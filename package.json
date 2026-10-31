@@ -13,10 +13,16 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @nexo/contracts",
-    "typecheck": "tsc -p tsconfig.tools.json --noEmit && npm run typecheck --workspace @nexo/contracts",
+    "build": "npm run db:generate && npm run build --workspace @nexo/contracts && npm run build --workspace @nexo/api",
+    "typecheck": "npm run db:generate && npm run build --workspace @nexo/contracts && tsc -p tsconfig.tools.json --noEmit && npm run typecheck --workspaces --if-present",
     "lint": "eslint . --max-warnings 0",
-    "test": "npm run build --workspace @nexo/contracts && vitest run --project unit"
+    "test": "npm run build --workspace @nexo/contracts && vitest run --project unit",
+    "test:integration": "npm run db:generate && vitest run --project integration",
+    "db:generate": "npm run db:generate --workspace @nexo/api",
+    "db:migrate": "npm run db:migrate --workspace @nexo/api",
+    "db:init": "npm run db:init --workspace @nexo/api",
+    "db:migrate:dev": "npm run db:migrate:dev --workspace @nexo/api",
+    "db:test": "npm run db:generate && vitest run --project integration apps/api/test/database.integration.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
