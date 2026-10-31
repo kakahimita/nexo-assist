@@ -15,6 +15,11 @@ coverage/
 *.log
 **/generated/prisma/
 
+# Test artifacts
+test-results/
+playwright-report/
+blob-report/
+
 # Local databases
 *.db
 *.db-*
