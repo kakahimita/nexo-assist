@@ -107,7 +107,7 @@ export async function runFoundationBrowserTests(): Promise<number> {
 
     webProcess = spawn(process.execPath, [nextCli, 'start', '-p', '3000'], {
       cwd: resolve(repositoryRoot, 'apps', 'web'),
-      env: { ...process.env, NEXT_PUBLIC_API_BASE_URL: apiUrl },
+      env: process.env,
       shell: false,
       stdio: 'inherit',
     });

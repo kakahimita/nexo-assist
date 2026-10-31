@@ -2,6 +2,7 @@ import { createGoogle } from '@ai-sdk/google';
 import { Agent } from '@mastra/core/agent';
 
 import type { ModelConfiguration } from './model-config.js';
+import { IncompleteSmokeEvidenceError } from './smoke-runner.js';
 import type { SmokeEvent, SmokeTransport, SmokeUsage } from './smoke-runner.js';
 import { createSmokeTool, EchoOutputSchema } from './smoke-tool.js';
 
@@ -11,6 +12,12 @@ const INSTRUCTIONS = [
   'Depois responda em português, em uma frase curta, incluindo o nonce devolvido pela ferramenta.',
   'Nunca invente um nonce nem afirme sucesso sem o resultado real da ferramenta.',
 ].join('\n');
+
+export function assertSuccessfulFinish(reason: string): void {
+  if (reason !== 'stop') {
+    throw new IncompleteSmokeEvidenceError();
+  }
+}
 
 function readUsage(value: unknown): SmokeUsage | undefined {
   if (typeof value !== 'object' || value === null) {
@@ -110,6 +117,7 @@ export function createMastraSmokeTransport(
             }
 
             case 'finish': {
+              assertSuccessfulFinish(value.payload.stepResult.reason);
               const usage = readUsage(value.payload.output.usage);
 
               yield { type: 'finish', ...(usage === undefined ? {} : { usage }) };
