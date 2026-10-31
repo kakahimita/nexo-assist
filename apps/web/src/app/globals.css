@@ -87,3 +87,18 @@ button:focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
+
+.login-layout { display: grid; grid-template-columns: 55% 45%; min-height: 100vh; background: white; }
+.intro { background: #182230; color: white; padding: 3rem; display: flex; flex-direction: column; justify-content: space-between; }
+.intro > div { margin: auto 0; max-width: 50rem; }
+.intro h1 { font-family: Georgia, serif; font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 400; }
+.login-main { width: 100%; display: grid; align-items: center; padding: 3rem; }
+.login-main form { width: 100%; }
+.login-main h2 { font-family: Georgia, serif; font-size: 2.5rem; font-weight: 400; }
+label { display: block; margin-top: 1rem; }
+input, textarea { width: 100%; padding: .8rem; font: inherit; border: 1px solid #9ca3af; border-radius: .4rem; }
+.login-main button { margin-top: 1.5rem; width: 100%; background: #005fbe; }
+.history nav { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+.history textarea { min-height: 7rem; }
+[role='alert'] { color: #9b1c1c; }
+@media (max-width: 700px) { .login-layout { grid-template-columns: 1fr; } .intro { min-height: 18rem; padding: 2rem; } .login-main { padding: 2rem; } }

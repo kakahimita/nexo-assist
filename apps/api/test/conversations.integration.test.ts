@@ -17,6 +17,7 @@ describe('B01 B13 B16: authorized persistent history', () => {
       const ana = await login('ana.souza@nexo.com.br');
       const bruno = await login('bruno.lima@nexo.com.br');
       const analyst = await login('analista@nexo.com.br');
+      await request(server).post('/api/conversations').set('Cookie', ana).set('Origin', 'http://localhost:4000').type('form').send({}).expect(403);
       await request(server).get('/api/conversations').expect(401);
       await request(server).get('/api/conversations').set('Cookie', analyst).expect(403);
       await request(server).post('/api/conversations').set('Cookie', ana).send({ ownerId: 'forged' }).expect(400);
