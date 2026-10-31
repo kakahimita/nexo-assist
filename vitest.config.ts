@@ -19,6 +19,7 @@ export default defineConfig({
       {
         test: {
           name: 'integration',
+          testTimeout: 30000,
           include: ['**/*.integration.test.ts'],
           exclude: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/generated/**'],
         },

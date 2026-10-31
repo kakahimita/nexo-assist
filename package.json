@@ -25,7 +25,9 @@
     "db:migrate": "npm run db:migrate --workspace @nexo/api",
     "db:init": "npm run db:init --workspace @nexo/api",
     "db:migrate:dev": "npm run db:migrate:dev --workspace @nexo/api",
-    "db:test": "npm run db:generate && vitest run --project integration apps/api/test/database.integration.test.ts"
+    "db:test": "npm run db:generate && vitest run --project integration apps/api/test/database.integration.test.ts",
+    "smoke:model": "npm run smoke:model --workspace @nexo/api",
+    "check": "npm run typecheck && npm run lint && npm test && npm run test:integration && npm run build && npm run test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
