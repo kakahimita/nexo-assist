@@ -105,5 +105,6 @@ Password recovery,
 corporate SSO, actual remote access, presence counts, and performance metrics
 must not be presented as implemented services merely because examples show them.
 
-The runnable foundation is in progress. The current application delivery remains [#3](https://github.com/kakahimita/nexo-assist/issues/3).
+The runnable foundation was merged in [#3](https://github.com/kakahimita/nexo-assist/issues/3).
+Identity and history are in progress in [#4](https://github.com/kakahimita/nexo-assist/issues/4).
 The [roadmap](roadmap.md) and [workflow](development-workflow.md) govern delivery.

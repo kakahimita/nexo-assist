@@ -5,9 +5,10 @@ confirmed ticket changes, and human handoff with context.
 
 ## Current status
 
-**Foundation in progress.** A diagnostic web page, API health endpoints,
-SQLite migrations, and an isolated model smoke command are available. The
-service desk workflows and production authentication are not yet implemented.
+**Identity and history in progress.** Demo login, employee-isolated conversation
+history, API health endpoints, SQLite migrations, and an isolated model smoke
+command are available. The service desk workflows and production authentication
+are not yet implemented.
 The project is built collaboratively in small, reviewable deliveries so the
 developer can understand, explain, and modify the implementation.
 
@@ -57,6 +58,12 @@ npm run dev
 ```
 
 Open http://localhost:3000; the API is at http://localhost:3001/api.
+The diagnostic page is at http://localhost:3000/diagnostico. Sign in using
+`ana.souza@nexo.com.br`, `bruno.lima@nexo.com.br`, or
+`analista@nexo.com.br` with any nonempty password. This is fictional demo
+authentication, not corporate login. Employees can create a conversation,
+save messages and recover their history; the agent does not respond yet.
+Analyst support workflows are planned separately. Use **Sair** to revoke a session.
 `DATABASE_URL` defaults to `data/nexo.db` relative to the repository root.
 `db:init` applies committed migrations without resetting existing data;
 use `npm run db:migrate:dev` when developing a migration. Integration and

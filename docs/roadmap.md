@@ -2,7 +2,8 @@
 
 Parent: [#1](https://github.com/kakahimita/nexo-assist/issues/1).
 Repository documentation: [#2](https://github.com/kakahimita/nexo-assist/issues/2).
-Every delivery below is planned, not completed. Split into smaller linked issues
+Foundation #3 was merged in PR #14; #4 is in progress on `feature/LAB-0004`.
+The remaining deliveries are planned. Split into smaller linked issues
 when an independently verifiable increment warrants it.
 
 Challenge context and original local references are tracked separately in
