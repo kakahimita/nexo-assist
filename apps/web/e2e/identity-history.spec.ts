@@ -3,8 +3,8 @@ import { expect, test } from '@playwright/test';
 test('B01 B13: login, persist, logout and isolate history', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
-  await page.getByLabel('Senha').fill('qualquer');
-  await page.getByLabel('Senha').press('Enter');
+  await page.getByLabel('Senha', { exact: true }).fill('qualquer');
+  await page.getByLabel('Senha', { exact: true }).press('Enter');
   await page.getByRole('button', { name: 'Nova conversa' }).click();
   await page.getByLabel('Mensagem').fill('Minha conexão caiu');
   await page.getByRole('button', { name: 'Salvar mensagem' }).click();
@@ -14,7 +14,7 @@ test('B01 B13: login, persist, logout and isolate history', async ({ page }) => 
   await expect(page.getByText('Minha conexão caiu')).toBeVisible();
   await page.getByRole('button', { name: 'Sair' }).click();
   await page.getByLabel('E-mail corporativo').fill('bruno.lima@nexo.com.br');
-  await page.getByLabel('Senha').fill('x');
+  await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page.getByText('Minha conexão caiu')).toHaveCount(0);
 });
@@ -22,7 +22,7 @@ test('B01 B13: login, persist, logout and isolate history', async ({ page }) => 
 test('B01: reports rejected login and unavailable service', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('desconhecido@nexo.com.br');
-  await page.getByLabel('Senha').fill('x');
+  await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'Não foi possível entrar' })).toBeVisible();
   await page.route('**/api/session', (route) => route.fulfill({ status: 503 }));

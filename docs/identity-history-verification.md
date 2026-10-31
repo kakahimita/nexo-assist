@@ -17,5 +17,13 @@ Issue #4 is in progress. Evidence below applies to application revision
   present; typography, spacing, illustration and other visual details differ.
   Narrow viewport overflow was checked. Native Pencil export comparison remains
   unavailable; this is not a claim of full visual acceptance.
+- A subsequent login refinement was compared in Chromium at 1440 × 900
+  and 390 × 844, using the verified `.pen` frame and owner-supplied rendering.
+  The layout now uses the design's font families and colors; its illustrative
+  content and sample metrics are visibly marked as illustrative, distinct from
+  working services. The mobile form, keyboard error feedback, and password-visibility
+  control were checked locally with Chromium; the latter has a keyboard test.
+  Screenshots are kept under `outputs/`, separate from reference assets. This
+  comparison does not establish native-editor pixel fidelity.
 - The live model smoke was not rerun for this delivery. No model inference or
   agent responses are implemented by this issue.

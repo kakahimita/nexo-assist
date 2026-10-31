@@ -47,7 +47,7 @@ test('B13: browser history survives restarting the API process', async ({ page }
     });
     await page.goto('/');
     await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
-    await page.getByLabel('Senha').fill('x');
+    await page.getByLabel('Senha', { exact: true }).fill('x');
     await page.getByRole('button', { name: 'Entrar' }).click();
     await page.getByRole('button', { name: 'Nova conversa' }).click();
     await page.getByLabel('Mensagem').fill('Histórico após reinício');
