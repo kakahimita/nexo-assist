@@ -5,6 +5,11 @@ Repository documentation: [#2](https://github.com/kakahimita/nexo-assist/issues/
 Every delivery below is planned, not completed. Split into smaller linked issues
 when an independently verifiable increment warrants it.
 
+Challenge context and original local references are tracked separately in
+[#12](https://github.com/kakahimita/nexo-assist/issues/12). Every implementation
+delivery must use the [acceptance matrix](challenge-acceptance.md) and
+[source reference policy](challenge-references.md) for its tests and review.
+
 | Issue | Delivery | Observable acceptance |
 | --- | --- | --- |
 | [#3](https://github.com/kakahimita/nexo-assist/issues/3) | Runnable foundation | Clean install, web/API health check, database migration, strict contracts, CI, separate live Mastra smoke check |

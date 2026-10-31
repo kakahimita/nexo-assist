@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "snapshot": "prd-v5-pencil-v2-owner-renders-3x-2026-10-31",
+  "visualPreviewOnly": false,
+  "nativeEditorExport": false,
+  "screenRenderScale": 3,
+  "assets": [
+    {
+      "path": "originals/challenge-invitation.png",
+      "sha256": "84bebfe4f23c4fbd3d6b17a4f1bf6e2413084fcc03c2dd08952eddbb49579a12"
+    },
+    {
+      "path": "originals/challenge-prd-v5.pdf",
+      "sha256": "2ed575f31a883df4ebc90932317927615bbe55b42e70317e60a7a72d3dfb0912"
+    },
+    {
+      "path": "originals/nexo.pen",
+      "sha256": "60affca8d1fae0fc0e8accd7c61f6a2d83b9448159992f9a5b58fea120763402"
+    },
+    {
+      "path": "originals/nexo.zip",
+      "sha256": "3789fbee9a56e41fb37efc0bacb26ae15bf4a629fc93599d2bb27a0b40d84c25"
+    },
+    {
+      "path": "originals/owner-screen-renders-readme.txt",
+      "sha256": "c97e10ce2b1b59d70ddb89e6e3469a5b896525a764f9f964dccf4ec227879752"
+    },
+    {
+      "path": "originals/pencil-share-manifest.json",
+      "sha256": "17caf95fdbf65d93c6d764e620149123cfd691a8eecd04cfbf3e5188472a074f"
+    },
+    {
+      "path": "prd-pages/page-01.png",
+      "sha256": "26ec60b0df3eb021602d795f72bef7d845b2e6c78e837d9a122f27102f594017"
+    },
+    {
+      "path": "prd-pages/page-02.png",
+      "sha256": "e459b66a85f7ed7fb3850cf1c21d0716d4b035ea6a40e0310edd6374eee58d15"
+    },
+    {
+      "path": "prd-pages/page-03.png",
+      "sha256": "54aaf744cc579ef4212f7348a0c7c6459ab2ebf8fba2fa599a580825a467b870"
+    },
+    {
+      "path": "prd-pages/page-04.png",
+      "sha256": "d0be8000dec416bc6245217fb15493173cdcf32e07b4cbb970cccbd3a6b99b0f"
+    },
+    {
+      "path": "prd-pages/page-05.png",
+      "sha256": "ee0c6c316cc2072ee645cbd698f612121f469b7b7f82fbb39e7fc3aaaa42c459"
+    },
+    {
+      "path": "prd-text.txt",
+      "sha256": "c310d715271522b6aaec407f2c213a141e98d0e25c9f50b9de1e972ba5ba31f2"
+    },
+    {
+      "path": "screens/01-login.png",
+      "sha256": "c973ce6c07308bf2249f6dc0e31dc124eb86d04257f256aaee155fc824de601d"
+    },
+    {
+      "path": "screens/02-ticket-draft.png",
+      "sha256": "a5e4286e355d0e252a6601f638770c450017a4a6f15afb428b0fb02c2a65f48f"
+    },
+    {
+      "path": "screens/03-ticket-consultation.png",
+      "sha256": "dc9a069f75b8b9513a67bcc7d7eb65ca86886ab921a4335caf2779483362548e"
+    },
+    {
+      "path": "screens/04-analyst-queue.png",
+      "sha256": "d052bfce618c356c57e51ebb0273798521ddb9a701efbee1198a3a03faa3dc44"
+    },
+    {
+      "path": "screens/05-analyst-owned.png",
+      "sha256": "7380c9cd878763e6642d75b275320a3b74b07371308dcdd9400ac30d82457476"
+    },
+    {
+      "path": "screens/06-profile.png",
+      "sha256": "1550fe9338c8f6ca688d4b9c32a6182e331e26347c99b4e4e2c4a9f1e481283f"
+    },
+    {
+      "path": "screens/prototype-overview.png",
+      "sha256": "7e2f45489126dee44fb668f160d4443717e6eba043bcd68f858db48daace4c77"
+    }
+  ]
+}
