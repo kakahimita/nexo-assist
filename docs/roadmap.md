@@ -2,7 +2,9 @@
 
 Parent: [#1](https://github.com/kakahimita/nexo-assist/issues/1).
 Repository documentation: [#2](https://github.com/kakahimita/nexo-assist/issues/2).
-Foundation #3 was merged in PR #14; #4 is in progress on `feature/LAB-0004`.
+Foundation #3 was merged in PR #14; the identity and conversation-history
+increment for #4 was merged in PR #15. Its verification is recorded in
+[identity and history verification](identity-history-verification.md).
 The remaining deliveries are planned. Split into smaller linked issues
 when an independently verifiable increment warrants it.
 
