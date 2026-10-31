@@ -6,6 +6,6 @@ import { IdentityService } from './identity.service.js';
 @Module({})
 export class IdentityModule {
   static register(secure: boolean): DynamicModule {
-    return { module: IdentityModule, controllers: [IdentityController], providers: [IdentityService, IdentityGuard, { provide: SECURE_COOKIE, useValue: secure }], exports: [IdentityGuard, IdentityService] };
+    return { module: IdentityModule, global: true, controllers: [IdentityController], providers: [IdentityService, IdentityGuard, { provide: SECURE_COOKIE, useValue: secure }], exports: [IdentityGuard, IdentityService] };
   }
 }
