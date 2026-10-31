@@ -40,6 +40,9 @@ Optional deployment does not block mandatory completion.
 
 ## Foundation completion gate
 
+Implementation is in progress; see [foundation verification](foundation-verification.md)
+for observed results and outstanding live-provider and CI evidence.
+
 Issue #3 needs a runnable stack and passing automated checks. Its live model
 verification also needs the owner's free-provider account/key configured locally.
 A missing key remains an outstanding criterion; simulated output does not prove
