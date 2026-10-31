@@ -13,3 +13,36 @@ model SystemMetadata {
   key   String @id
   value String
 }
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  name String
+  role String
+  sessions Session[]
+  conversations Conversation[]
+}
+
+model Session {
+  id String @id @default(cuid())
+  tokenHash String @unique
+  expiresAt DateTime
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id])
+  messages Message[]
+}
+
+model Message {
+  id String @id @default(cuid())
+  content String
+  createdAt DateTime @default(now())
+  conversationId String
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}

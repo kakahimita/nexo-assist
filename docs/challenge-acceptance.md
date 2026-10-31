@@ -1,6 +1,6 @@
 # Challenge acceptance and test matrix
 
-Status: requirements; foundation B17 evidence is recorded in [foundation verification](foundation-verification.md). Other rows remain planned unless independently demonstrated.
+Status: requirements; foundation B17 evidence is recorded in [foundation verification](foundation-verification.md). Partial B01 and B13 evidence for #4 is recorded in [identity and history verification](identity-history-verification.md). Other rows remain planned unless independently demonstrated.
 Read the [context](challenge-context.md), original sources through the
 [reference index](challenge-references.md), and [architecture](architecture.md)
 before implementing a row. Page numbers below refer to the original PRD v5.

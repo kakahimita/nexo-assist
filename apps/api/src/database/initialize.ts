@@ -7,6 +7,7 @@ import { config as loadEnvironment } from 'dotenv';
 import { REPOSITORY_ROOT, resolveDatabaseUrl } from '../config/paths.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { createDatabaseClient } from './client.js';
+import { identityFixtures } from '../identity/fixtures.js';
 
 export async function initializeDatabase(client: PrismaClient): Promise<void> {
   await client.systemMetadata.upsert({
@@ -14,6 +15,9 @@ export async function initializeDatabase(client: PrismaClient): Promise<void> {
     update: {},
     create: { key: 'installation-id', value: randomUUID() },
   });
+  for (const fixture of identityFixtures) {
+    await client.user.upsert({ where: { email: fixture.email }, update: {}, create: fixture });
+  }
 }
 
 async function main(): Promise<void> {

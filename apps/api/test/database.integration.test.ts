@@ -15,6 +15,23 @@ import {
 } from './support/test-database.js';
 
 describe('B17 / PRD p. 2: migrated, file-backed SQLite persistence', () => {
+  it('B01: seeds the same fictional identities on repeated initialization', async () => {
+    const database = await createTestDatabase();
+    const client = createDatabaseClient(database.url);
+    try {
+      await initializeDatabase(client);
+      await initializeDatabase(client);
+      const users = await client.user.findMany({ orderBy: { email: 'asc' } });
+      expect(users.map(({ email, role }) => ({ email, role }))).toEqual([
+        { email: 'ana.souza@nexo.com.br', role: 'employee' },
+        { email: 'analista@nexo.com.br', role: 'analyst' },
+        { email: 'bruno.lima@nexo.com.br', role: 'employee' },
+      ]);
+    } finally {
+      await client.$disconnect();
+      await database.cleanup();
+    }
+  });
   it('B17: keeps one installation marker across clients and repeated initialization', async () => {
     const database = await createTestDatabase();
 

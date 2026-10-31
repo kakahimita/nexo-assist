@@ -4,13 +4,15 @@ import type { DynamicModule } from '@nestjs/common';
 import type { ApiEnvironment } from './config/environment.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
+import { IdentityModule } from './identity/identity.module.js';
+import { ConversationsModule } from './conversations/conversations.module.js';
 
 @Module({})
 export class AppModule {
   static register(environment: ApiEnvironment): DynamicModule {
     return {
       module: AppModule,
-      imports: [DatabaseModule.register(environment.databaseUrl), HealthModule],
+      imports: [DatabaseModule.register(environment.databaseUrl), HealthModule, IdentityModule.register(environment.webOrigin.startsWith('https://')), ConversationsModule],
     };
   }
 }
