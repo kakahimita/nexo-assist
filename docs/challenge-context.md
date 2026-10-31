@@ -106,5 +106,5 @@ corporate SSO, actual remote access, presence counts, and performance metrics
 must not be presented as implemented services merely because examples show them.
 
 The runnable foundation was merged in [#3](https://github.com/kakahimita/nexo-assist/issues/3).
-Identity and history are in progress in [#4](https://github.com/kakahimita/nexo-assist/issues/4).
+The identity and conversation-history increment for [#4](https://github.com/kakahimita/nexo-assist/issues/4) was merged in [PR #15](https://github.com/kakahimita/nexo-assist/pull/15); its verification and remaining challenge-wide persistence work are recorded in [identity and history verification](identity-history-verification.md).
 The [roadmap](roadmap.md) and [workflow](development-workflow.md) govern delivery.
