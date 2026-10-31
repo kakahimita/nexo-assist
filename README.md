@@ -28,6 +28,9 @@ The agent stays paused while a conversation waits for or receives human care.
 
 ## Documentation
 
+- [Challenge context and source authority](docs/challenge-context.md)
+- [Challenge acceptance and test matrix](docs/challenge-acceptance.md)
+- [Local original references and restoration](docs/challenge-references.md)
 - [Architecture and challenge conventions](docs/architecture.md)
 - [Roadmap and acceptance criteria](docs/roadmap.md)
 - [Development workflow](docs/development-workflow.md)
@@ -44,5 +47,8 @@ free quotas must cause a clear recoverable error, not paid inference.
 Automated checks will run without real model credentials.
 
 Only fictional service desk fixtures will be used. Original challenge documents
-and design files are external references, not published repository assets.
+and design files are preserved in an ignored local reference bundle, not
+published repository assets. Root `AGENTS.md` directs future repository sessions
+to the context, sources, and acceptance matrix. Other machines and cloud sessions
+need the private bundle restored; cloning Git alone does not include it.
 No production authentication or deployment is claimed at this stage.

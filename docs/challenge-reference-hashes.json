@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "snapshot": "prd-v5-pencil-share-v2-2026-10-31",
+  "visualPreviewOnly": true,
+  "assets": [
+    {
+      "path": "originals/challenge-invitation.png",
+      "sha256": "84bebfe4f23c4fbd3d6b17a4f1bf6e2413084fcc03c2dd08952eddbb49579a12"
+    },
+    {
+      "path": "originals/challenge-prd-v5.pdf",
+      "sha256": "2ed575f31a883df4ebc90932317927615bbe55b42e70317e60a7a72d3dfb0912"
+    },
+    {
+      "path": "originals/nexo.pen",
+      "sha256": "60affca8d1fae0fc0e8accd7c61f6a2d83b9448159992f9a5b58fea120763402"
+    },
+    {
+      "path": "originals/nexo.zip",
+      "sha256": "3789fbee9a56e41fb37efc0bacb26ae15bf4a629fc93599d2bb27a0b40d84c25"
+    },
+    {
+      "path": "originals/pencil-share-manifest.json",
+      "sha256": "17caf95fdbf65d93c6d764e620149123cfd691a8eecd04cfbf3e5188472a074f"
+    },
+    {
+      "path": "prd-pages/page-01.png",
+      "sha256": "26ec60b0df3eb021602d795f72bef7d845b2e6c78e837d9a122f27102f594017"
+    },
+    {
+      "path": "prd-pages/page-02.png",
+      "sha256": "e459b66a85f7ed7fb3850cf1c21d0716d4b035ea6a40e0310edd6374eee58d15"
+    },
+    {
+      "path": "prd-pages/page-03.png",
+      "sha256": "54aaf744cc579ef4212f7348a0c7c6459ab2ebf8fba2fa599a580825a467b870"
+    },
+    {
+      "path": "prd-pages/page-04.png",
+      "sha256": "d0be8000dec416bc6245217fb15493173cdcf32e07b4cbb970cccbd3a6b99b0f"
+    },
+    {
+      "path": "prd-pages/page-05.png",
+      "sha256": "ee0c6c316cc2072ee645cbd698f612121f469b7b7f82fbb39e7fc3aaaa42c459"
+    },
+    {
+      "path": "prd-text.txt",
+      "sha256": "c310d715271522b6aaec407f2c213a141e98d0e25c9f50b9de1e972ba5ba31f2"
+    },
+    {
+      "path": "screens/01-login.png",
+      "sha256": "30786e6fc2081b3f7cacaef91cd00317c1ecca7465cec8b89fca380f46d50186"
+    },
+    {
+      "path": "screens/02-ticket-draft.png",
+      "sha256": "4f717917927b70aa57a2ace69251ebb55cab4e78299132d6cfef363fba278aa8"
+    },
+    {
+      "path": "screens/03-ticket-consultation.png",
+      "sha256": "ca5f331223a34675b44c763ce44bd2a4ce2783ec19bc3f8578e83ac2bcdaf914"
+    },
+    {
+      "path": "screens/04-analyst-queue.png",
+      "sha256": "0f6febaa3e903b58966554762f4541078789664c20da47c808961f08b1d37ba2"
+    },
+    {
+      "path": "screens/05-analyst-owned.png",
+      "sha256": "57adbd12b55e3e4220752cb9d328b8071054f3d5a79e79d349bca6cbaa6592fa"
+    },
+    {
+      "path": "screens/06-profile.png",
+      "sha256": "32fb00895eb50c1dd2460a3fdfeebcf885816905a30facb35dee0da7dce04423"
+    },
+    {
+      "path": "screens/prototype-overview.png",
+      "sha256": "1cbf3179d973ecb3ea3151c8ff8833d7b832970fbf135027ba978583c6fb582e"
+    }
+  ]
+}
