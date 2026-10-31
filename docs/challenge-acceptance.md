@@ -32,8 +32,9 @@ Rows apply to all relevant roadmap deliveries, not only final submission.
 ## Visual acceptance
 
 Frame IDs refer to `originals/nexo.pen` in the local bundle. `screens/` paths
-are relative to that bundle. Every current individual PNG is an unscaled crop
-of the official 1200 x 296 overview, not a full-resolution export.
+are relative to that bundle. The owner supplied replacement images rendered
+at 3x from `.pen` data through HTML/CSS. Five PNGs are 4320 x 2700; V05 is
+4701 x 2700. They are readable secondary guides, not native Pencil exports.
 
 | ID | PRD / frame | Reference image | Verify in the application |
 | --- | --- | --- | --- |
@@ -50,10 +51,13 @@ matching viewport, then verify keyboard behavior and narrow-screen adaptation.
 Check loading, empty, error, quota, waiting, closed, and reconnect states as
 project acceptance, even where the static prototype does not show them.
 
-Low-resolution crops support composition checks only. Fine typography,
-spacing, and pixel-level visual comparison require genuine 1x/2x Pencil exports
-from the pinned design. Record the export engine/version and scale before
-adding them to the manifest. Do not upscale thumbnails and claim extra detail.
+The supplied provenance README discloses possible typography and spacing
+differences and no comparison against the native editor. Use the 3x images
+for readable content and composition checks; use `.pen` as the visual authority.
+Exact pixel-level assertions still require native Pencil exports or comparison
+against the editor. Preserve the source images without resizing, and record
+renderer, scale, and hashes. The previous low-resolution snapshot is archived
+outside the active bundle; do not use its thumbnails for detailed UI checks.
 
 ## Evidence rules
 

@@ -98,7 +98,10 @@ business hours for medium/low, seven elapsed calendar days inclusive, and a
 read-only profile are project choices. They are not additional PRD quotations.
 
 The design contains six desktop frames: the five required screens and an
-additional profile. It contains no runnable frontend. Password recovery,
+additional profile. Owner-supplied 3x HTML/CSS renderings are preserved as
+readable secondary visual guides; they are not native Pencil exports and
+do not replace the `.pen` authority. The design contains no runnable frontend.
+Password recovery,
 corporate SSO, actual remote access, presence counts, and performance metrics
 must not be presented as implemented services merely because examples show them.
 
