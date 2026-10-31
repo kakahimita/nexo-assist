@@ -4,6 +4,9 @@ Status: agreed plan; components below are not implemented yet.
 
 ## Components
 
+The in-progress foundation implements a diagnostic Next.js page, NestJS health
+and readiness endpoints, shared Zod contracts, and migrated SQLite metadata.
+
 Use npm workspaces with `apps/web`, `apps/api`, and `packages/contracts`.
 Next.js handles UI and HTTP/SSE consumption. NestJS owns application rules,
 sessions, authorization, and persistence; integrate Mastra as a library without
@@ -70,6 +73,9 @@ Do not promise an earlier response simply because a meeting is imminent.
 These conventions resolve PRD ambiguities and must be tested and disclosed.
 
 ## Agent and evidence
+
+The foundation has a private, explicitly invoked Mastra nonce tool and streaming
+smoke command. It is not the service-desk agent and exposes no HTTP endpoint.
 
 Use validated Mastra tools. Start with eight short fictional knowledge articles
 and textual retrieval. Article applicability is explicit: a Windows 10 fix must

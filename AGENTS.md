@@ -55,10 +55,11 @@ explicit owner instruction. Read-only investigation needs no issue.
 
 ## Verification
 
-Current delivery is documentation only: check links, issue references, ignore
-rules, and `git diff --check`. Do not invent passing application tests.
-The foundation must add documented install, typecheck, lint, test, build, and
-isolated database commands, then update these instructions.
-Later deliveries run relevant checks and disclose failures and skipped checks.
-Test behavior and trust boundaries rather than trivial implementation details.
-Review manually unless the user or applicable instructions request delegation.
+Run `npm run typecheck`, `npm run lint`, `npm test`,
+`npm run test:integration`, `npm run build`, and `npm run test:e2e`, or
+`npm run check` after installing Chromium. Integration and browser checks use
+isolated temporary databases. Run `npm run smoke:model` separately when a local
+provider key is available; simulated results do not satisfy the live gate.
+Disclose failures and skipped checks. Test behavior and trust boundaries rather
+than trivial implementation details. Review manually unless the user or
+applicable instructions request delegation.

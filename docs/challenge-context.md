@@ -105,6 +105,5 @@ Password recovery,
 corporate SSO, actual remote access, presence counts, and performance metrics
 must not be presented as implemented services merely because examples show them.
 
-The current repository contains documentation only. The next application
-delivery remains [#3](https://github.com/kakahimita/nexo-assist/issues/3).
+The runnable foundation is in progress. The current application delivery remains [#3](https://github.com/kakahimita/nexo-assist/issues/3).
 The [roadmap](roadmap.md) and [workflow](development-workflow.md) govern delivery.
