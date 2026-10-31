@@ -9,6 +9,7 @@ export class DatabaseModule {
   static register(databaseUrl: string): DynamicModule {
     return {
       module: DatabaseModule,
+      global: true,
       providers: [{ provide: DATABASE_URL, useValue: databaseUrl }, DatabaseService],
       exports: [DatabaseService],
     };
