@@ -5,17 +5,17 @@ confirmed ticket changes, and human handoff with context.
 
 ## Current status
 
-**Identity and history in progress.** Demo login, employee-isolated conversation
-history, API health endpoints, SQLite migrations, and an isolated model smoke
-command are available. The service desk workflows and production authentication
-are not yet implemented.
+**Identity, history, and an initial ticket service are available.** Demo login,
+employee-isolated conversation history, ticket consultation and confirmed
+ticket changes use SQLite. Agent conversations, human support workflows and
+production authentication are not yet implemented.
 The project is built collaboratively in small, reviewable deliveries so the
 developer can understand, explain, and modify the implementation.
 
 ## Planned stack
 
 - Strict TypeScript and npm workspaces.
-- Next.js, React, and Tailwind for employee and analyst interfaces.
+- Next.js, React, and CSS for employee and analyst interfaces.
 - NestJS for rules, sessions, authorization, and persistence.
 - Mastra for agent orchestration and validated tools.
 - Prisma with file-backed SQLite for the initial local application.
@@ -35,6 +35,7 @@ The agent stays paused while a conversation waits for or receives human care.
 - [Local original references and restoration](docs/challenge-references.md)
 - [Architecture and challenge conventions](docs/architecture.md)
 - [Roadmap and acceptance criteria](docs/roadmap.md)
+- [Ticket-service verification](docs/ticket-verification.md)
 - [Development workflow](docs/development-workflow.md)
 - [Contributor instructions](AGENTS.md)
 
@@ -63,11 +64,28 @@ The diagnostic page is at http://localhost:3000/diagnostico. Sign in using
 `analista@nexo.com.br` with any nonempty password. This is fictional demo
 authentication, not corporate login. Employees can create a conversation,
 save messages and recover their history; the agent does not respond yet.
+Employees can also consult fictional tickets and review, edit, confirm or cancel
+a draft for ticket creation, supplementation and recent reopening. Example
+tickets are seeded for Ana and Bruno; the seed does not overwrite existing data.
 Analyst support workflows are planned separately. Use **Sair** to revoke a session.
 `DATABASE_URL` defaults to `data/nexo.db` relative to the repository root.
 `db:init` applies committed migrations without resetting existing data;
 use `npm run db:migrate:dev` when developing a migration. Integration and
 browser checks use temporary databases, separate from the development file.
+
+The backend computes priority and deadlines in `America/Sao_Paulo`: critical
+uses one elapsed hour; high, medium and low use 4, 30 and 50 business hours,
+Monday–Friday 08:00–18:00 without holidays. Employee supplements do not reset
+the clock. A substantive support update must reset it when that workflow is
+implemented in #8. Resolved tickets can reopen through seven elapsed days.
+
+The server stores each draft version and operation ID; repeating a confirmation
+returns the committed result instead of creating another write. Temporary
+service failures have bounded retries. Exact normalized-title matching blocks
+some duplicates, but can miss the same issue described differently and can
+block different issues with the same title; broader matching is future work.
+The backend can record a ticket transfer request, but this does not create an
+analyst queue or indicate that a human has received the conversation.
 
 For deterministic verification, install Chromium with
 `npm exec playwright -- install chromium`, then run `npm run check`. Individual
@@ -80,7 +98,8 @@ server-only `GOOGLE_API_KEY` in `.env`. Configure a project with free-tier
 access and check the provider's current quota and pricing first. A missing key,
 quota exhaustion, or unavailable model produces an error; there is no automatic
 fallback. Never share the key in chat or commit it. CI does not need a key.
-See [verification evidence](docs/foundation-verification.md) for completed and
+See [foundation verification](docs/foundation-verification.md) and
+[ticket-service verification](docs/ticket-verification.md) for completed and
 outstanding checks.
 
 Only fictional service desk fixtures will be used. The original challenge

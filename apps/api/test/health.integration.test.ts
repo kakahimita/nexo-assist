@@ -73,14 +73,15 @@ describe('B17 / PRD p. 2: API health and readiness', () => {
     }
   });
 
-  it('B17: does not expose agent, Mastra, or ticket endpoints', async () => {
+  it('B17: keeps agent endpoints unavailable and ticket endpoints authenticated', async () => {
     const database = await createTestDatabase();
     const app = await createApp({ ...baseEnvironment, databaseUrl: database.url });
 
     try {
-      for (const path of ['/api/agents', '/api/mastra', '/api/tickets']) {
+      for (const path of ['/api/agents', '/api/mastra']) {
         await request(app.getHttpServer()).get(path).expect(404);
       }
+      await request(app.getHttpServer()).get('/api/tickets').expect(401);
     } finally {
       await app.close();
       await database.cleanup();

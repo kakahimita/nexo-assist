@@ -6,13 +6,14 @@ import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { ConversationsModule } from './conversations/conversations.module.js';
+import { TicketsModule } from './tickets/tickets.module.js';
 
 @Module({})
 export class AppModule {
   static register(environment: ApiEnvironment): DynamicModule {
     return {
       module: AppModule,
-      imports: [DatabaseModule.register(environment.databaseUrl), HealthModule, IdentityModule.register(environment.webOrigin.startsWith('https://')), ConversationsModule],
+      imports: [DatabaseModule.register(environment.databaseUrl), HealthModule, IdentityModule.register(environment.webOrigin.startsWith('https://')), ConversationsModule, TicketsModule],
     };
   }
 }

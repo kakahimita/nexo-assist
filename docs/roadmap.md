@@ -5,6 +5,9 @@ Repository documentation: [#2](https://github.com/kakahimita/nexo-assist/issues/
 Foundation #3 was merged in PR #14; the identity and conversation-history
 increment for #4 was merged in PR #15. Its verification is recorded in
 [identity and history verification](identity-history-verification.md).
+The #5 ticket-service increment is implemented on `feature/LAB-0005` and
+awaiting review; its evidence and remaining limitations are recorded in
+[ticket verification](ticket-verification.md).
 The remaining deliveries are planned. Split into smaller linked issues
 when an independently verifiable increment warrants it.
 
