@@ -166,6 +166,12 @@ label { display: block; margin-top: 1rem; }
 input, textarea { width: 100%; padding: .8rem; font: inherit; border: 1px solid #9ca3af; border-radius: .4rem; }
 .history nav { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
 .history textarea { min-height: 7rem; }
+.tickets { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #d7dce3; }
+.ticket-card, .ticket-form { margin: 1rem 0; padding: 1rem; border: 1px solid #d7dce3; border-radius: .6rem; background: #fff; }
+.ticket-form { display: grid; gap: .75rem; max-width: 42rem; }
+.ticket-form label { display: grid; gap: .3rem; }
+.ticket-form select { width: 100%; padding: .75rem; font: inherit; border: 1px solid #9ca3af; border-radius: .4rem; background: white; }
+.ticket-card button, .ticket-form button { margin: .3rem .4rem .3rem 0; }
 [role='alert'] { color: #9b1c1c; }
 @media (max-width: 900px) { .intro { padding: 36px; } .login-main { padding: 36px; } .preview-wrap { padding-left: 0; } }
 @media (max-width: 700px) { .login-layout { grid-template-columns: 1fr; } .intro { padding: 28px 24px; } .intro-story { margin: 40px 0 12px; } .intro h1 { font-size: clamp(2.6rem, 9vw, 3.5rem); } .preview-wrap, .intro-metrics { display: none; } .login-main { min-height: 480px; padding: 28px 24px; } .login-center { padding: 32px 0; } .login-topline { text-align: left; } .login-footer { flex-wrap: wrap; } }

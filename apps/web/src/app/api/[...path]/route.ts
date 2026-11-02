@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 async function forward(request: Request, context: { params: Promise<{ path: string[] }> }): Promise<Response> {
   const { path } = await context.params;
   const route = path.join('/');
-  if (!/^(session|conversations|conversations\/[a-z0-9]+\/messages)$/.test(route)) return new Response(null, { status: 404 });
+  const existing = /^(session|conversations|conversations\/[a-z0-9]+\/messages)$/.test(route);
+  const ticketRead = request.method === 'GET' && /^(tickets|tickets\/[a-z0-9-]+(?:\/history)?|ticket-drafts\/[a-z0-9-]+)$/.test(route);
+  const ticketWrite = request.method === 'POST' && /^(ticket-drafts|ticket-drafts\/[a-z0-9-]+\/(?:edit|cancel|confirm))$/.test(route);
+  if (!existing && !ticketRead && !ticketWrite) return new Response(null, { status: 404 });
   if (request.method !== 'GET' && request.headers.get('origin') !== new URL(request.url).origin) return new Response(null, { status: 403 });
   const base = process.env.API_BASE_URL ?? 'http://127.0.0.1:3001/api';
   try {

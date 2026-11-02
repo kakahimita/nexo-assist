@@ -44,6 +44,7 @@ test('B01: unavailable session service offers retry', async ({ page }) => {
 test('B13: a late history response cannot change the selected conversation', async ({ page }) => {
   const timestamp = '2026-10-31T00:00:00.000Z';
   await page.route('**/api/session', (route) => route.fulfill({ json: { id: 'user', name: 'Ana', email: 'ana.souza@nexo.com.br', role: 'employee' } }));
+  await page.route('**/api/tickets', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/conversations', (route) => route.fulfill({ json: [{ id: 'one', createdAt: timestamp }, { id: 'two', createdAt: timestamp }] }));
   let release = (): void => undefined;
   const gate = new Promise<void>((resolve) => { release = resolve; });
@@ -66,6 +67,7 @@ test('B13: a late history response cannot change the selected conversation', asy
 test('B13: pending message cannot be submitted twice or edited', async ({ page }) => {
   const timestamp = '2026-10-31T00:00:00.000Z';
   await page.route('**/api/session', (route) => route.fulfill({ json: { id: 'user', name: 'Ana', email: 'ana.souza@nexo.com.br', role: 'employee' } }));
+  await page.route('**/api/tickets', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/conversations', (route) => route.fulfill({ json: [{ id: 'one', createdAt: timestamp }] }));
   let release = (): void => undefined;
   const gate = new Promise<void>((resolve) => { release = resolve; });
