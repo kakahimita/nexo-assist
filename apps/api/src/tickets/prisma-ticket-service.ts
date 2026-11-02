@@ -1,16 +1,33 @@
 import { createHash } from 'node:crypto';
 import { ConfirmDraftInputSchema, DraftInputSchema, PrioritySchema, TicketEventViewSchema, TicketViewSchema, type ConfirmDraftInput, type TicketEventView, type TicketView, type UserView } from '@nexo/contracts';
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import type { Ticket } from '../generated/prisma/client.js';
 import { normalizeTitle } from './normalize-title.js';
+import { FailureSimulator, isTransientTicketError } from './failure-simulator.js';
 import { canReopen, deadline, isOverdue, type Priority } from './rules.js';
 import { assertEmployee, TicketService } from './ticket-service.js';
 
 @Injectable()
 export class PrismaTicketService extends TicketService {
   private queue: Promise<void> = Promise.resolve();
-  constructor(@Inject(DatabaseService) private readonly database: DatabaseService) { super(); }
+  constructor(@Inject(DatabaseService) private readonly database: DatabaseService, @Inject(FailureSimulator) private readonly failures: FailureSimulator) { super(); }
+
+  private async retry<T>(operation: () => Promise<{ value: T; committed?: boolean }>): Promise<T> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        this.failures.beforeOperation();
+        const outcome = await operation();
+        if (outcome.committed) this.failures.afterCommit();
+        return outcome.value;
+      } catch (error) {
+        if (!isTransientTicketError(error)) throw error;
+        if (attempt === 2) throw new ServiceUnavailableException();
+        await new Promise<void>((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+      }
+    }
+    throw new ServiceUnavailableException();
+  }
 
   private view(ticket: Ticket, now: Date): TicketView {
     const due = deadline(ticket.slaStartedAt, ticket.priority as Priority);
@@ -19,21 +36,27 @@ export class PrismaTicketService extends TicketService {
 
   async list(user: UserView, now: Date): Promise<TicketView[]> {
     assertEmployee(user);
-    const rows = await this.database.client.ticket.findMany({ where: { ownerId: user.id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
-    return rows.map((row) => this.view(row, now));
+    return this.retry(async () => {
+      const rows = await this.database.client.ticket.findMany({ where: { ownerId: user.id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
+      return { value: rows.map((row) => this.view(row, now)) };
+    });
   }
 
   async get(user: UserView, id: string, now: Date): Promise<TicketView> {
     assertEmployee(user);
-    const row = await this.database.client.ticket.findFirst({ where: { id, ownerId: user.id } });
-    if (!row) throw new NotFoundException();
-    return this.view(row, now);
+    return this.retry(async () => {
+      const row = await this.database.client.ticket.findFirst({ where: { id, ownerId: user.id } });
+      if (!row) throw new NotFoundException();
+      return { value: this.view(row, now) };
+    });
   }
 
   async history(user: UserView, id: string): Promise<TicketEventView[]> {
     await this.get(user, id, new Date());
-    const events = await this.database.client.ticketEvent.findMany({ where: { ticketId: id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
-    return events.map((event) => TicketEventViewSchema.parse({ ...event, createdAt: event.createdAt.toISOString() }));
+    return this.retry(async () => {
+      const events = await this.database.client.ticketEvent.findMany({ where: { ticketId: id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
+      return { value: events.map((event) => TicketEventViewSchema.parse({ ...event, createdAt: event.createdAt.toISOString() })) };
+    });
   }
 
   async confirm(user: UserView, draftId: string, request: ConfirmDraftInput, now: Date): Promise<TicketView> {
@@ -45,7 +68,7 @@ export class PrismaTicketService extends TicketService {
     this.queue = new Promise<void>((resolve) => { release = resolve; });
     await previous;
     try {
-      return await this.database.client.$transaction(async (tx) => {
+      return await this.retry(async () => this.database.client.$transaction(async (tx) => {
         const draft = await tx.ticketDraft.findFirst({ where: { id: draftId, ownerId: user.id } });
         if (!draft) throw new NotFoundException();
         const version = await tx.ticketDraftVersion.findUnique({ where: { draftId_version: { draftId, version: parsed.data.version } } });
@@ -54,7 +77,7 @@ export class PrismaTicketService extends TicketService {
         const prior = await tx.ticketOperation.findUnique({ where: { operationId: parsed.data.operationId } });
         if (prior) {
           if (prior.ownerId !== user.id || prior.draftId !== draftId || prior.version !== version.version || prior.fingerprint !== fingerprint) throw new ConflictException();
-          return TicketViewSchema.parse(JSON.parse(prior.resultJson) as unknown);
+          return { value: TicketViewSchema.parse(JSON.parse(prior.resultJson) as unknown), committed: false };
         }
         const claimed = await tx.ticketDraft.updateMany({ where: { id: draftId, ownerId: user.id, version: version.version, status: 'pending' }, data: { status: 'committed' } });
         if (claimed.count !== 1) throw new ConflictException();
@@ -89,8 +112,8 @@ export class PrismaTicketService extends TicketService {
         await tx.ticketEvent.create({ data: { ticketId: ticket.id, kind, content, createdAt: now } });
         const result = this.view(ticket, now);
         await tx.ticketOperation.create({ data: { operationId: parsed.data.operationId, ownerId: user.id, draftId, version: version.version, fingerprint, resultJson: JSON.stringify(result), createdAt: now } });
-        return result;
-      });
+        return { value: result, committed: true };
+      }));
     } finally {
       release();
     }
