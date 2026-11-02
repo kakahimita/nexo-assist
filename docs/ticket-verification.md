@@ -116,8 +116,9 @@ available, so this is not pixel-level visual acceptance.
 
 - Finish owner review of the transfer interpretation and the partial B rows
   above.
-- Open the issue-linked PR with `Refs #5`, not `Closes #5`, while criteria remain
-  partial. Do not merge without explicit owner instruction.
+- PR [#17](https://github.com/kakahimita/nexo-assist/pull/17) is open with
+  `Refs #5`, not `Closes #5`, while criteria remain partial. It is not merged;
+  merge requires explicit owner instruction.
 - Implement conversational matching and agent decisions in #6, conversational
   changes and the session cap in #7, and human support in #8.
 - Complete the remaining UI and visual acceptance in #9 and submission evidence
