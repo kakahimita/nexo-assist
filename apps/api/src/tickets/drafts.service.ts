@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { DraftInputSchema, DraftViewSchema, type DraftInput, type DraftView, type UserView } from '@nexo/contracts';
+import { DraftInputSchema, DraftViewSchema, type ConfirmDraftInput, type DraftInput, type DraftView, type TicketView, type UserView } from '@nexo/contracts';
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import { normalizeTitle } from './normalize-title.js';
@@ -58,5 +58,9 @@ export class DraftsService {
     const updated = await this.database.client.ticketDraft.updateMany({ where: { id, ownerId: user.id, version: expectedVersion, status: 'pending' }, data: { status: 'cancelled' } });
     if (updated.count !== 1) throw new ConflictException();
     return this.get(user, id);
+  }
+
+  async confirm(user: UserView, id: string, input: ConfirmDraftInput, now: Date): Promise<TicketView> {
+    return this.tickets.confirm(user, id, input, now);
   }
 }

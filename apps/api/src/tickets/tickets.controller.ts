@@ -1,5 +1,5 @@
 import { BadRequestException, Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { DraftInputSchema } from '@nexo/contracts';
+import { ConfirmDraftInputSchema, DraftInputSchema } from '@nexo/contracts';
 import { z } from 'zod';
 import { IdentityGuard, type AuthRequest } from '../identity/identity.guard.js';
 import { DraftsService } from './drafts.service.js';
@@ -27,5 +27,10 @@ export class TicketsController {
     const parsed = z.strictObject({ version: z.number().int().positive() }).safeParse(body);
     if (!parsed.success) throw new BadRequestException();
     return this.drafts.cancel(request.user, id, parsed.data.version);
+  }
+  @Post('ticket-drafts/:id/confirm') confirm(@Req() request: AuthRequest, @Param('id') id: string, @Body() body: unknown) {
+    const parsed = ConfirmDraftInputSchema.safeParse(body);
+    if (!parsed.success) throw new BadRequestException();
+    return this.drafts.confirm(request.user, id, parsed.data, new Date());
   }
 }
