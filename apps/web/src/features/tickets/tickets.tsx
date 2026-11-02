@@ -19,6 +19,7 @@ export function Tickets({ onUnauthorized }: { onUnauthorized: () => void }): Rea
   const [selected, setSelected] = useState<TicketView | null>(null);
   const [events, setEvents] = useState<TicketEventView[]>([]);
   const [draft, setDraft] = useState<DraftView | null>(null);
+  const [conflicts, setConflicts] = useState<TicketView[]>([]);
   const [editor, setEditor] = useState<'create' | 'supplement' | 'reopen' | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -74,6 +75,22 @@ export function Tickets({ onUnauthorized }: { onUnauthorized: () => void }): Rea
     } catch { if (version === selectionVersion.current) setError('Não foi possível carregar o histórico do chamado.'); }
   }
 
+  async function refreshDraftAfterConflict(previous: DraftView) {
+    try {
+      const latest = DraftViewSchema.parse(await call(`/api/ticket-drafts/${previous.id}`));
+      setEditor(null); setEditing(false); setConflicts([]);
+      if (latest.status !== 'pending') {
+        sessionStorage.removeItem(draftKey); setDraft(null);
+        setError(latest.status === 'committed' ? 'Este rascunho já foi confirmado. Atualize a lista de chamados.' : 'Este rascunho foi cancelado.');
+      } else {
+        setDraft(latest);
+        setError(latest.version !== previous.version || latest.operationId !== previous.operationId
+          ? 'O rascunho foi atualizado. Confira os dados antes de confirmar.'
+          : 'Não foi possível confirmar. Confira a situação do chamado e revise o rascunho.');
+      }
+    } catch { setError('Não foi possível atualizar o rascunho. Tente novamente.'); }
+  }
+
   async function review(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busyRef.current || !editor) return;
@@ -86,16 +103,22 @@ export function Tickets({ onUnauthorized }: { onUnauthorized: () => void }): Rea
     try {
       const input = DraftInputSchema.parse(raw);
       const saved = DraftViewSchema.parse(await call(editing && draft ? `/api/ticket-drafts/${draft.id}/edit` : '/api/ticket-drafts', editing && draft ? { version: draft.version, input } : input));
-      sessionStorage.setItem(draftKey, saved.id); setDraft(saved); setEditor(null); setEditing(false);
-    } catch { setError('Não foi possível preparar o rascunho. Confira os dados e tente novamente.'); }
+      sessionStorage.setItem(draftKey, saved.id); setDraft(saved); setConflicts([]); setEditor(null); setEditing(false);
+    } catch (failure) {
+      if (editing && draft && failure instanceof RequestError && failure.status === 409) await refreshDraftAfterConflict(draft);
+      else setError('Não foi possível preparar o rascunho. Confira os dados e tente novamente.');
+    }
     finally { busyRef.current = false; setBusy(false); }
   }
 
   async function cancelDraft() {
     if (!draft || busyRef.current) return;
     busyRef.current = true; setBusy(true); setError('');
-    try { await call(`/api/ticket-drafts/${draft.id}/cancel`, { version: draft.version }); sessionStorage.removeItem(draftKey); setDraft(null); setEditor(null); setEditing(false); setNotice('Rascunho cancelado.'); }
-    catch { setError('Não foi possível cancelar o rascunho. Tente novamente.'); }
+    try { await call(`/api/ticket-drafts/${draft.id}/cancel`, { version: draft.version }); sessionStorage.removeItem(draftKey); setDraft(null); setConflicts([]); setEditor(null); setEditing(false); setNotice('Rascunho cancelado.'); }
+    catch (failure) {
+      if (failure instanceof RequestError && failure.status === 409) await refreshDraftAfterConflict(draft);
+      else setError('Não foi possível cancelar o rascunho. Tente novamente.');
+    }
     finally { busyRef.current = false; setBusy(false); }
   }
 
@@ -104,13 +127,17 @@ export function Tickets({ onUnauthorized }: { onUnauthorized: () => void }): Rea
     busyRef.current = true; setBusy(true); setError('');
     try {
       const ticket = TicketViewSchema.parse(await call(`/api/ticket-drafts/${draft.id}/confirm`, { version: draft.version, operationId: draft.operationId }));
-      sessionStorage.removeItem(draftKey); setDraft(null); setNotice('Alteração confirmada.');
+      sessionStorage.removeItem(draftKey); setDraft(null); setConflicts([]); setNotice('Alteração confirmada.');
       try { await load(); await choose(ticket); }
       catch { setError('Alteração confirmada, mas não foi possível atualizar a lista de chamados.'); }
     } catch (failure) {
       const duplicate = failure instanceof RequestError ? DuplicateConflictSchema.safeParse(failure.payload) : null;
-      if (duplicate?.success && draft.input.action === 'create') setDraft({ ...draft, candidates: duplicate.data.candidates });
-      setError(duplicate?.success ? 'Já existe um chamado com esse título. Revise os candidatos.' : 'Não foi possível confirmar. Tente novamente com o mesmo rascunho.');
+      if (duplicate?.success) {
+        setConflicts(duplicate.data.candidates);
+        if (draft.input.action === 'create') setDraft({ ...draft, candidates: duplicate.data.candidates });
+        setError('Já existe um chamado com esse título. Revise os candidatos.');
+      } else if (failure instanceof RequestError && failure.status === 409) await refreshDraftAfterConflict(draft);
+      else setError('Não foi possível confirmar. Tente novamente com o mesmo rascunho.');
     } finally { busyRef.current = false; setBusy(false); }
   }
 
@@ -148,7 +175,8 @@ export function Tickets({ onUnauthorized }: { onUnauthorized: () => void }): Rea
       {draft.input.action === 'create' ? <><p>{draft.input.title}</p><p>{draft.input.description}</p><p>Tipo: {draft.input.type === 'INC' ? 'Incidente' : 'Requisição'} · Categoria: {categories[draft.input.category]}</p><p>Prioridade: {draft.priority && priorities[draft.priority]}</p><p>Pessoas afetadas: {impacts[draft.input.impact]}</p><p>{workStates[draft.input.workState]} · {urgencies[draft.input.urgency]}</p>
         {!!draft.candidates?.length && <div><p>Já existe um chamado com esse título. Edite o título ou cancele e adicione informações ao chamado existente:</p>{draft.candidates.map((candidate) => <button key={candidate.id} disabled={busy} onClick={() => void choose(candidate)}>{candidate.title}</button>)}</div>}
       </> : <p>{draft.input.action === 'supplement' ? draft.input.content : draft.input.reason}</p>}
-      <button disabled={busy || !!draft.candidates?.length} onClick={() => void confirmDraft()}>Confirmar alteração</button>
+      {draft.input.action !== 'create' && conflicts.length > 0 && <div><p>Chamados com o mesmo título:</p>{conflicts.map((candidate) => <button key={candidate.id} disabled={busy} onClick={() => void choose(candidate)}>{candidate.title}</button>)}</div>}
+      <button disabled={busy || !!draft.candidates?.length || conflicts.length > 0} onClick={() => void confirmDraft()}>Confirmar alteração</button>
       <button disabled={busy || draft.input.action === 'transfer'} onClick={() => { setEditor(draft.input.action === 'transfer' ? null : draft.input.action); setEditing(true); }}>Editar rascunho</button>
       <button disabled={busy} onClick={() => void cancelDraft()}>Cancelar rascunho</button>
     </article>}

@@ -79,3 +79,31 @@ test('B04 B06: confirm a supplement and reopen a recently resolved ticket', asyn
   await expect(tickets.getByText('O bloqueio voltou')).toBeVisible();
   await expect(tickets.getByText(/Situação: Aberto/)).toBeVisible();
 });
+
+test('B04: a stale confirmation reloads the current draft for review', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
+  await page.getByLabel('Senha', { exact: true }).fill('x');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  const tickets = page.getByRole('region', { name: 'Chamados' });
+  await tickets.getByRole('button', { name: 'Novo chamado' }).click();
+  await tickets.getByLabel('Título').fill('Rascunho antigo');
+  await tickets.getByLabel('Descrição').fill('Detalhes do problema');
+  await tickets.getByLabel('Tipo').selectOption('INC');
+  await tickets.getByLabel('Categoria').selectOption('software');
+  await tickets.getByLabel('Pessoas afetadas').selectOption('self');
+  await tickets.getByLabel('Situação do trabalho').selectOption('stopped');
+  await tickets.getByLabel('Urgência').selectOption('normal');
+  await tickets.getByRole('button', { name: 'Revisar chamado' }).click();
+  await expect(tickets.getByRole('article', { name: 'Rascunho para confirmação' })).toBeVisible();
+  const id = await page.evaluate(() => sessionStorage.getItem('nexo_ticket_draft'));
+  expect(id).toBeTruthy();
+  const current = await (await page.request.get(`/api/ticket-drafts/${id}`)).json();
+  const edit = await page.request.post(`/api/ticket-drafts/${id}/edit`, { headers: { Origin: new URL(page.url()).origin }, data: { version: current.version, input: { ...current.input, title: 'Rascunho atualizado' } } });
+  expect(edit.status()).toBe(201);
+  await tickets.getByRole('button', { name: 'Confirmar alteração' }).click();
+  await expect(tickets.getByRole('alert')).toContainText('O rascunho foi atualizado. Confira os dados antes de confirmar.');
+  await expect(tickets.getByText('Rascunho atualizado', { exact: true })).toBeVisible();
+  await tickets.getByRole('button', { name: 'Confirmar alteração' }).click();
+  await expect(tickets.getByText('Alteração confirmada.', { exact: true })).toBeVisible();
+});
