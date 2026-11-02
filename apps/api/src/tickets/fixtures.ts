@@ -11,13 +11,14 @@ export async function initializeTicketFixtures(client: PrismaClient): Promise<vo
   const now = new Date();
   for (const fixture of fixtures) {
     const owner = await client.user.findUniqueOrThrow({ where: { email: fixture.owner } });
+    const createdAt = fixture.id === 'fixture-ana-open' ? new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000) : now;
     await client.ticket.upsert({
       where: { id: fixture.id }, update: {},
       create: {
         id: fixture.id, ownerId: owner.id, title: fixture.title, normalizedTitle: normalizeTitle(fixture.title),
         description: fixture.description, type: fixture.type, category: fixture.category, priority: fixture.priority,
-        impact: 'self', status: fixture.status, resolvedAt: fixture.status === 'resolved' ? now : null, slaStartedAt: now,
-        events: { create: { id: `${fixture.id}-created`, kind: 'created', content: 'Chamado de exemplo criado.' } },
+        impact: 'self', status: fixture.status, resolvedAt: fixture.status === 'resolved' ? now : null, createdAt, slaStartedAt: createdAt,
+        events: { create: { id: `${fixture.id}-created`, kind: 'created', content: 'Chamado de exemplo criado.', createdAt } },
       },
     });
   }

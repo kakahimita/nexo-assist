@@ -8,6 +8,7 @@ import { REPOSITORY_ROOT, resolveDatabaseUrl } from '../src/config/paths.js';
 import { createDatabaseClient } from '../src/database/client.js';
 import { DatabaseService } from '../src/database/database.service.js';
 import { initializeDatabase } from '../src/database/initialize.js';
+import { deadline } from '../src/tickets/rules.js';
 import {
   createMigratedTestDatabase,
   createTestDatabase,
@@ -24,6 +25,7 @@ describe('B17 / PRD p. 2: migrated, file-backed SQLite persistence', () => {
       expect(before.some((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'resolved')).toBe(true);
       expect(before.some((ticket) => ticket.owner.email === 'bruno.lima@nexo.com.br')).toBe(true);
       const open = before.find((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'open')!;
+      expect(deadline(open.slaStartedAt, 'medium').getTime()).toBeLessThan(Date.now());
       await client.ticket.update({ where: { id: open.id }, data: { description: 'Alteração preservada' } });
       await initializeDatabase(client);
       await initializeDatabase(client);

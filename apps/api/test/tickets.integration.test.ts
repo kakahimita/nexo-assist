@@ -23,6 +23,7 @@ describe('B03 B04 B13 B16: authorized tickets and drafts', () => {
       const tickets = (await request(server).get('/api/tickets').set('Cookie', ana).expect(200)).body;
       expect(tickets).toHaveLength(2);
       expect(tickets.every((ticket: { id: string }) => ticket.id.startsWith('fixture-ana-'))).toBe(true);
+      expect(tickets.find((ticket: { id: string }) => ticket.id === 'fixture-ana-open').overdue).toBe(true);
       await request(server).get('/api/tickets/fixture-ana-open').set('Cookie', bruno).expect(404);
       await request(server).get('/api/tickets/fixture-ana-open/history').set('Cookie', bruno).expect(404);
       await request(server).post('/api/ticket-drafts').set('Cookie', ana).send({ ...draft, ownerId: 'forged' }).expect(400);
