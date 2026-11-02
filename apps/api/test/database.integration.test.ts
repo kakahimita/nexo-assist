@@ -15,6 +15,22 @@ import {
 } from './support/test-database.js';
 
 describe('B17 / PRD p. 2: migrated, file-backed SQLite persistence', () => {
+  it('B13: initializes fictional tickets once without overwriting changes', async () => {
+    const database = await createTestDatabase();
+    const client = createDatabaseClient(database.url);
+    try {
+      const before = await client.ticket.findMany({ include: { owner: true }, orderBy: { id: 'asc' } });
+      expect(before.some((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'open')).toBe(true);
+      expect(before.some((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'resolved')).toBe(true);
+      expect(before.some((ticket) => ticket.owner.email === 'bruno.lima@nexo.com.br')).toBe(true);
+      const open = before.find((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'open')!;
+      await client.ticket.update({ where: { id: open.id }, data: { description: 'Alteração preservada' } });
+      await initializeDatabase(client);
+      await initializeDatabase(client);
+      expect(await client.ticket.count()).toBe(before.length);
+      expect((await client.ticket.findUniqueOrThrow({ where: { id: open.id } })).description).toBe('Alteração preservada');
+    } finally { await client.$disconnect(); await database.cleanup(); }
+  });
   it('B01: seeds the same fictional identities on repeated initialization', async () => {
     const database = await createTestDatabase();
     const client = createDatabaseClient(database.url);

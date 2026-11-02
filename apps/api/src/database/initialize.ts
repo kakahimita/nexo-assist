@@ -8,6 +8,7 @@ import { REPOSITORY_ROOT, resolveDatabaseUrl } from '../config/paths.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { createDatabaseClient } from './client.js';
 import { identityFixtures } from '../identity/fixtures.js';
+import { initializeTicketFixtures } from '../tickets/fixtures.js';
 
 export async function initializeDatabase(client: PrismaClient): Promise<void> {
   await client.systemMetadata.upsert({
@@ -18,6 +19,7 @@ export async function initializeDatabase(client: PrismaClient): Promise<void> {
   for (const fixture of identityFixtures) {
     await client.user.upsert({ where: { email: fixture.email }, update: {}, create: fixture });
   }
+  await initializeTicketFixtures(client);
 }
 
 async function main(): Promise<void> {

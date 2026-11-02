@@ -21,6 +21,8 @@ model User {
   role String
   sessions Session[]
   conversations Conversation[]
+  tickets Ticket[]
+  ticketDrafts TicketDraft[]
 }
 
 model Session {
@@ -45,4 +47,68 @@ model Message {
   createdAt DateTime @default(now())
   conversationId String
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model Ticket {
+  id String @id @default(cuid())
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id])
+  title String
+  normalizedTitle String
+  description String
+  type String
+  category String
+  priority String
+  impact String
+  status String @default("open")
+  transferRequested Boolean @default(false)
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+  slaStartedAt DateTime
+  events TicketEvent[]
+  @@index([ownerId])
+}
+
+model TicketEvent {
+  id String @id @default(cuid())
+  ticketId String
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  kind String
+  content String
+  createdAt DateTime @default(now())
+  @@index([ticketId, createdAt])
+}
+
+model TicketDraft {
+  id String @id @default(cuid())
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id])
+  version Int @default(1)
+  status String @default("pending")
+  versions TicketDraftVersion[]
+  operations TicketOperation[]
+  @@index([ownerId])
+}
+
+model TicketDraftVersion {
+  id String @id @default(cuid())
+  draftId String
+  draft TicketDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  version Int
+  operationId String @unique
+  inputJson String
+  priority String?
+  @@unique([draftId, version])
+}
+
+model TicketOperation {
+  operationId String @id
+  ownerId String
+  draftId String
+  draft TicketDraft @relation(fields: [draftId], references: [id])
+  version Int
+  fingerprint String
+  resultJson String
+  createdAt DateTime @default(now())
+  @@index([draftId])
 }
