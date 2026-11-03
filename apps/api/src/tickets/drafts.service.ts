@@ -8,6 +8,7 @@ import { assertEmployee, TicketService } from './ticket-service.js';
 
 @Injectable()
 export class DraftsService {
+  private proposalQueue: Promise<void> = Promise.resolve();
   constructor(@Inject(DatabaseService) private readonly database: DatabaseService, @Inject(TicketService) private readonly tickets: TicketService) {}
 
   private async prepare(user: UserView, input: DraftInput): Promise<{ input: DraftInput; priority: string | null }> {
@@ -27,6 +28,24 @@ export class DraftsService {
     const prepared = await this.prepare(user, input);
     const draft = await this.database.client.ticketDraft.create({ data: { ownerId: user.id, versions: { create: { version: 1, operationId: randomUUID(), inputJson: JSON.stringify(prepared.input), priority: prepared.priority } } } });
     return this.get(user, draft.id);
+  }
+
+  async createForRun(user: UserView, input: DraftInput, context: { conversationId: string; runId: string }): Promise<DraftView> {
+    const prepared = await this.prepare(user, input);
+    const operation = this.proposalQueue.then(() => this.database.client.$transaction(async (tx) => {
+      if (!await tx.conversation.findFirst({ where: { id: context.conversationId, ownerId: user.id }, select: { id: true } })) throw new NotFoundException();
+      const existing = await tx.draftProposalRun.findUnique({ where: { id: context.runId }, include: { draft: { include: { versions: true } } } });
+      if (existing) {
+        const first = existing.draft.versions.find((version) => version.version === 1);
+        if (existing.ownerId !== user.id || existing.conversationId !== context.conversationId || !first || first.inputJson !== JSON.stringify(prepared.input)) throw new ConflictException();
+        return existing.draftId;
+      }
+      const draft = await tx.ticketDraft.create({ data: { ownerId: user.id, versions: { create: { version: 1, operationId: randomUUID(), inputJson: JSON.stringify(prepared.input), priority: prepared.priority } } } });
+      await tx.draftProposalRun.create({ data: { id: context.runId, ownerId: user.id, conversationId: context.conversationId, draftId: draft.id } });
+      return draft.id;
+    }));
+    this.proposalQueue = operation.then(() => undefined, () => undefined);
+    return this.get(user, await operation);
   }
 
   async get(user: UserView, id: string): Promise<DraftView> {

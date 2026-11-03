@@ -2,7 +2,7 @@
 
 type CandidateTicket = { id: string; title: string; description: string; status: string };
 type TicketMatch = 'exact' | 'possible';
-const ignored = new Set(['apos', 'com', 'como', 'das', 'depois', 'para', 'por', 'que', 'sem', 'uma', 'muito', 'ficou', 'esta', 'funciona', 'nao']);
+const ignored = new Set(['apos', 'com', 'como', 'das', 'depois', 'para', 'por', 'que', 'sem', 'uma', 'muito', 'ficou', 'esta', 'funciona', 'nao', 'meu', 'minha']);
 const equivalents: Record<string, string> = {
   computador: 'notebook', portatil: 'notebook', equipamento: 'notebook', laptop: 'notebook',
   devagar: 'lento', lentidao: 'lento', lentos: 'lento', lenta: 'lento',

@@ -6,6 +6,7 @@ import { FailureSimulator } from '../src/tickets/failure-simulator.js';
 import { PrismaTicketService } from '../src/tickets/prisma-ticket-service.js';
 import { KnowledgeService } from '../src/knowledge/knowledge.service.js';
 import { ConsultationTools } from '../src/agent/tools/consultation-tools.js';
+import { DraftsService } from '../src/tickets/drafts.service.js';
 
 describe('B03/B16: authorized read-only consultation', () => {
   it('limits candidates to the authenticated employee and classifies knowledge', async () => {
@@ -14,7 +15,8 @@ describe('B03/B16: authorized read-only consultation', () => {
     try {
       const row = await database.client.user.findUniqueOrThrow({ where: { email: 'ana.souza@nexo.com.br' } });
       const ana = { id: row.id, email: row.email, name: row.name, role: 'employee' as const };
-      const tools = new ConsultationTools(new PrismaTicketService(database, new FailureSimulator()), new KnowledgeService(database));
+      const ticketService = new PrismaTicketService(database, new FailureSimulator());
+      const tools = new ConsultationTools(ticketService, new KnowledgeService(database), new DraftsService(database, ticketService), database);
       const app = await createApp({ host: '127.0.0.1', port: 3001, webOrigin: 'http://localhost:3000', databaseUrl: db.url });
       try { expect((await app.get(ConsultationTools).searchKnowledge(ana, { query: 'VPN erro 809', platform: 'Windows 11' })).matches.length).toBeGreaterThan(0); } finally { await app.close(); }
       const before = await Promise.all([database.client.ticket.count(), database.client.ticketDraft.count(), database.client.ticketEvent.count()]);

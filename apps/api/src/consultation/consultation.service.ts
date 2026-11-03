@@ -14,13 +14,13 @@ function errorCode(error: unknown, signal: AbortSignal): ErrorCode {
 @Injectable()
 export class ConsultationService {
   constructor(@Inject(ConversationsService) private readonly conversations: ConversationsService, @Inject(CONSULTATION_ENGINE) private readonly engine: ConsultationEngine) {}
-  async *run(user: UserView, conversationId: string, message: MessageView, signal: AbortSignal): AsyncIterable<ConsultationStreamEvent> {
+  async *run(user: UserView, conversationId: string, message: MessageView, signal: AbortSignal, runId: string): AsyncIterable<ConsultationStreamEvent> {
     yield { type: 'user-message', message };
     const turn = new ConsultationTurn();
     try {
       const history = await this.conversations.messages(user, conversationId);
       let finished = false;
-      for await (const event of this.engine.run({ user, messages: history.map(({ role, content }) => ({ role, content })), signal, now: new Date() })) {
+      for await (const event of this.engine.run({ user, messages: history.map(({ role, content }) => ({ role, content })), signal, now: new Date(), conversationId, runId })) {
         if (signal.aborted) throw new Error('interrupted');
         const before = turn.partial().actions.length;
         turn.apply(event);
@@ -33,8 +33,8 @@ export class ConsultationService {
       if (!finished) throw new Error('invalid_output');
       const snapshot = turn.snapshot();
       if (!snapshot.text.trim()) throw new Error('invalid_output');
-      const decision: ConsultationDecisionView = { ...snapshot.decision, actions: snapshot.actions, evidence: snapshot.evidence, tickets: snapshot.tickets, outcome: 'completed', errorCode: null, source: this.engine.source, draftId: null };
-      const final = await this.conversations.appendAgentTurn(user, conversationId, { content: snapshot.text, status: 'completed', decision, promptVersion: this.engine.promptVersion });
+      const decision: ConsultationDecisionView = { ...snapshot.decision, actions: snapshot.actions, evidence: snapshot.evidence, tickets: snapshot.tickets, outcome: 'completed', errorCode: null, source: this.engine.source, draftId: snapshot.draftId };
+      const final = await this.conversations.appendAgentTurn(user, conversationId, { content: snapshot.text, status: 'completed', decision, promptVersion: this.engine.promptVersion, runId });
       yield { type: 'done', message: final };
     } catch (error) {
       const code = errorCode(error, signal);

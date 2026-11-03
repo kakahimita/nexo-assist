@@ -3,6 +3,7 @@ import { createTestDatabase } from '../../../test/support/test-database.js';
 import { DatabaseService } from '../../database/database.service.js';
 import { FailureSimulator } from '../../tickets/failure-simulator.js';
 import { PrismaTicketService } from '../../tickets/prisma-ticket-service.js';
+import { DraftsService } from '../../tickets/drafts.service.js';
 import { KnowledgeService } from '../../knowledge/knowledge.service.js';
 import { ConsultationTools } from '../tools/consultation-tools.js';
 import { createFixtureConsultation } from './fixture-consultation.js';
@@ -14,7 +15,8 @@ describe('B02/B03/B16: deterministic consultation', () => {
     try {
       const row = await database.client.user.findUniqueOrThrow({ where: { email: 'ana.souza@nexo.com.br' } });
       const user = { id: row.id, email: row.email, name: row.name, role: 'employee' as const };
-      const engine = createFixtureConsultation(new ConsultationTools(new PrismaTicketService(database, new FailureSimulator()), new KnowledgeService(database)));
+      const ticketService = new PrismaTicketService(database, new FailureSimulator());
+      const engine = createFixtureConsultation(new ConsultationTools(ticketService, new KnowledgeService(database), new DraftsService(database, ticketService), database));
       const before = [await database.client.ticket.count(), await database.client.ticketDraft.count()];
       async function run(content: string) {
         const turn = new ConsultationTurn();

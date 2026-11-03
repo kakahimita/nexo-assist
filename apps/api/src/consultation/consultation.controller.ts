@@ -5,6 +5,7 @@ import { IdentityGuard, type AuthRequest } from '../identity/identity.guard.js';
 import { ConversationsService } from '../conversations/conversations.service.js';
 import { ConsultationService } from './consultation.service.js';
 import { encodeSse } from './sse.js';
+import { randomUUID } from 'node:crypto';
 @Controller('conversations')
 @UseGuards(IdentityGuard)
 export class ConsultationController {
@@ -21,7 +22,7 @@ export class ConsultationController {
     response.setHeader('X-Accel-Buffering', 'no');
     response.flushHeaders();
     try {
-      for await (const event of this.consultation.run(request.user, id, accepted, abort.signal)) {
+      for await (const event of this.consultation.run(request.user, id, accepted, abort.signal, randomUUID())) {
         if (!response.destroyed) response.write(encodeSse(event));
       }
     } catch {

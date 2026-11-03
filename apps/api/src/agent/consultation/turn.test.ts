@@ -4,6 +4,22 @@ const ticket = { id: 't1', title: 'Notebook', status: 'open', priority: 'medium'
 const article = (id: string, applicability: string) => ({ id, title: id, summary: '', body: '', platform: 'windows10', applicability, reason: '' });
 const decision = { intent: 'VPN', action: 'answer' as const, appliedRule: 'IT', confidence: 0.8, justification: 'Artigo', missingFacts: [], quickReplies: [] };
 describe('B12: decisions use actual tool results', () => {
+  it('exposes a draft reference only for a successful validated proposal result', () => {
+    const turn = new ConsultationTurn();
+    turn.apply({ type: 'tool-result', toolCallId: 'd', tool: 'propose-ticket-draft', result: { status: 'draft', draftId: 'draft-1' } } as never);
+    turn.apply({ type: 'decision', decision });
+    expect(turn.snapshot()).toMatchObject({ draftId: 'draft-1', actions: [{ tool: 'propose-ticket-draft', status: 'succeeded' }] });
+    const failed = new ConsultationTurn();
+    failed.apply({ type: 'tool-result', toolCallId: 'f', tool: 'propose-ticket-draft', result: { status: 'draft', draftId: 'forged' }, isError: true } as never);
+    failed.apply({ type: 'decision', decision });
+    expect(failed.snapshot()).toMatchObject({ draftId: null, actions: [{ status: 'failed' }] });
+  });
+  it('does not offer a misleading creation shortcut while duplicate candidates need review', () => {
+    const turn = new ConsultationTurn();
+    turn.apply({ type: 'tool-result', toolCallId: 'd', tool: 'propose-ticket-draft', result: { status: 'duplicate_candidates', candidates: [] } });
+    turn.apply({ type: 'decision', decision: { ...decision, quickReplies: ['Sim, quero criar um novo', 'Ver chamados existentes'] } });
+    expect(turn.snapshot().decision.quickReplies).toEqual(['Ver chamados existentes']);
+  });
   it('joins text and derives de-duplicated ticket actions and evidence', () => {
     const turn = new ConsultationTurn();
     turn.apply({ type: 'text-delta', text: 'Olá' }); turn.apply({ type: 'text-delta', text: ' mundo' });

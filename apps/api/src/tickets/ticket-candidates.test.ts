@@ -14,6 +14,7 @@ describe('B05: identify possible duplicate problems', () => {
   });
   it('does not suggest resolved tickets or unrelated issues sharing only a device', () => {
     expect(findTicketCandidates({ title: 'Notebook sem áudio', description: 'O som não funciona' }, tickets)).toEqual([]);
+    expect(findTicketCandidates({ title: 'Meu projetor não liga no prédio 766', description: 'Meu projetor não liga no prédio 766' }, [{ id: 'other', title: 'Meu notebook não liga no setor 234', description: 'Meu notebook não liga no setor 234', status: 'open' }])).toEqual([]);
   });
   it('returns every plausible candidate for clarification', () => {
     const more = [...tickets, { id: 'd', title: 'Computador lento', description: 'Equipamento muito lento', status: 'open' }];

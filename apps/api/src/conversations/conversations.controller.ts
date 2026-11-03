@@ -14,6 +14,7 @@ export class ConversationsController {
     return this.conversations.create(request.user);
   }
   @Get(':id/messages') messages(@Req() request: AuthRequest, @Param('id') id: string) { return this.conversations.messages(request.user, id); }
+  @Get(':id/draft-proposals') pendingDrafts(@Req() request: AuthRequest, @Param('id') id: string) { return this.conversations.pendingDrafts(request.user, id); }
   @Post(':id/messages') append(@Req() request: AuthRequest, @Param('id') id: string, @Body() body: unknown) {
     const parsed = MessageInputSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException();
