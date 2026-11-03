@@ -175,3 +175,21 @@ input, textarea { width: 100%; padding: .8rem; font: inherit; border: 1px solid 
 [role='alert'] { color: #9b1c1c; }
 @media (max-width: 900px) { .intro { padding: 36px; } .login-main { padding: 36px; } .preview-wrap { padding-left: 0; } }
 @media (max-width: 700px) { .login-layout { grid-template-columns: 1fr; } .intro { padding: 28px 24px; } .intro-story { margin: 40px 0 12px; } .intro h1 { font-size: clamp(2.6rem, 9vw, 3.5rem); } .preview-wrap, .intro-metrics { display: none; } .login-main { min-height: 480px; padding: 28px 24px; } .login-center { padding: 32px 0; } .login-topline { text-align: left; } .login-footer { flex-wrap: wrap; } }
+.consultation { margin: 1.5rem 0; min-width: 0; }
+.consultation-messages { display: grid; gap: 1.1rem; }
+.chat-message { min-width: 0; }
+.chat-message > p:first-of-type { margin: .35rem 0; padding: .8rem 1rem; border: 1px solid #d7dce3; border-radius: .7rem; background: white; overflow-wrap: anywhere; }
+.chat-message.employee { justify-self: end; max-width: 80%; }
+.chat-message.employee > p:first-of-type { background: #1b2431; color: white; }
+.chat-message.agent { width: 100%; }
+.consultation-actions { display: inline-flex; flex-wrap: wrap; gap: .6rem; margin-left: .8rem; color: #697386; font-size: .84rem; }
+.consultation-actions .failed { color: #9b1c1c; }
+.decision-detail { margin: .5rem 0; color: #52606d; font-size: .9rem; }
+.decision-detail summary { cursor: pointer; font-weight: 600; }
+.decision-detail dl { display: grid; grid-template-columns: max-content 1fr; gap: .3rem .8rem; }
+.decision-detail dt { font-weight: 600; }.decision-detail dd { margin: 0; overflow-wrap: anywhere; }
+.quick-replies, .ticket-options { display: flex; gap: .5rem; flex-wrap: wrap; margin: .5rem 0; }
+.quick-replies button, .ticket-options button { background: white; border: 1px solid #d7dce3; color: #1b2431; text-align: left; }
+.consultation form button { margin-top: .5rem; background: #0062c4; }
+button:disabled { cursor: not-allowed; opacity: .6; }
+@media (max-width: 700px) { .decision-detail dl { grid-template-columns: 1fr; }.decision-detail dd { margin-bottom: .4rem; }.chat-message.employee { max-width: 95%; } }

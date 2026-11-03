@@ -5,12 +5,17 @@ test('B01 B13: login, persist, logout and isolate history', async ({ page }) => 
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('qualquer');
   await page.getByLabel('Senha', { exact: true }).press('Enter');
+  const creation = page.waitForResponse((response) => response.url().endsWith('/api/conversations') && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Nova conversa' }).click();
+  const conversationId = (await (await creation).json()).id as string;
   await page.getByLabel('Mensagem').fill('Minha conexão caiu');
-  await page.getByRole('button', { name: 'Salvar mensagem' }).click();
+  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
   await expect(page.getByText('Minha conexão caiu')).toBeVisible();
   await page.reload();
-  await page.getByRole('button', { name: /Conversa 1/ }).click();
+  const conversations = await (await page.request.get('/api/conversations')).json() as Array<{ id: string }>;
+  const index = conversations.findIndex((conversation) => conversation.id === conversationId);
+  expect(index).toBeGreaterThanOrEqual(0);
+  await page.getByRole('button', { name: `Conversa ${index + 1}`, exact: true }).click();
   await expect(page.getByText('Minha conexão caiu')).toBeVisible();
   await page.getByRole('button', { name: 'Sair' }).click();
   await page.getByLabel('E-mail corporativo').fill('bruno.lima@nexo.com.br');
@@ -51,7 +56,7 @@ test('B13: a late history response cannot change the selected conversation', asy
   await page.route('**/api/conversations/*/messages', async (route) => {
     const first = route.request().url().includes('/one/');
     if (first) await gate;
-    await route.fulfill({ json: [{ id: first ? 'a' : 'b', content: first ? 'Primeira conversa' : 'Segunda conversa', createdAt: timestamp }] });
+    await route.fulfill({ json: [{ id: first ? 'a' : 'b', content: first ? 'Primeira conversa' : 'Segunda conversa', createdAt: timestamp, role: 'employee', status: 'completed', decision: null }] });
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Conversa 1' }).click();
@@ -72,17 +77,19 @@ test('B13: pending message cannot be submitted twice or edited', async ({ page }
   let release = (): void => undefined;
   const gate = new Promise<void>((resolve) => { release = resolve; });
   let posts = 0;
-  await page.route('**/api/conversations/one/messages', async (route) => {
-    if (route.request().method() === 'POST') { posts++; await gate; await route.fulfill({ status: 201, json: { id: 'a', content: 'Olá', createdAt: timestamp } }); }
-    else await route.fulfill({ json: [] });
+  await page.route('**/api/conversations/one/messages', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/conversations/one/messages/stream', async (route) => {
+    posts++; await gate;
+    const message = { id: 'a', content: 'Olá', createdAt: timestamp, role: 'employee', status: 'completed', decision: null };
+    await route.fulfill({ status: 201, contentType: 'text/event-stream', body: `data: ${JSON.stringify({ type: 'user-message', message })}\n\ndata: ${JSON.stringify({ type: 'done', message })}\n\n` });
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Conversa 1' }).click();
   await page.getByLabel('Mensagem').fill('Olá');
-  await page.getByRole('button', { name: 'Salvar mensagem' }).click();
-  await expect(page.getByRole('button', { name: 'Salvar mensagem' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await expect(page.getByRole('button', { name: 'Enviar mensagem' })).toBeDisabled();
   await expect(page.getByLabel('Mensagem')).toBeDisabled();
   expect(posts).toBe(1);
   release();
-  await expect(page.getByRole('button', { name: 'Salvar mensagem' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Enviar mensagem' })).toBeEnabled();
 });

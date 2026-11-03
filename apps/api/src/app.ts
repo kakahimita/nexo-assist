@@ -6,9 +6,10 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module.js';
 import type { ApiEnvironment } from './config/environment.js';
+import type { ConsultationEngine } from './agent/consultation/types.js';
 
-export async function createApp(environment: ApiEnvironment): Promise<INestApplication> {
-  const app = await NestFactory.create(AppModule.register(environment));
+export async function createApp(environment: ApiEnvironment, overrides?: { consultationEngine?: ConsultationEngine }): Promise<INestApplication> {
+  const app = await NestFactory.create(AppModule.register(environment, overrides));
 
   app.setGlobalPrefix('api');
   app.use((request: IncomingMessage, response: ServerResponse, next: () => void) => {

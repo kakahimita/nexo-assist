@@ -1,0 +1,14 @@
+﻿import { z } from 'zod';
+import { PrioritySchema } from './ticket.js';
+
+export const ConsultationErrorCodeSchema = z.enum(['model_unavailable', 'quota', 'invalid_output', 'interrupted']);
+export const ConsultationActionSchema = z.strictObject({ id: z.string(), tool: z.enum(['consult-tickets', 'search-knowledge']), status: z.enum(['succeeded', 'failed']), label: z.string(), summary: z.string() });
+export const ConsultationEvidenceSchema = z.strictObject({ kind: z.enum(['ticket', 'article']), id: z.string(), title: z.string() });
+export const ConsultationTicketViewSchema = z.strictObject({ id: z.string(), title: z.string(), status: z.enum(['open', 'resolved']), priority: PrioritySchema, deadline: z.string().datetime(), overdue: z.boolean() });
+export const ConsultationEngineDecisionSchema = z.strictObject({ intent: z.string(), action: z.enum(['answer', 'clarify', 'redirect']), appliedRule: z.string(), confidence: z.number().min(0).max(1), justification: z.string(), missingFacts: z.array(z.string()), quickReplies: z.array(z.string()).max(4) });
+export const ConsultationDecisionViewSchema = z.strictObject({ intent: z.string(), action: z.enum(['answer', 'clarify', 'redirect', 'unavailable']), appliedRule: z.string(), confidence: z.number().min(0).max(1), justification: z.string(), missingFacts: z.array(z.string()), quickReplies: z.array(z.string()).max(4), actions: z.array(ConsultationActionSchema), evidence: z.array(ConsultationEvidenceSchema), tickets: z.array(ConsultationTicketViewSchema), outcome: z.enum(['completed', 'failed']), errorCode: ConsultationErrorCodeSchema.nullable(), source: z.enum(['live', 'deterministic']) }).refine((value) => (value.outcome === 'completed') === (value.errorCode === null), { message: 'Outcome and error code must agree' });
+export type ConsultationAction = z.infer<typeof ConsultationActionSchema>;
+export type ConsultationEvidence = z.infer<typeof ConsultationEvidenceSchema>;
+export type ConsultationTicketView = z.infer<typeof ConsultationTicketViewSchema>;
+export type ConsultationEngineDecision = z.infer<typeof ConsultationEngineDecisionSchema>;
+export type ConsultationDecisionView = z.infer<typeof ConsultationDecisionViewSchema>;

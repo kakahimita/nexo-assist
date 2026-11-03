@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:init": "npm run db:generate && prisma migrate deploy && tsx src/database/initialize.ts",
     "db:migrate:dev": "prisma migrate dev",
-    "smoke:model": "tsx scripts/smoke-model.ts"
+    "smoke:model": "tsx scripts/smoke-model.ts",
+    "smoke:consultation": "tsx scripts/smoke-consultation.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.109",

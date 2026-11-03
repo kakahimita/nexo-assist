@@ -9,6 +9,6 @@ describe('B13 conversation contracts', () => {
     expect(MessageInputSchema.safeParse({ content: 'x', owner: 'other' }).success).toBe(false);
   });
   it('accepts ISO timestamps', () => {
-    expect(MessageViewSchema.safeParse({ id: '1', content: 'Olá', createdAt: '2026-10-31T00:00:00.000Z' }).success).toBe(true);
+    expect(MessageViewSchema.safeParse({ id: '1', content: 'Olá', createdAt: '2026-10-31T00:00:00.000Z', role: 'employee', status: 'completed', decision: null }).success).toBe(true);
   });
 });

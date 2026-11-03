@@ -9,6 +9,7 @@ export interface ApiEnvironment {
   port: number;
   webOrigin: string;
   databaseUrl: string;
+  consultationEngine?: 'mastra' | 'fixture';
 }
 
 const DEFAULTS = {
@@ -79,7 +80,10 @@ function parseWebOrigin(raw: string | undefined): string {
 }
 
 export function parseApiEnvironment(input: NodeJS.ProcessEnv): ApiEnvironment {
+  const consultationEngine = input.CONSULTATION_ENGINE ?? 'mastra';
+  if (consultationEngine !== 'mastra' && consultationEngine !== 'fixture') throw new Error('CONSULTATION_ENGINE must be mastra or fixture.');
   return {
+    consultationEngine,
     host: readValue(input, 'API_HOST', DEFAULTS.host),
     port: parsePort(input.API_PORT),
     webOrigin: parseWebOrigin(input.WEB_ORIGIN),

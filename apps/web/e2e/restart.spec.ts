@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { expect, test } from '@playwright/test';
 
-test('B13: browser history survives restarting the API process', async ({ page }) => {
+test('B13: browser history survives restarting the API process', async ({ page, baseURL }) => {
   const directory = await mkdtemp(join(tmpdir(), 'nexo-browser-restart-'));
   const databaseUrl = `file:${join(directory, 'test.db').replaceAll('\\', '/')}`;
   const exec = promisify(execFile);
@@ -31,7 +31,7 @@ test('B13: browser history survives restarting the API process', async ({ page }
     await exited;
   }
   async function start() {
-    api = spawn(process.execPath, [resolve('apps/api/dist/main.js')], { env: { ...process.env, API_HOST: '127.0.0.1', API_PORT: String(port), WEB_ORIGIN: 'http://localhost:3000', DATABASE_URL: databaseUrl }, stdio: 'ignore' });
+    api = spawn(process.execPath, [resolve('apps/api/dist/main.js')], { env: { ...process.env, API_HOST: '127.0.0.1', API_PORT: String(port), WEB_ORIGIN: baseURL ?? 'http://localhost:3000', CONSULTATION_ENGINE: 'fixture', DATABASE_URL: databaseUrl }, stdio: 'ignore' });
     for (let attempt = 0; attempt < 100; attempt++) {
       try { if ((await fetch(`http://127.0.0.1:${port}/api/ready`)).ok) return; } catch { /* wait for startup */ }
       await new Promise((done) => setTimeout(done, 100));
@@ -51,7 +51,7 @@ test('B13: browser history survives restarting the API process', async ({ page }
     await page.getByRole('button', { name: 'Entrar' }).click();
     await page.getByRole('button', { name: 'Nova conversa' }).click();
     await page.getByLabel('Mensagem').fill('Histórico após reinício');
-    await page.getByRole('button', { name: 'Salvar mensagem' }).click();
+    await page.getByRole('button', { name: 'Enviar mensagem' }).click();
     await expect(page.getByText('Histórico após reinício')).toBeVisible();
     await stop();
     await start();

@@ -7,3 +7,4 @@ export type { HealthResponse, ReadinessResponse, UnavailableResponse } from './h
 export * from './identity.js';
 export * from './conversation.js';
 export * from './ticket.js';
+export * from './consultation.js';

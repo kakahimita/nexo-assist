@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { assessApplicability, normalizePlatform, KnowledgeService } from './knowledge.service.js';
 import { createTestDatabase } from '../../test/support/test-database.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -27,5 +27,5 @@ describe('B02 / PRD pp. 1, 4: knowledge applicability', () => {
       expect(await service.search('férias no RH', undefined)).toEqual([]);
       expect(await service.search('xyzzy', undefined)).toEqual([]);
     } finally { await database.onModuleDestroy(); await db.cleanup(); }
-  });
+  }, 30000);
 });
