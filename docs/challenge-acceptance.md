@@ -1,7 +1,7 @@
 # Challenge acceptance and test matrix
 
 Status: requirements; foundation B17 evidence is recorded in [foundation verification](foundation-verification.md). Identity and conversation-history evidence for #4, including its limits, is recorded in [identity and history verification](identity-history-verification.md). Full B13, B16 and visual acceptance remain broader than this increment. Other rows remain planned unless independently demonstrated.
-Partial ticket-service evidence for #5 is recorded in [ticket verification](ticket-verification.md): B03 only for authorized list/detail, B04-B08 and B15 partially or fully as described there, and the ticket portions of B13/B16. Conversational matching, agent decisions, human handoff, session limits and full visual acceptance remain future work.
+Partial ticket-service evidence for #5 is recorded in [ticket verification](ticket-verification.md): B03 only for authorized list/detail, B04-B08 and B15 partially or fully as described there, and the ticket portions of B13/B16. Deterministic consultation and decision-evidence checks are recorded in [agent consultation verification](agent-consultation-verification.md); live model evaluation, human handoff, session limits and full visual acceptance remain outstanding.
 Read the [context](challenge-context.md), original sources through the
 [reference index](challenge-references.md), and [architecture](architecture.md)
 before implementing a row. Page numbers below refer to the original PRD v5.

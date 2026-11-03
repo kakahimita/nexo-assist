@@ -5,10 +5,7 @@ confirmed ticket changes, and human handoff with context.
 
 ## Current status
 
-**Identity, history, and an initial ticket service are available.** Demo login,
-employee-isolated conversation history, ticket consultation and confirmed
-ticket changes use SQLite. Agent conversations, human support workflows and
-production authentication are not yet implemented.
+**Identity, history, an initial ticket service, and an agent consultation path are available.** Demo login, employee-isolated history, ticket consultation and confirmed ticket changes use SQLite. The agent consultation streams read-only answers and decision evidence; live-model behavior remains unverified until the separate evaluation passes. Human support workflows and production authentication are not yet implemented.
 The project is built collaboratively in small, reviewable deliveries so the
 developer can understand, explain, and modify the implementation.
 
@@ -36,6 +33,7 @@ The agent stays paused while a conversation waits for or receives human care.
 - [Architecture and challenge conventions](docs/architecture.md)
 - [Roadmap and acceptance criteria](docs/roadmap.md)
 - [Ticket-service verification](docs/ticket-verification.md)
+- [Agent consultation verification](docs/agent-consultation-verification.md)
 - [Development workflow](docs/development-workflow.md)
 - [Contributor instructions](AGENTS.md)
 
@@ -63,7 +61,7 @@ The diagnostic page is at http://localhost:3000/diagnostico. Sign in using
 `ana.souza@nexo.com.br`, `bruno.lima@nexo.com.br`, or
 `analista@nexo.com.br` with any nonempty password. This is fictional demo
 authentication, not corporate login. Employees can create a conversation,
-save messages and recover their history; the agent does not respond yet.
+send messages, receive streamed consultation responses and recover their history.
 Employees can also consult fictional tickets and review, edit, confirm or cancel
 a draft for ticket creation, supplementation and recent reopening. Example
 tickets are seeded for Ana and Bruno; the seed does not overwrite existing data.
@@ -92,6 +90,20 @@ For deterministic verification, install Chromium with
 commands are `npm run typecheck`, `npm run lint`, `npm test`,
 `npm run test:integration`, `npm run build`, and `npm run test:e2e`.
 Run `npm run build` and `npm start` for the production build locally.
+
+The consultation backend uses Mastra with the configured Google model by default.
+It resolves employee identity on the server and exposes read-only ticket and knowledge
+search tools; action labels and evidence are derived from tool results. Decision
+confidence is an estimate. Platform-specific knowledge is classified before use.
+`CONSULTATION_ENGINE=fixture` selects a deterministic test engine; it is not live
+model evidence and is intended only for tests. The chat does not yet implement
+conversational writes, the session cap, or human handoff.
+
+`npm run smoke:consultation` separately exercises the production engine with an
+isolated temporary database. It requires a local `GOOGLE_API_KEY`, records model,
+prompt version, latency, available usage, decision, actions and evidence, and
+fails when its assertions fail. No paid fallback is configured. The live gate
+has not been run for this increment; see [consultation verification](docs/agent-consultation-verification.md).
 
 The optional `npm run smoke:model` explicitly contacts Google using the
 server-only `GOOGLE_API_KEY` in `.env`. Configure a project with free-tier

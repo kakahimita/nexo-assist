@@ -108,3 +108,5 @@ must not be presented as implemented services merely because examples show them.
 The runnable foundation was merged in [#3](https://github.com/kakahimita/nexo-assist/issues/3).
 The identity and conversation-history increment for [#4](https://github.com/kakahimita/nexo-assist/issues/4) was merged in [PR #15](https://github.com/kakahimita/nexo-assist/pull/15); its verification and remaining challenge-wide persistence work are recorded in [identity and history verification](identity-history-verification.md).
 The [roadmap](roadmap.md) and [workflow](development-workflow.md) govern delivery.
+
+The knowledge foundation for #6 was merged in PR #18. The continuation is tracked by [issue #19](https://github.com/kakahimita/nexo-assist/issues/19); its deterministic evidence and outstanding live-model gate are recorded in [agent consultation verification](agent-consultation-verification.md).
