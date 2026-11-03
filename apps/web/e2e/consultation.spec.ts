@@ -40,7 +40,14 @@ test('B03 B16: selects own tickets and redirects RH', async ({ page }) => {
     .getByRole('button', { name: /Notebook lento/ })
     .last()
     .click();
-  await expect(chat.getByText(/Prazo:/).last()).toBeVisible();
+  await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
+  const creation = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/conversations') && response.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await creation;
+  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeEnabled();
   await send(page, 'INC-99999');
   await expect(chat.getByText(/Qual chamado você deseja consultar/).last()).toBeVisible();
   await send(page, 'Como solicitar férias no RH?');

@@ -8,6 +8,7 @@ async function forward(
   const existing = /^(session|conversations|conversations\/[a-z0-9]+\/messages)$/.test(route);
   const consultationStream =
     request.method === 'POST' && /^conversations\/[a-z0-9]+\/messages\/stream$/.test(route);
+  const handoff = request.method === 'POST' && /^conversations\/[a-z0-9]+\/handoff$/.test(route);
   const draftRecovery =
     request.method === 'GET' && /^conversations\/[a-z0-9]+\/draft-proposals$/.test(route);
   const ticketRead =
@@ -16,7 +17,7 @@ async function forward(
   const ticketWrite =
     request.method === 'POST' &&
     /^(ticket-drafts|ticket-drafts\/[a-z0-9-]+\/(?:edit|cancel|confirm))$/.test(route);
-  if (!existing && !ticketRead && !ticketWrite && !consultationStream && !draftRecovery)
+  if (!existing && !ticketRead && !ticketWrite && !consultationStream && !handoff && !draftRecovery)
     return new Response(null, { status: 404 });
   if (request.method !== 'GET' && request.headers.get('origin') !== new URL(request.url).origin)
     return new Response(null, { status: 403 });

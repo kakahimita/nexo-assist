@@ -3,6 +3,7 @@ import {
   CONVERSATION_MESSAGE_LIMIT,
   SessionLimitResponseSchema,
   type ConsultationAction,
+  type ConversationView,
   type MessageView,
 } from '@nexo/contracts';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -17,6 +18,7 @@ const errors: Record<string, string> = {
 };
 export function Consultation({
   conversationId,
+  conversation,
   messages,
   setMessages,
   onBusy,
@@ -25,6 +27,7 @@ export function Consultation({
   onTicketCommitted,
 }: {
   conversationId: string;
+  conversation: ConversationView;
   messages: MessageView[];
   setMessages: React.Dispatch<React.SetStateAction<MessageView[]>>;
   onBusy: (busy: boolean) => void;
@@ -40,6 +43,8 @@ export function Consultation({
   const activeRef = useRef(false);
   const [serverUsed, setServerUsed] = useState(0);
   const [pendingDrafts, setPendingDrafts] = useState<string[]>([]);
+  const [waiting, setWaiting] = useState(conversation.state === 'waiting_for_analyst');
+  const [handoff, setHandoff] = useState(conversation.handoff);
   useEffect(() => {
     let current = true;
     void fetch(`/api/conversations/${encodeURIComponent(conversationId)}/draft-proposals`)
@@ -108,7 +113,12 @@ export function Consultation({
         if (event.type === 'user-message') setMessages((current) => [...current, event.message]);
         else if (event.type === 'text-delta') setPartial((current) => current + event.text);
         else if (event.type === 'action') setActions((current) => [...current, event.action]);
-        else if (event.type === 'error') {
+        else if (event.type === 'handoff-waiting') {
+          done = true;
+          setWaiting(true);
+          setPartial('');
+          setActions([]);
+        } else if (event.type === 'error') {
           setActions([]);
           setError(errors[event.code] ?? 'Não foi possível concluir a resposta.');
         } else if (event.type === 'done') {
@@ -129,6 +139,20 @@ export function Consultation({
       onBusy(false);
     }
   }
+  async function requestHandoff(): Promise<void> {
+    if (active || waiting) return;
+    setError('');
+    const response = await fetch(`/api/conversations/${conversationId}/handoff`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'employee_request' }),
+    });
+    if (response.status === 401) return onUnauthorized();
+    if (!response.ok) return setError('NÃ£o foi possÃ­vel solicitar atendimento humano.');
+    const result = await response.json();
+    setWaiting(true);
+    setHandoff(result.handoff);
+  }
   function submit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     void send(content);
@@ -147,6 +171,16 @@ export function Consultation({
   return (
     <section className="consultation" aria-label="Conversa">
       <h2>Mensagens</h2>
+      {waiting && (
+        <p role="status">
+          Aguardando atendimento humano. {handoff?.summary ?? 'Sua solicitaÃ§Ã£o foi encaminhada.'}
+        </p>
+      )}
+      {!waiting && (
+        <button type="button" disabled={active || capped} onClick={() => void requestHandoff()}>
+          Falar com analista
+        </button>
+      )}
       {messages.length === 0 && !active && <p>Descreva sua dúvida de TI para começar.</p>}
       <div className="consultation-messages">
         {messages.map((message) => (
