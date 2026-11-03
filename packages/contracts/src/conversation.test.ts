@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   CONVERSATION_MESSAGE_LIMIT,
+  ConversationViewSchema,
+  HandoffViewSchema,
+  RequestHandoffInputSchema,
   SessionLimitResponseSchema,
   MessageInputSchema,
   MessageViewSchema,
@@ -24,6 +27,28 @@ describe('B13 conversation contracts', () => {
         decision: null,
       }).success,
     ).toBe(true);
+  });
+  it('accepts a server-owned waiting lifecycle and rejects forged handoff metadata', () => {
+    expect(
+      ConversationViewSchema.safeParse({
+        id: 'conversation-1',
+        createdAt: '2026-11-03T00:00:00.000Z',
+        state: 'waiting_for_analyst',
+        stateVersion: 1,
+        handoff: {
+          reason: 'employee_request',
+          summary: 'Funcionário solicitou atendimento humano.',
+          requestedAt: '2026-11-03T00:00:01.000Z',
+        },
+      }).success,
+    ).toBe(true);
+    expect(HandoffViewSchema.safeParse({ reason: 'unknown', summary: 'x' }).success).toBe(false);
+    expect(
+      RequestHandoffInputSchema.safeParse({
+        reason: 'employee_request',
+        summary: 'forged',
+      }).success,
+    ).toBe(false);
   });
 });
 

@@ -8,8 +8,39 @@ import {
 export const ConversationViewSchema = z.strictObject({
   id: z.string(),
   createdAt: z.string().datetime(),
+  state: z.enum(['agent', 'waiting_for_analyst']),
+  stateVersion: z.number().int().nonnegative(),
+  handoff: z
+    .strictObject({
+      reason: z.enum([
+        'employee_request',
+        'critical_incident',
+        'overdue_ticket',
+        'unresolved_uncertainty',
+      ]),
+      summary: z.string().min(1).max(2000),
+      requestedAt: z.string().datetime(),
+    })
+    .nullable(),
 });
 export type ConversationView = z.infer<typeof ConversationViewSchema>;
+export const ConversationStateSchema = z.enum(['agent', 'waiting_for_analyst']);
+export type ConversationState = z.infer<typeof ConversationStateSchema>;
+export const HandoffReasonSchema = z.enum([
+  'employee_request',
+  'critical_incident',
+  'overdue_ticket',
+  'unresolved_uncertainty',
+]);
+export type HandoffReason = z.infer<typeof HandoffReasonSchema>;
+export const HandoffViewSchema = z.strictObject({
+  reason: HandoffReasonSchema,
+  summary: z.string().min(1).max(2000),
+  requestedAt: z.string().datetime(),
+});
+export type HandoffView = z.infer<typeof HandoffViewSchema>;
+export const RequestHandoffInputSchema = z.strictObject({ reason: HandoffReasonSchema });
+export type RequestHandoffInput = z.infer<typeof RequestHandoffInputSchema>;
 export const MessageViewSchema = z.strictObject({
   id: z.string(),
   content: z.string(),

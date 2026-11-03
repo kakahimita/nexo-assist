@@ -1,17 +1,27 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CONVERSATION_MESSAGE_LIMIT,
   ConsultationDecisionViewSchema,
+  ConversationViewSchema,
+  HandoffReasonSchema,
   MessageViewSchema,
 } from '@nexo/contracts';
 import type {
   ConversationView,
+  HandoffReason,
   MessageView,
   UserView,
   ConsultationDecisionView,
 } from '@nexo/contracts';
 import { DatabaseService } from '../database/database.service.js';
 import { SessionLimitReachedError } from './session-limit.js';
+import { formatHandoffSummary } from './handoff-summary.js';
 
 @Injectable()
 export class ConversationsService {
@@ -26,12 +36,80 @@ export class ConversationsService {
       where: { ownerId: user.id },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
-    return rows.map(({ id, createdAt }) => ({ id, createdAt: createdAt.toISOString() }));
+    return rows.map((row) => this.conversationView(row));
   }
   async create(user: UserView): Promise<ConversationView> {
     this.employee(user);
     const row = await this.database.client.conversation.create({ data: { ownerId: user.id } });
-    return { id: row.id, createdAt: row.createdAt.toISOString() };
+    return this.conversationView(row);
+  }
+  private conversationView(row: {
+    id: string;
+    createdAt: Date;
+    state: string;
+    stateVersion: number;
+    handoffReason: string | null;
+    handoffSummary: string | null;
+    handoffRequestedAt: Date | null;
+  }): ConversationView {
+    return ConversationViewSchema.parse({
+      id: row.id,
+      createdAt: row.createdAt.toISOString(),
+      state: row.state,
+      stateVersion: row.stateVersion,
+      handoff:
+        row.handoffReason === null || row.handoffSummary === null || row.handoffRequestedAt === null
+          ? null
+          : {
+              reason: HandoffReasonSchema.parse(row.handoffReason),
+              summary: row.handoffSummary,
+              requestedAt: row.handoffRequestedAt.toISOString(),
+            },
+    });
+  }
+  async requestHandoff(
+    user: UserView,
+    conversationId: string,
+    reason: HandoffReason,
+  ): Promise<ConversationView> {
+    this.employee(user);
+    return this.database.client.$transaction(async (tx) => {
+      const conversation = await tx.conversation.findFirst({
+        where: { id: conversationId, ownerId: user.id },
+      });
+      if (!conversation) throw new NotFoundException();
+      const latest = await tx.message.findFirst({
+        where: { conversationId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { content: true },
+      });
+      const openTicketCount = await tx.ticket.count({
+        where: { ownerId: user.id, status: 'open' },
+      });
+      const requestedAt = new Date();
+      const updated = await tx.conversation.updateMany({
+        where: {
+          id: conversationId,
+          ownerId: user.id,
+          state: 'agent',
+          stateVersion: conversation.stateVersion,
+        },
+        data: {
+          state: 'waiting_for_analyst',
+          stateVersion: { increment: 1 },
+          handoffReason: reason,
+          handoffSummary: formatHandoffSummary({
+            reason,
+            latestMessage: latest?.content,
+            openTicketCount,
+          }),
+          handoffRequestedAt: requestedAt,
+        },
+      });
+      if (updated.count !== 1) throw new ConflictException();
+      const persisted = await tx.conversation.findUniqueOrThrow({ where: { id: conversationId } });
+      return this.conversationView(persisted);
+    });
   }
   async ensureOwned(user: UserView, conversationId: string): Promise<void> {
     this.employee(user);

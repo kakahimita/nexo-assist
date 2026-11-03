@@ -39,6 +39,11 @@ model Conversation {
   createdAt DateTime @default(now())
   ownerId String
   owner User @relation(fields: [ownerId], references: [id])
+  state String @default("agent")
+  stateVersion Int @default(0)
+  handoffReason String?
+  handoffSummary String?
+  handoffRequestedAt DateTime?
   messages Message[]
   draftProposalRuns DraftProposalRun[]
 }
