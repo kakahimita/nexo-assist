@@ -24,7 +24,7 @@ import { normalizeTitle } from './normalize-title.js';
 import { findTicketCandidates } from './ticket-candidates.js';
 import { FailureSimulator, isTransientTicketError } from './failure-simulator.js';
 import { canReopen, deadline, isOverdue, type Priority } from './rules.js';
-import { assertEmployee, TicketService } from './ticket-service.js';
+import { assertEmployee, assertAnalyst, TicketService } from './ticket-service.js';
 
 @Injectable()
 export class PrismaTicketService extends TicketService {
@@ -105,6 +105,17 @@ export class PrismaTicketService extends TicketService {
           TicketEventViewSchema.parse({ ...event, createdAt: event.createdAt.toISOString() }),
         ),
       };
+    });
+  }
+
+  async listForAnalyst(user: UserView, ownerId: string, now: Date): Promise<TicketView[]> {
+    assertAnalyst(user);
+    return this.retry(async () => {
+      const rows = await this.database.client.ticket.findMany({
+        where: { ownerId },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      });
+      return { value: rows.map((row) => this.view(row, now)) };
     });
   }
 

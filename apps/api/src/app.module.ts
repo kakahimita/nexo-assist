@@ -8,6 +8,7 @@ import { IdentityModule } from './identity/identity.module.js';
 import { ConversationsModule } from './conversations/conversations.module.js';
 import { TicketsModule } from './tickets/tickets.module.js';
 import { KnowledgeModule } from './knowledge/knowledge.module.js';
+import { HumanSupportModule } from './human-support/human-support.module.js';
 import { ConsultationTools } from './agent/tools/consultation-tools.js';
 import { ConsultationModule } from './consultation/consultation.module.js';
 import type { ConsultationEngine } from './agent/consultation/types.js';
@@ -27,6 +28,7 @@ export class AppModule {
         ConversationsModule,
         TicketsModule,
         KnowledgeModule,
+        HumanSupportModule,
         ConsultationModule.register(
           environment.consultationEngine ?? 'mastra',
           overrides?.consultationEngine,
