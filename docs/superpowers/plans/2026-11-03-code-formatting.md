@@ -127,4 +127,3 @@
 - [ ] **Step 6: Commit blame metadata and workflow documentation**
 
   Stage only `.git-blame-ignore-revs` and `docs/development-workflow.md`; commit `docs: document formatting workflow`.
-

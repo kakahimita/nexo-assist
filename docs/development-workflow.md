@@ -16,6 +16,22 @@ Start from current `main`, preserving local changes. Issue #12 uses
 All change types use `feature/`; labels describe the change type.
 Use small imperative English commits. Each increment leaves existing behavior working.
 
+## Formatting
+
+Run `npm run format` after editing supported source and configuration files, and
+use `npm run format:check` to verify them without making changes. The formatting
+check also runs inside `npm run check`. Markdown and `package-lock.json` are
+deliberately excluded from bulk formatting; npm remains responsible for lockfile
+updates.
+
+The repository records formatting-only revisions in `.git-blame-ignore-revs`.
+Configure Git once in this checkout so blame follows the earlier author through
+those revisions:
+
+```sh
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
 ## Pull requests
 
 Use `.github/pull_request_template.md` and the title
