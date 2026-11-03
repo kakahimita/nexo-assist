@@ -75,6 +75,7 @@ test('B13: browser history survives restarting the API process', async ({ page, 
     await page.getByLabel('Mensagem').fill('Histórico após reinício');
     await page.getByRole('button', { name: 'Enviar mensagem' }).click();
     await expect(page.getByText('Histórico após reinício')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Enviar mensagem' })).toBeEnabled();
     await stop();
     await start();
     await page.reload();
