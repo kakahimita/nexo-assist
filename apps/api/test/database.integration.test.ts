@@ -100,6 +100,7 @@ describe('B17 / PRD p. 2: migrated, file-backed SQLite persistence', () => {
         { email: 'ana.souza@nexo.com.br', role: 'employee' },
         { email: 'analista@nexo.com.br', role: 'analyst' },
         { email: 'bruno.lima@nexo.com.br', role: 'employee' },
+        { email: 'rafael.lima@nexo.com.br', role: 'analyst' },
       ]);
     } finally {
       await client.$disconnect();

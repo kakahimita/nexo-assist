@@ -105,7 +105,7 @@ export function History({
       </header>
       {error && <p role="alert">{error}</p>}
       {user.role === 'analyst' ? (
-        <Support user={user} onLogout={onLogout} />
+        <Support onLogout={onLogout} />
       ) : (
         <>
           <p>As mensagens são salvas no histórico.</p>

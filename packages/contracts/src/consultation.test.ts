@@ -78,11 +78,17 @@ describe('B12/B13: consultation wire contracts', () => {
         role: 'employee',
         status: 'completed',
         decision: null,
+        authorName: null,
       }).success,
     ).toBe(true);
     expect(
-      MessageViewSchema.safeParse({ ...base, role: 'agent', status: 'completed', decision })
-        .success,
+      MessageViewSchema.safeParse({
+        ...base,
+        role: 'agent',
+        status: 'completed',
+        decision,
+        authorName: null,
+      }).success,
     ).toBe(true);
     expect(MessageViewSchema.safeParse(base).success).toBe(false);
   });

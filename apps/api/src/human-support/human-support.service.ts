@@ -27,7 +27,10 @@ export class HumanSupportService {
     @Inject(TicketService) private readonly tickets: TicketService,
   ) {}
 
-  async queue(user: UserView, filter: SupportConversationFilter): Promise<SupportConversationSummary[]> {
+  async queue(
+    user: UserView,
+    filter: SupportConversationFilter,
+  ): Promise<SupportConversationSummary[]> {
     assertAnalyst(user);
     const rows = await this.database.client.conversation.findMany({
       where: this.queueWhere(filter, user.id),
@@ -139,7 +142,10 @@ export class HumanSupportService {
     return this.summary(row);
   }
 
-  private queueWhere(filter: SupportConversationFilter, analystId: string): Prisma.ConversationWhereInput {
+  private queueWhere(
+    filter: SupportConversationFilter,
+    analystId: string,
+  ): Prisma.ConversationWhereInput {
     if (filter === 'waiting') return { state: 'waiting_for_analyst' };
     if (filter === 'owned') return { state: 'with_analyst', assignedAnalystId: analystId };
     return { state: { in: ['waiting_for_analyst', 'with_analyst'] } };

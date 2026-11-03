@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import {
-  ConversationStateSchema,
-  HandoffViewSchema,
-  MessageViewSchema,
-} from './conversation.js';
+import { ConversationStateSchema, HandoffViewSchema, MessageViewSchema } from './conversation.js';
 import { TicketViewSchema } from './ticket.js';
 
 export const SupportConversationFilterSchema = z.enum(['all', 'waiting', 'owned']);

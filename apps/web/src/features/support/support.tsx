@@ -4,7 +4,6 @@ import {
   SupportConversationViewSchema,
   type SupportConversationSummary,
   type SupportConversationView,
-  type UserView,
 } from '@nexo/contracts';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
@@ -15,13 +14,7 @@ const reasonTag: Record<string, string> = {
   unresolved_uncertainty: 'Sem segurança',
 };
 
-export function Support({
-  user,
-  onLogout,
-}: {
-  user: UserView;
-  onLogout: () => void;
-}): React.JSX.Element {
+export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Element {
   const [filter, setFilter] = useState<'all' | 'waiting' | 'owned'>('waiting');
   const [queue, setQueue] = useState<SupportConversationSummary[]>([]);
   const [selectedId, setSelectedId] = useState('');
@@ -46,7 +39,9 @@ export function Support({
 
   const loadQueue = useCallback(async () => {
     try {
-      const data: unknown = await (await call(`/api/support/conversations?filter=${filter}`)).json();
+      const data: unknown = await (
+        await call(`/api/support/conversations?filter=${filter}`)
+      ).json();
       if (!Array.isArray(data)) throw new Error();
       setQueue(data.map((item: unknown) => SupportConversationSummarySchema.parse(item)));
     } catch {

@@ -144,7 +144,11 @@ describe('B11: analyst queue and conversation detail', () => {
         .set('Cookie', rafael.cookie)
         .send({ content: 'x' })
         .expect(403);
-      await request(server).post(`${path}/return`).set('Cookie', rafael.cookie).send({}).expect(403);
+      await request(server)
+        .post(`${path}/return`)
+        .set('Cookie', rafael.cookie)
+        .send({})
+        .expect(403);
       await request(server).post(`${path}/close`).set('Cookie', rafael.cookie).send({}).expect(403);
 
       const returned = await request(server)
@@ -160,7 +164,11 @@ describe('B11: analyst queue and conversation detail', () => {
         .send({ reason: 'employee_request' })
         .expect(201);
 
-      await request(server).post(`${path}/claim`).set('Cookie', analyst.cookie).send({}).expect(201);
+      await request(server)
+        .post(`${path}/claim`)
+        .set('Cookie', analyst.cookie)
+        .send({})
+        .expect(201);
       const closed = await request(server)
         .post(`${path}/close`)
         .set('Cookie', analyst.cookie)
@@ -168,6 +176,59 @@ describe('B11: analyst queue and conversation detail', () => {
         .expect(201);
       expect(closed.body).toMatchObject({ state: 'closed' });
       expect(closed.body.closedAt).toEqual(expect.any(String));
+    } finally {
+      await app.close();
+      await db.cleanup();
+    }
+  });
+
+  it('preserves analyst ownership across restart', async () => {
+    const db = await createTestDatabase();
+    const env = {
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    };
+    let app = await createApp(env);
+    try {
+      let server = app.getHttpServer();
+      const login = async (email: string) =>
+        String(
+          (await request(server).post('/api/session').send({ email, password: 'x' }).expect(201))
+            .headers['set-cookie']?.[0],
+        );
+      const ana = await login('ana.souza@nexo.com.br');
+      const analyst = await login('analista@nexo.com.br');
+
+      const conversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', ana)
+        .send({})
+        .expect(201);
+      await request(server)
+        .post(`/api/conversations/${conversation.body.id}/handoff`)
+        .set('Cookie', ana)
+        .send({ reason: 'employee_request' })
+        .expect(201);
+      await request(server)
+        .post(`/api/support/conversations/${conversation.body.id}/claim`)
+        .set('Cookie', analyst)
+        .send({})
+        .expect(201);
+
+      await app.close();
+      app = await createApp(env);
+      server = app.getHttpServer();
+      const analystAfterRestart = await login('analista@nexo.com.br');
+      const queue = await request(server)
+        .get('/api/support/conversations')
+        .query({ filter: 'owned' })
+        .set('Cookie', analystAfterRestart)
+        .expect(200);
+      expect(queue.body).toContainEqual(
+        expect.objectContaining({ id: conversation.body.id, state: 'with_analyst' }),
+      );
     } finally {
       await app.close();
       await db.cleanup();

@@ -53,6 +53,8 @@ describe('B11 support contracts', () => {
   it('rejects a forged reply body', () => {
     expect(SupportReplyInputSchema.safeParse({ content: 'olá' }).success).toBe(true);
     expect(SupportReplyInputSchema.safeParse({ content: '   ' }).success).toBe(false);
-    expect(SupportReplyInputSchema.safeParse({ content: 'olá', authorId: 'x' }).success).toBe(false);
+    expect(SupportReplyInputSchema.safeParse({ content: 'olá', authorId: 'x' }).success).toBe(
+      false,
+    );
   });
 });
