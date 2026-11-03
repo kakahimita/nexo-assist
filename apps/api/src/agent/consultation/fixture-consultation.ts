@@ -9,7 +9,7 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
     const normalized = context.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
     const recent = latest.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
     let text = ''; let decision: ConsultationEngineDecision;
-    if (/\b(rh|ferias|financeiro|instalacoes)\b/.test(recent)) {
+    if (/\b(rh|ferias|financeiro|reembolso|instalacoes|facilities|predial|limpeza)\b/.test(recent)) {
       text = 'Posso ajudar apenas com assuntos de TI. Procure a área responsável pela sua solicitação.';
       decision = { intent: 'Assunto fora de TI', action: 'redirect', appliedRule: 'Escopo de TI', confidence: 1, justification: 'A solicitação pertence a outra área.', missingFacts: [], quickReplies: [] };
     } else if ((/vpn/.test(recent) && /809/.test(recent)) || (/\b(?:windows|win)\s*(?:10|11)\b/.test(recent) && /vpn/.test(normalized) && /809/.test(normalized))) {

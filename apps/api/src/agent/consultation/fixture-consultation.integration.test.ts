@@ -46,6 +46,7 @@ describe('B02/B03/B16: deterministic consultation', () => {
       expect(continued.snapshot().tickets).toHaveLength(2);
       const outside = await run('Como solicitar férias no RH?');
       expect(outside.decision.action).toBe('redirect'); expect(outside.actions).toEqual([]);
+      for (const text of ['Como solicitar reembolso?', 'A sala precisa de limpeza.']) { const response = await run(text); expect(response.decision.action).toBe('redirect'); expect(response.actions).toEqual([]); }
       expect([await database.client.ticket.count(), await database.client.ticketDraft.count()]).toEqual(before);
     } finally { await database.onModuleDestroy(); await db.cleanup(); }
   });
