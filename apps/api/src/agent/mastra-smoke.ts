@@ -40,9 +40,7 @@ function readUsage(value: unknown): SmokeUsage | undefined {
   return hasMetric ? usage : undefined;
 }
 
-export function createMastraSmokeTransport(
-  configuration: ModelConfiguration,
-): SmokeTransport {
+export function createMastraSmokeTransport(configuration: ModelConfiguration): SmokeTransport {
   const executedNonces: string[] = [];
   const tool = createSmokeTool((input) => {
     executedNonces.push(input.nonce);

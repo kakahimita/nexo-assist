@@ -30,13 +30,19 @@ describe('B08: São Paulo business deadlines', () => {
     expect(friday.toISOString()).toBe('2026-10-30T20:00:00.000Z');
   });
   it('starts at the next opening when created at closing', () => {
-    expect(deadline(new Date('2026-10-30T21:00:00Z'), 'high').toISOString()).toBe('2026-11-02T15:00:00.000Z');
+    expect(deadline(new Date('2026-10-30T21:00:00Z'), 'high').toISOString()).toBe(
+      '2026-11-02T15:00:00.000Z',
+    );
   });
   it('uses the historical offset after a daylight-saving transition', () => {
-    expect(deadline(new Date('2019-02-15T19:00:00Z'), 'high').toISOString()).toBe('2019-02-18T14:00:00.000Z');
+    expect(deadline(new Date('2019-02-15T19:00:00Z'), 'high').toISOString()).toBe(
+      '2019-02-18T14:00:00.000Z',
+    );
   });
   it('computes a new deadline for a later support update', () => {
-    expect(deadline(new Date('2026-11-02T13:00:00Z'), 'high').toISOString()).toBe('2026-11-02T17:00:00.000Z');
+    expect(deadline(new Date('2026-11-02T13:00:00Z'), 'high').toISOString()).toBe(
+      '2026-11-02T17:00:00.000Z',
+    );
   });
   it('becomes overdue only after the exact deadline', () => {
     const due = new Date('2026-11-02T14:00:00Z');

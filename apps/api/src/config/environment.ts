@@ -81,7 +81,8 @@ function parseWebOrigin(raw: string | undefined): string {
 
 export function parseApiEnvironment(input: NodeJS.ProcessEnv): ApiEnvironment {
   const consultationEngine = input.CONSULTATION_ENGINE ?? 'mastra';
-  if (consultationEngine !== 'mastra' && consultationEngine !== 'fixture') throw new Error('CONSULTATION_ENGINE must be mastra or fixture.');
+  if (consultationEngine !== 'mastra' && consultationEngine !== 'fixture')
+    throw new Error('CONSULTATION_ENGINE must be mastra or fixture.');
   return {
     consultationEngine,
     host: readValue(input, 'API_HOST', DEFAULTS.host),

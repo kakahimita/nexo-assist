@@ -1,6 +1,8 @@
 ﻿import { expect, test } from '@playwright/test';
 
-test('B05: employee reviews a possible duplicate before creating a different ticket', async ({ page }) => {
+test('B05: employee reviews a possible duplicate before creating a different ticket', async ({
+  page,
+}) => {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('bruno.lima@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');

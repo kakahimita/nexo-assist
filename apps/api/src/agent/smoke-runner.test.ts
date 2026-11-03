@@ -95,31 +95,26 @@ describe('runSmoke', () => {
   it.each([
     [
       'text without a tool event',
-      [
-        { type: 'text-delta', text: `OK ${NONCE}` },
-        { type: 'finish' },
-      ] satisfies SmokeEvent[],
+      [{ type: 'text-delta', text: `OK ${NONCE}` }, { type: 'finish' }] satisfies SmokeEvent[],
     ],
     [
       'a mismatched nonce',
       [
-        { type: 'tool-result', nonce: '123e4567-e89b-42d3-a456-426614174001', source: 'foundation-smoke' },
+        {
+          type: 'tool-result',
+          nonce: '123e4567-e89b-42d3-a456-426614174001',
+          source: 'foundation-smoke',
+        },
         { type: 'text-delta', text: `OK ${NONCE}` },
         { type: 'finish' },
       ] satisfies SmokeEvent[],
     ],
-    [
-      'zero text chunks',
-      [matchingToolResult, { type: 'finish' }] satisfies SmokeEvent[],
-    ],
+    ['zero text chunks', [matchingToolResult, { type: 'finish' }] satisfies SmokeEvent[]],
     [
       'no finish event',
       [matchingToolResult, { type: 'text-delta', text: `OK ${NONCE}` }] satisfies SmokeEvent[],
     ],
-    [
-      'a tool-only result',
-      [matchingToolResult, { type: 'finish' }] satisfies SmokeEvent[],
-    ],
+    ['a tool-only result', [matchingToolResult, { type: 'finish' }] satisfies SmokeEvent[]],
     [
       'text that omits the nonce',
       [

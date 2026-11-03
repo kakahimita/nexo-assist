@@ -11,8 +11,16 @@ test('B13: browser history survives restarting the API process', async ({ page, 
   const databaseUrl = `file:${join(directory, 'test.db').replaceAll('\\', '/')}`;
   const exec = promisify(execFile);
   const env = { ...process.env, DATABASE_URL: databaseUrl };
-  await exec(process.execPath, [resolve('node_modules/prisma/build/index.js'), 'migrate', 'deploy'], { cwd: resolve('apps/api'), env });
-  await exec(process.execPath, [resolve('node_modules/tsx/dist/cli.mjs'), resolve('apps/api/src/database/initialize.ts')], { env });
+  await exec(
+    process.execPath,
+    [resolve('node_modules/prisma/build/index.js'), 'migrate', 'deploy'],
+    { cwd: resolve('apps/api'), env },
+  );
+  await exec(
+    process.execPath,
+    [resolve('node_modules/tsx/dist/cli.mjs'), resolve('apps/api/src/database/initialize.ts')],
+    { env },
+  );
   const listener = createServer();
   const port = await new Promise<number>((done, reject) => {
     listener.once('error', reject);
@@ -31,9 +39,23 @@ test('B13: browser history survives restarting the API process', async ({ page, 
     await exited;
   }
   async function start() {
-    api = spawn(process.execPath, [resolve('apps/api/dist/main.js')], { env: { ...process.env, API_HOST: '127.0.0.1', API_PORT: String(port), WEB_ORIGIN: baseURL ?? 'http://localhost:3000', CONSULTATION_ENGINE: 'fixture', DATABASE_URL: databaseUrl }, stdio: 'ignore' });
+    api = spawn(process.execPath, [resolve('apps/api/dist/main.js')], {
+      env: {
+        ...process.env,
+        API_HOST: '127.0.0.1',
+        API_PORT: String(port),
+        WEB_ORIGIN: baseURL ?? 'http://localhost:3000',
+        CONSULTATION_ENGINE: 'fixture',
+        DATABASE_URL: databaseUrl,
+      },
+      stdio: 'ignore',
+    });
     for (let attempt = 0; attempt < 100; attempt++) {
-      try { if ((await fetch(`http://127.0.0.1:${port}/api/ready`)).ok) return; } catch { /* wait for startup */ }
+      try {
+        if ((await fetch(`http://127.0.0.1:${port}/api/ready`)).ok) return;
+      } catch {
+        /* wait for startup */
+      }
       await new Promise((done) => setTimeout(done, 100));
     }
     throw new Error('Test API failed to start');
@@ -58,5 +80,8 @@ test('B13: browser history survives restarting the API process', async ({ page, 
     await page.reload();
     await page.getByRole('button', { name: 'Conversa 1' }).click();
     await expect(page.getByText('Histórico após reinício')).toBeVisible();
-  } finally { await stop(); await rm(directory, { recursive: true, force: true }); }
+  } finally {
+    await stop();
+    await rm(directory, { recursive: true, force: true });
+  }
 });

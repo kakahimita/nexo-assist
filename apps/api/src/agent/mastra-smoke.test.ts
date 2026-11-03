@@ -6,7 +6,8 @@ describe('model finish reason', () => {
     expect(() => assertSuccessfulFinish('stop')).not.toThrow();
   });
   it.each(['length', 'content-filter', 'error', 'tripwire', 'retry', 'tool-calls', 'unknown'])(
-    'rejects %s after partial evidence', (reason) => {
+    'rejects %s after partial evidence',
+    (reason) => {
       expect(() => assertSuccessfulFinish(reason)).toThrow();
     },
   );

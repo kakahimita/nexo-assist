@@ -114,7 +114,10 @@ export async function runFoundationBrowserTests(): Promise<number> {
     });
 
     const deadline = Date.now() + startupDeadlineMs;
-    await Promise.all([waitForUrl(`${apiUrl}/ready`, deadline), waitForUrl(webReadinessUrl, deadline)]);
+    await Promise.all([
+      waitForUrl(`${apiUrl}/ready`, deadline),
+      waitForUrl(webReadinessUrl, deadline),
+    ]);
 
     const playwright = spawn(process.execPath, [playwrightCli, 'test'], {
       cwd: repositoryRoot,

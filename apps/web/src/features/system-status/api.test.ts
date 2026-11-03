@@ -32,7 +32,10 @@ describe('B17: browser health client', () => {
   });
 
   it('B17: rejects a successful HTTP response with an invalid contract', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ status: 'ok', service: 'other' })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(Response.json({ status: 'ok', service: 'other' })),
+    );
 
     await expect(fetchApiHealth(baseUrl)).rejects.toMatchObject({ code: 'invalid-response' });
   });
@@ -71,7 +74,9 @@ describe('B17: browser health client', () => {
   });
 
   it('B17: normalizes a trailing slash and forwards the abort signal', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ status: 'ok', service: 'nexo-api' }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ status: 'ok', service: 'nexo-api' }));
     vi.stubGlobal('fetch', fetchMock);
     const controller = new AbortController();
 

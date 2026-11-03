@@ -1,12 +1,84 @@
 ﻿export type KnowledgePlatform = 'windows10' | 'windows11' | 'any';
 
-export const articles: Array<{ id: string; title: string; summary: string; body: string; category: string; platform: KnowledgePlatform; keywords: string }> = [
-  { id: 'kb-vpn-809-windows-10', title: 'VPN erro 809 no Windows 10', summary: 'Conexão VPN falha com erro 809 no Windows 10.', body: 'Reinstale o cliente VPN e reinicie o computador. Esta orientação não se aplica ao Windows 11.', category: 'network', platform: 'windows10', keywords: 'vpn erro 809 conexão' },
-  { id: 'kb-vpn-809-windows-11', title: 'VPN erro 809 no Windows 11', summary: 'Conexão VPN falha com erro 809 no Windows 11.', body: 'A reinstalação indicada para Windows 10 não é indicada para Windows 11. Abra um chamado informando a versão e o erro.', category: 'network', platform: 'windows11', keywords: 'vpn erro 809 conexão' },
-  { id: 'kb-service-hours', title: 'Horário de atendimento', summary: 'Horário do suporte de TI.', body: 'O atendimento funciona de segunda a sexta, das 8h às 18h.', category: 'other', platform: 'any', keywords: 'horário atendimento suporte' },
-  { id: 'kb-password-lockout', title: 'Senha bloqueada', summary: 'Acesso bloqueado após tentativas de senha.', body: 'Entre em contato com o suporte para recuperar o acesso.', category: 'access', platform: 'any', keywords: 'senha bloqueada acesso' },
-  { id: 'kb-wifi-corporate', title: 'Wi-Fi corporativo', summary: 'Conexão à rede sem fio da empresa.', body: 'Confirme que selecionou a rede corporativa e suas credenciais.', category: 'network', platform: 'any', keywords: 'wifi rede sem fio' },
-  { id: 'kb-email-quota', title: 'Caixa de email cheia', summary: 'Limite de armazenamento do email.', body: 'Remova mensagens desnecessárias e esvazie a lixeira.', category: 'email', platform: 'any', keywords: 'email correio caixa armazenamento quota' },
-  { id: 'kb-monitor-not-detected', title: 'Monitor não detectado', summary: 'Monitor externo sem imagem.', body: 'Verifique os cabos e a entrada selecionada no monitor.', category: 'hardware', platform: 'any', keywords: 'monitor tela imagem cabo' },
-  { id: 'kb-software-install', title: 'Instalação de software', summary: 'Solicitação de instalação de programa.', body: 'Abra uma solicitação informando o software e a finalidade.', category: 'software', platform: 'any', keywords: 'software instalação programa aplicativo' },
+export const articles: Array<{
+  id: string;
+  title: string;
+  summary: string;
+  body: string;
+  category: string;
+  platform: KnowledgePlatform;
+  keywords: string;
+}> = [
+  {
+    id: 'kb-vpn-809-windows-10',
+    title: 'VPN erro 809 no Windows 10',
+    summary: 'Conexão VPN falha com erro 809 no Windows 10.',
+    body: 'Reinstale o cliente VPN e reinicie o computador. Esta orientação não se aplica ao Windows 11.',
+    category: 'network',
+    platform: 'windows10',
+    keywords: 'vpn erro 809 conexão',
+  },
+  {
+    id: 'kb-vpn-809-windows-11',
+    title: 'VPN erro 809 no Windows 11',
+    summary: 'Conexão VPN falha com erro 809 no Windows 11.',
+    body: 'A reinstalação indicada para Windows 10 não é indicada para Windows 11. Abra um chamado informando a versão e o erro.',
+    category: 'network',
+    platform: 'windows11',
+    keywords: 'vpn erro 809 conexão',
+  },
+  {
+    id: 'kb-service-hours',
+    title: 'Horário de atendimento',
+    summary: 'Horário do suporte de TI.',
+    body: 'O atendimento funciona de segunda a sexta, das 8h às 18h.',
+    category: 'other',
+    platform: 'any',
+    keywords: 'horário atendimento suporte',
+  },
+  {
+    id: 'kb-password-lockout',
+    title: 'Senha bloqueada',
+    summary: 'Acesso bloqueado após tentativas de senha.',
+    body: 'Entre em contato com o suporte para recuperar o acesso.',
+    category: 'access',
+    platform: 'any',
+    keywords: 'senha bloqueada acesso',
+  },
+  {
+    id: 'kb-wifi-corporate',
+    title: 'Wi-Fi corporativo',
+    summary: 'Conexão à rede sem fio da empresa.',
+    body: 'Confirme que selecionou a rede corporativa e suas credenciais.',
+    category: 'network',
+    platform: 'any',
+    keywords: 'wifi rede sem fio',
+  },
+  {
+    id: 'kb-email-quota',
+    title: 'Caixa de email cheia',
+    summary: 'Limite de armazenamento do email.',
+    body: 'Remova mensagens desnecessárias e esvazie a lixeira.',
+    category: 'email',
+    platform: 'any',
+    keywords: 'email correio caixa armazenamento quota',
+  },
+  {
+    id: 'kb-monitor-not-detected',
+    title: 'Monitor não detectado',
+    summary: 'Monitor externo sem imagem.',
+    body: 'Verifique os cabos e a entrada selecionada no monitor.',
+    category: 'hardware',
+    platform: 'any',
+    keywords: 'monitor tela imagem cabo',
+  },
+  {
+    id: 'kb-software-install',
+    title: 'Instalação de software',
+    summary: 'Solicitação de instalação de programa.',
+    body: 'Abra uma solicitação informando o software e a finalidade.',
+    category: 'software',
+    platform: 'any',
+    keywords: 'software instalação programa aplicativo',
+  },
 ];

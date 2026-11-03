@@ -8,13 +8,20 @@ import { AppModule } from './app.module.js';
 import type { ApiEnvironment } from './config/environment.js';
 import type { ConsultationEngine } from './agent/consultation/types.js';
 
-export async function createApp(environment: ApiEnvironment, overrides?: { consultationEngine?: ConsultationEngine }): Promise<INestApplication> {
+export async function createApp(
+  environment: ApiEnvironment,
+  overrides?: { consultationEngine?: ConsultationEngine },
+): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule.register(environment, overrides));
 
   app.setGlobalPrefix('api');
   app.use((request: IncomingMessage, response: ServerResponse, next: () => void) => {
     const origin = request.headers.origin;
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method ?? '') && origin && origin !== environment.webOrigin) {
+    if (
+      !['GET', 'HEAD', 'OPTIONS'].includes(request.method ?? '') &&
+      origin &&
+      origin !== environment.webOrigin
+    ) {
       response.statusCode = 403;
       response.end();
       return;
