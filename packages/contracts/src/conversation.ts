@@ -8,7 +8,7 @@ import {
 export const ConversationViewSchema = z.strictObject({
   id: z.string(),
   createdAt: z.string().datetime(),
-  state: z.enum(['agent', 'waiting_for_analyst']),
+  state: z.enum(['agent', 'waiting_for_analyst', 'with_analyst', 'closed']),
   stateVersion: z.number().int().nonnegative(),
   handoff: z
     .strictObject({
@@ -22,9 +22,16 @@ export const ConversationViewSchema = z.strictObject({
       requestedAt: z.string().datetime(),
     })
     .nullable(),
+  assignedAnalystId: z.string().nullable(),
+  closedAt: z.string().datetime().nullable(),
 });
 export type ConversationView = z.infer<typeof ConversationViewSchema>;
-export const ConversationStateSchema = z.enum(['agent', 'waiting_for_analyst']);
+export const ConversationStateSchema = z.enum([
+  'agent',
+  'waiting_for_analyst',
+  'with_analyst',
+  'closed',
+]);
 export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export const HandoffReasonSchema = z.enum([
   'employee_request',
@@ -45,9 +52,10 @@ export const MessageViewSchema = z.strictObject({
   id: z.string(),
   content: z.string(),
   createdAt: z.string().datetime(),
-  role: z.enum(['employee', 'agent']),
+  role: z.enum(['employee', 'agent', 'analyst']),
   status: z.enum(['completed', 'failed']),
   decision: ConsultationDecisionViewSchema.nullable(),
+  authorName: z.string().nullable(),
 });
 export type MessageView = z.infer<typeof MessageViewSchema>;
 export const MessageInputSchema = z.strictObject({

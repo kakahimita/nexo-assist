@@ -25,6 +25,20 @@ describe('B13 conversation contracts', () => {
         role: 'employee',
         status: 'completed',
         decision: null,
+        authorName: null,
+      }).success,
+    ).toBe(true);
+  });
+  it('accepts an analyst message with its author name', () => {
+    expect(
+      MessageViewSchema.safeParse({
+        id: '2',
+        content: 'Já li o histórico.',
+        createdAt: '2026-10-31T00:00:01.000Z',
+        role: 'analyst',
+        status: 'completed',
+        decision: null,
+        authorName: 'Rafael Lima',
       }).success,
     ).toBe(true);
   });
@@ -40,6 +54,8 @@ describe('B13 conversation contracts', () => {
           summary: 'Funcionário solicitou atendimento humano.',
           requestedAt: '2026-11-03T00:00:01.000Z',
         },
+        assignedAnalystId: null,
+        closedAt: null,
       }).success,
     ).toBe(true);
     expect(HandoffViewSchema.safeParse({ reason: 'unknown', summary: 'x' }).success).toBe(false);
@@ -47,6 +63,45 @@ describe('B13 conversation contracts', () => {
       RequestHandoffInputSchema.safeParse({
         reason: 'employee_request',
         summary: 'forged',
+      }).success,
+    ).toBe(false);
+  });
+  it('accepts with_analyst and closed states and rejects an unknown state', () => {
+    expect(
+      ConversationViewSchema.safeParse({
+        id: 'conversation-2',
+        createdAt: '2026-11-03T00:00:00.000Z',
+        state: 'with_analyst',
+        stateVersion: 2,
+        handoff: {
+          reason: 'employee_request',
+          summary: 'Funcionário solicitou atendimento humano.',
+          requestedAt: '2026-11-03T00:00:01.000Z',
+        },
+        assignedAnalystId: 'analyst-1',
+        closedAt: null,
+      }).success,
+    ).toBe(true);
+    expect(
+      ConversationViewSchema.safeParse({
+        id: 'conversation-3',
+        createdAt: '2026-11-03T00:00:00.000Z',
+        state: 'closed',
+        stateVersion: 3,
+        handoff: null,
+        assignedAnalystId: 'analyst-1',
+        closedAt: '2026-11-03T00:05:00.000Z',
+      }).success,
+    ).toBe(true);
+    expect(
+      ConversationViewSchema.safeParse({
+        id: 'conversation-4',
+        createdAt: '2026-11-03T00:00:00.000Z',
+        state: 'unknown',
+        stateVersion: 1,
+        handoff: null,
+        assignedAnalystId: null,
+        closedAt: null,
       }).success,
     ).toBe(false);
   });
