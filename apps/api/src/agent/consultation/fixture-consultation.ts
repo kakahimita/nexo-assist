@@ -1,4 +1,4 @@
-﻿import type { ConsultationEngineDecision } from '@nexo/contracts';
+import type { ConsultationEngineDecision } from '@nexo/contracts';
 import type { ConsultationTools } from '../tools/consultation-tools.js';
 import { CONSULTATION_PROMPT_VERSION, type ConsultationEngine, type ConsultationEngineEvent } from './types.js';
 
@@ -12,8 +12,9 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
     if (/\b(rh|ferias|financeiro|instalacoes)\b/.test(recent)) {
       text = 'Posso ajudar apenas com assuntos de TI. Procure a área responsável pela sua solicitação.';
       decision = { intent: 'Assunto fora de TI', action: 'redirect', appliedRule: 'Escopo de TI', confidence: 1, justification: 'A solicitação pertence a outra área.', missingFacts: [], quickReplies: [] };
-    } else if (/vpn/.test(normalized) && /809/.test(normalized)) {
-      const platform = /windows\s*11|win\s*11/.test(normalized) ? 'Windows 11' : /windows\s*10|win\s*10/.test(normalized) ? 'Windows 10' : undefined;
+    } else if ((/vpn/.test(recent) && /809/.test(recent)) || (/\b(?:windows|win)\s*(?:10|11)\b/.test(recent) && /vpn/.test(normalized) && /809/.test(normalized))) {
+      const platformText = /(?:windows|win)\s*(?:10|11)/.test(recent) ? recent : normalized;
+      const platform = /(?:windows|win)\s*11/.test(platformText) ? 'Windows 11' : /(?:windows|win)\s*10/.test(platformText) ? 'Windows 10' : undefined;
       const tickets = await tools.consultTickets(request.user, { query: 'VPN', kind: 'topic' }, request.now);
       yield { type: 'tool-result', toolCallId: 'tickets', tool: 'consult-tickets', result: tickets } as ConsultationEngineEvent;
       const knowledge = await tools.searchKnowledge(request.user, { query: 'VPN erro 809', ...(platform ? { platform } : {}) });

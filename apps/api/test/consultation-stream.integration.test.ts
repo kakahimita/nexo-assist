@@ -105,6 +105,18 @@ describe('B02/B03/B12/B13/B15/B16: authenticated consultation stream', () => {
       expect(agent).toMatchObject({ status: 'failed', decision: { errorCode: 'interrupted', outcome: 'failed' } });
     } finally { await app.close(); await client.$disconnect(); await db.cleanup(); }
   });
+  it('maps a provider HTTP 429 error to quota without exposing its message', async () => {
+    const db = await createTestDatabase();
+    const engine: ConsultationEngine = { source: 'live', promptVersion: 'test', async *run() { yield* []; throw Object.assign(new Error('private provider details'), { statusCode: 429 }); } };
+    const app = await createApp({ host: '127.0.0.1', port: 3001, webOrigin: 'http://localhost:3000', databaseUrl: db.url }, { consultationEngine: engine });
+    try {
+      const server = app.getHttpServer(); const auth = await request(server).post('/api/session').send({ email: 'ana.souza@nexo.com.br', password: 'x' }).expect(201); const cookie = String(auth.headers['set-cookie']?.[0]);
+      const conversation = await request(server).post('/api/conversations').set('Cookie', cookie).send({}).expect(201);
+      const response = await request(server).post(`/api/conversations/${conversation.body.id}/messages/stream`).set('Cookie', cookie).send({ content: 'VPN' }).expect(201);
+      expect(events(response.text).at(-2)).toEqual({ type: 'error', code: 'quota' });
+      expect(response.text).not.toContain('private provider details');
+    } finally { await app.close(); await db.cleanup(); }
+  });
   it.each(['quota', 'model_unavailable', 'invalid_output', 'interrupted'])('persists an honest failed answer for %s', async (code) => {
     const db = await createTestDatabase();
     const engine: ConsultationEngine = { source: 'deterministic', promptVersion: 'test', async *run() { yield* []; throw new Error(code); } };

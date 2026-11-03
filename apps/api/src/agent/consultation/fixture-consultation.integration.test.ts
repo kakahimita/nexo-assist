@@ -36,6 +36,14 @@ describe('B02/B03/B16: deterministic consultation', () => {
       expect((await run('INC-99999')).decision.action).toBe('clarify');
       const topic = await run('Qual o status do Notebook lento?');
       expect(topic.text).toContain('Notebook lento'); expect(topic.text).toContain(topic.tickets[0]!.deadline);
+      const corrected = new ConsultationTurn();
+      for await (const event of engine.run({ user, messages: [{ role: 'employee', content: `${question} Windows 11` }, { role: 'agent', content: 'Entendi Windows 11.' }, { role: 'employee', content: 'Windows 10' }], signal: new AbortController().signal, now: new Date() })) corrected.apply(event);
+      expect(corrected.snapshot().evidence).toContainEqual(expect.objectContaining({ id: 'kb-vpn-809-windows-10' }));
+      expect(corrected.snapshot().evidence).not.toContainEqual(expect.objectContaining({ id: 'kb-vpn-809-windows-11' }));
+      const continued = new ConsultationTurn();
+      for await (const event of engine.run({ user, messages: [{ role: 'employee', content: question }, { role: 'agent', content: 'Qual versão do Windows?' }, { role: 'employee', content: 'Qual o status do meu chamado?' }], signal: new AbortController().signal, now: new Date() })) continued.apply(event);
+      expect(continued.snapshot().decision.intent).toBe('Consulta de chamado');
+      expect(continued.snapshot().tickets).toHaveLength(2);
       const outside = await run('Como solicitar férias no RH?');
       expect(outside.decision.action).toBe('redirect'); expect(outside.actions).toEqual([]);
       expect([await database.client.ticket.count(), await database.client.ticketDraft.count()]).toEqual(before);

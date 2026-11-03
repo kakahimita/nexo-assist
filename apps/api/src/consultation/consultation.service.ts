@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { ConsultationDecisionView, ConsultationStreamEvent, MessageInput, UserView } from '@nexo/contracts';
 import { ConversationsService } from '../conversations/conversations.service.js';
 import { ConsultationTurn } from '../agent/consultation/turn.js';
@@ -7,6 +7,7 @@ export const CONSULTATION_ENGINE = Symbol('CONSULTATION_ENGINE');
 type ErrorCode = 'quota' | 'model_unavailable' | 'invalid_output' | 'interrupted';
 function errorCode(error: unknown, signal: AbortSignal): ErrorCode {
   if (signal.aborted) return 'interrupted';
+  if (typeof error === 'object' && error !== null && (('statusCode' in error && error.statusCode === 429) || ('status' in error && error.status === 429))) return 'quota';
   const message = error instanceof Error ? error.message : '';
   return message === 'quota' || message === 'invalid_output' || message === 'interrupted' ? message : 'model_unavailable';
 }
