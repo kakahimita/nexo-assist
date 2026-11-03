@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
+import { createDatabaseClient } from '../src/database/client.js';
 import { createTestDatabase } from './support/test-database.js';
 
 describe('B01 B13 B16: authorized persistent history', () => {
@@ -23,7 +24,12 @@ describe('B01 B13 B16: authorized persistent history', () => {
       await request(server).post('/api/conversations').set('Cookie', ana).send({ ownerId: 'forged' }).expect(400);
       const conversation = await request(server).post('/api/conversations').set('Cookie', ana).send({}).expect(201);
       const path = `/api/conversations/${conversation.body.id}/messages`;
-      await request(server).post(path).set('Cookie', ana).send({ content: 'Olá' }).expect(201);
+      const employee = await request(server).post(path).set('Cookie', ana).send({ content: 'Olá' }).expect(201);
+      expect(employee.body).toMatchObject({ role: 'employee', status: 'completed', decision: null });
+      const client = createDatabaseClient(db.url);
+      try {
+        await client.message.create({ data: { conversationId: conversation.body.id, content: 'Resposta', role: 'agent', status: 'completed', decision: { create: { intent: 'VPN', action: 'answer', appliedRule: 'IT', confidence: 0.8, justification: 'Artigo', missingFactsJson: '[]', quickRepliesJson: '[]', actionsJson: '[{"id":"1","tool":"search-knowledge","status":"succeeded","label":"Busca","summary":"Encontrado"}]', evidenceJson: '[{"kind":"article","id":"kb-1","title":"VPN"}]', ticketsJson: '[]', outcome: 'completed', source: 'deterministic', promptVersion: 'consultation-v1' } } } });
+      } finally { await client.$disconnect(); }
       await request(server).post(path).set('Cookie', ana).send({ content: ' ' }).expect(400);
       await request(server).post(path).set('Cookie', ana).send({ content: 'x', role: 'analyst' }).expect(400);
       expect((await request(server).get('/api/conversations').set('Cookie', bruno).expect(200)).body).toEqual([]);
@@ -34,7 +40,8 @@ describe('B01 B13 B16: authorized persistent history', () => {
       server = app.getHttpServer();
       expect((await request(server).get('/api/conversations').set('Cookie', ana).expect(200)).body).toHaveLength(1);
       const messages = (await request(server).get(path).set('Cookie', ana).expect(200)).body;
-      expect(messages).toHaveLength(1);
+      expect(messages).toHaveLength(2);
+      expect(messages[1]).toMatchObject({ role: 'agent', status: 'completed', decision: { confidence: 0.8, source: 'deterministic', actions: [{ tool: 'search-knowledge' }], evidence: [{ id: 'kb-1' }], tickets: [] } });
       expect(messages[0].content).toBe('Olá');
     } finally { await app.close(); await db.cleanup(); }
   });

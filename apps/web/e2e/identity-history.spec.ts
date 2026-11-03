@@ -51,7 +51,7 @@ test('B13: a late history response cannot change the selected conversation', asy
   await page.route('**/api/conversations/*/messages', async (route) => {
     const first = route.request().url().includes('/one/');
     if (first) await gate;
-    await route.fulfill({ json: [{ id: first ? 'a' : 'b', content: first ? 'Primeira conversa' : 'Segunda conversa', createdAt: timestamp }] });
+    await route.fulfill({ json: [{ id: first ? 'a' : 'b', content: first ? 'Primeira conversa' : 'Segunda conversa', createdAt: timestamp, role: 'employee', status: 'completed', decision: null }] });
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Conversa 1' }).click();
@@ -73,7 +73,7 @@ test('B13: pending message cannot be submitted twice or edited', async ({ page }
   const gate = new Promise<void>((resolve) => { release = resolve; });
   let posts = 0;
   await page.route('**/api/conversations/one/messages', async (route) => {
-    if (route.request().method() === 'POST') { posts++; await gate; await route.fulfill({ status: 201, json: { id: 'a', content: 'Olá', createdAt: timestamp } }); }
+    if (route.request().method() === 'POST') { posts++; await gate; await route.fulfill({ status: 201, json: { id: 'a', content: 'Olá', createdAt: timestamp, role: 'employee', status: 'completed', decision: null } }); }
     else await route.fulfill({ json: [] });
   });
   await page.goto('/');

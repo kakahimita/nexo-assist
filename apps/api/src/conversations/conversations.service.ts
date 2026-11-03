@@ -1,4 +1,5 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConsultationDecisionViewSchema, MessageViewSchema } from '@nexo/contracts';
 import type { ConversationView, MessageView, UserView } from '@nexo/contracts';
 import { DatabaseService } from '../database/database.service.js';
 
@@ -22,12 +23,12 @@ export class ConversationsService {
   }
   async messages(user: UserView, conversationId: string): Promise<MessageView[]> {
     await this.owned(user, conversationId);
-    const rows = await this.database.client.message.findMany({ where: { conversationId }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
-    return rows.map(({ id, content, createdAt }) => ({ id, content, createdAt: createdAt.toISOString() }));
+    const rows = await this.database.client.message.findMany({ where: { conversationId }, include: { decision: true }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
+    return rows.map(({ id, content, createdAt, role, status, decision }) => MessageViewSchema.parse({ id, content, createdAt: createdAt.toISOString(), role, status, decision: decision === null ? null : ConsultationDecisionViewSchema.parse({ intent: decision.intent, action: decision.action, appliedRule: decision.appliedRule, confidence: decision.confidence, justification: decision.justification, missingFacts: JSON.parse(decision.missingFactsJson), quickReplies: JSON.parse(decision.quickRepliesJson), actions: JSON.parse(decision.actionsJson), evidence: JSON.parse(decision.evidenceJson), tickets: JSON.parse(decision.ticketsJson), outcome: decision.outcome, errorCode: decision.errorCode, source: decision.source }) }));
   }
   async append(user: UserView, conversationId: string, content: string): Promise<MessageView> {
     await this.owned(user, conversationId);
     const { id, createdAt } = await this.database.client.message.create({ data: { conversationId, content } });
-    return { id, content, createdAt: createdAt.toISOString() };
+    return { id, content, createdAt: createdAt.toISOString(), role: 'employee', status: 'completed', decision: null };
   }
 }

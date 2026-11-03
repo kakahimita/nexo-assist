@@ -44,6 +44,9 @@ model Conversation {
 model Message {
   id String @id @default(cuid())
   content String
+  role String @default("employee")
+  status String @default("completed")
+  decision AgentDecision?
   createdAt DateTime @default(now())
   conversationId String
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -122,4 +125,26 @@ model KnowledgeArticle {
   platform String
   keywords String
   createdAt DateTime @default(now())
+}
+
+model AgentDecision {
+  id String @id @default(cuid())
+  messageId String @unique
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  intent String
+  action String
+  appliedRule String
+  confidence Float
+  justification String
+  missingFactsJson String
+  quickRepliesJson String
+  actionsJson String
+  evidenceJson String
+  ticketsJson String
+  outcome String
+  errorCode String?
+  source String
+  promptVersion String
+  createdAt DateTime @default(now())
+  @@index([messageId])
 }
