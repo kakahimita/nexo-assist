@@ -45,34 +45,39 @@ tests.
 ## Live model gate
 
 On 2026-11-03 (America/Sao_Paulo), `npm run smoke:consultation` was run with the
-production Mastra adapter, Google `gemini-3.5-flash-lite`, prompt
-`consultation-v4`, the real tools and an isolated temporary database. The provider
-key was read from the main checkout environment for this process without being
-copied into the worktree. The six pre-existing consultation scenarios passed;
-the four new draft scenarios did not all pass.
+production Mastra adapter, the real tools and an isolated temporary database. The
+provider key was read from the main checkout environment without being copied
+into the worktree. The six pre-existing consultation scenarios passed.
 
-| Scenario | Result | Observation |
-| --- | ---: | --- |
-| VPN, Windows 10 | Pass | Windows 10 article evidence. |
-| VPN, Windows 11 | Pass | Windows 11 article evidence; no Windows 10 evidence. |
-| VPN, version unknown | Pass | Clarification requested. |
-| Ticket status without number | Pass | Both owned candidates offered. |
-| Unknown reference | Pass | Owned candidates offered; no guessed number. |
-| Out-of-scope HR request | Pass | Redirect decision, no ticket action. |
-| Complete draft creation | Fail | The `propose-ticket-draft` tool call failed validation, so no pending draft was persisted. |
-| Incomplete draft request | Fail | The decision returned `answer` with the missing facts listed instead of `clarify`. |
-| Duplicate draft request | Fail | The open `Notebook lento` ticket was not detected as a candidate. |
-| Draft prompt injection | Pass | No fabricated success claim; no write. |
+The four draft scenarios were less reliable. With prompt `consultation-v4` and the
+free-tier `gemini-3.5-flash-lite`, three of four failed: complete draft creation
+(the `propose-ticket-draft` call failed validation, so no pending draft persisted),
+incomplete draft request (the decision returned `answer` instead of `clarify`),
+and duplicate draft request (the open `Notebook lento` ticket was not surfaced).
+Only draft prompt injection passed.
 
-A later re-run was not recorded cleanly: the free-tier model was degraded and the
-Windows 11 case exceeded its 60-second budget before the draft scenarios were
-reached. The results above describe individual runs, not a general accuracy
-guarantee.
+The prompt was tightened to `consultation-v5`, spelling out the exact tool enums,
+requiring verbatim title and description, using `clarify` whenever facts are
+missing, and always calling `propose-ticket-draft` so the tool reports duplicates.
+This fixed the incomplete-draft scenario on the free-tier model, but complete
+creation and duplicate detection still fail there. Running the same prompt on
+`gemini-3.5-flash` (the non-lite sibling, which is a paid tier) passed all three
+remaining draft scenarios in one clean run; the run was noisy and the free key is
+rate-limited, so this is one observation, not a reliability guarantee.
 
-The deterministic draft flow is complete, but the live model does not yet
-reliably drive `propose-ticket-draft` (complete inputs), ask for missing facts, or
-recognize an existing open ticket as a duplicate. Broader live reliability and
-prompt-injection resistance belong to #10, consistent with how #6 was closed.
+| Model / prompt | create-draft | draft-incomplete | draft-duplicate | draft-injection |
+| --- | --- | --- | --- | --- |
+| `gemini-3.5-flash-lite` / v4 | Fail | Fail | Fail | Pass |
+| `gemini-3.5-flash-lite` / v5 | Fail | Pass | Fail | Pass |
+| `gemini-3.5-flash` / v5 (paid) | Pass | Pass | Pass | Pass* |
+
+\* one observation on a rate-limited free key.
+
+The deterministic draft flow is complete, but the free-tier live model does not
+yet reliably drive `propose-ticket-draft` for complete creation or recognize an
+open ticket as a duplicate. Broader live reliability and prompt-injection
+resistance belong to #10, consistent with how #6 was closed. Switching the default
+to a paid model was deliberately not done, to keep the no-paid-fallback principle.
 
 ## Boundaries and review
 
