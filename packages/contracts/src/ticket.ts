@@ -10,10 +10,14 @@ const text = z.string().trim().min(1).max(4000);
 const id = z.string().trim().min(1).max(200);
 const timestamp = z.string().datetime();
 
-export const DraftInputSchema = z.discriminatedUnion('action', [
+export const TicketChangeInputSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('create'), title: text.max(200), description: text, type: TicketTypeSchema, category: TicketCategorySchema, impact: ImpactSchema, workState: WorkStateSchema, urgency: UrgencySchema }),
   z.strictObject({ action: z.literal('supplement'), ticketId: id, content: text }),
   z.strictObject({ action: z.literal('reopen'), ticketId: id, reason: text }),
+]);
+export type TicketChangeInput = z.infer<typeof TicketChangeInputSchema>;
+export const DraftInputSchema = z.discriminatedUnion('action', [
+  ...TicketChangeInputSchema.options,
   z.strictObject({ action: z.literal('transfer'), ticketId: id, reason: text }),
 ]);
 export type DraftInput = z.infer<typeof DraftInputSchema>;

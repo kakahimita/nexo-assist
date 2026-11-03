@@ -33,12 +33,12 @@ export class ConsultationService {
       if (!finished) throw new Error('invalid_output');
       const snapshot = turn.snapshot();
       if (!snapshot.text.trim()) throw new Error('invalid_output');
-      const decision: ConsultationDecisionView = { ...snapshot.decision, actions: snapshot.actions, evidence: snapshot.evidence, tickets: snapshot.tickets, outcome: 'completed', errorCode: null, source: this.engine.source };
+      const decision: ConsultationDecisionView = { ...snapshot.decision, actions: snapshot.actions, evidence: snapshot.evidence, tickets: snapshot.tickets, outcome: 'completed', errorCode: null, source: this.engine.source, draftId: null };
       const final = await this.conversations.appendAgentTurn(user, conversationId, { content: snapshot.text, status: 'completed', decision, promptVersion: this.engine.promptVersion });
       yield { type: 'done', message: final };
     } catch (error) {
       const code = errorCode(error, signal);
-      const decision: ConsultationDecisionView = { intent: 'Consulta indisponível', action: 'unavailable', appliedRule: 'Falha na consulta', confidence: 0, justification: 'Não foi possível concluir a consulta.', missingFacts: [], quickReplies: [], actions: [], evidence: [], tickets: [], outcome: 'failed', errorCode: code, source: this.engine.source };
+      const decision: ConsultationDecisionView = { intent: 'Consulta indisponível', action: 'unavailable', appliedRule: 'Falha na consulta', confidence: 0, justification: 'Não foi possível concluir a consulta.', missingFacts: [], quickReplies: [], actions: [], evidence: [], tickets: [], outcome: 'failed', errorCode: code, source: this.engine.source, draftId: null };
       const final = await this.conversations.appendAgentTurn(user, conversationId, { content: 'Não foi possível concluir a resposta. Tente novamente.', status: 'failed', decision, promptVersion: this.engine.promptVersion });
       yield { type: 'error', code };
       yield { type: 'done', message: final };

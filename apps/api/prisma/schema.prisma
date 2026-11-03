@@ -23,6 +23,7 @@ model User {
   conversations Conversation[]
   tickets Ticket[]
   ticketDrafts TicketDraft[]
+  draftProposalRuns DraftProposalRun[]
 }
 
 model Session {
@@ -39,6 +40,7 @@ model Conversation {
   ownerId String
   owner User @relation(fields: [ownerId], references: [id])
   messages Message[]
+  draftProposalRuns DraftProposalRun[]
 }
 
 model Message {
@@ -90,7 +92,19 @@ model TicketDraft {
   status String @default("pending")
   versions TicketDraftVersion[]
   operations TicketOperation[]
+  proposalRun DraftProposalRun?
   @@index([ownerId])
+}
+
+model DraftProposalRun {
+  id String @id
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id])
+  conversationId String
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  draftId String @unique
+  draft TicketDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  @@index([ownerId, conversationId])
 }
 
 model TicketDraftVersion {
@@ -145,6 +159,7 @@ model AgentDecision {
   errorCode String?
   source String
   promptVersion String
+  draftId String?
   createdAt DateTime @default(now())
   @@index([messageId])
 }
