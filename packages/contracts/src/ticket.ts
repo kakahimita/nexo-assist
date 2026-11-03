@@ -10,10 +10,14 @@ const text = z.string().trim().min(1).max(4000);
 const id = z.string().trim().min(1).max(200);
 const timestamp = z.string().datetime();
 
-export const DraftInputSchema = z.discriminatedUnion('action', [
+export const TicketChangeInputSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('create'), title: text.max(200), description: text, type: TicketTypeSchema, category: TicketCategorySchema, impact: ImpactSchema, workState: WorkStateSchema, urgency: UrgencySchema }),
   z.strictObject({ action: z.literal('supplement'), ticketId: id, content: text }),
   z.strictObject({ action: z.literal('reopen'), ticketId: id, reason: text }),
+]);
+export type TicketChangeInput = z.infer<typeof TicketChangeInputSchema>;
+export const DraftInputSchema = z.discriminatedUnion('action', [
+  ...TicketChangeInputSchema.options,
   z.strictObject({ action: z.literal('transfer'), ticketId: id, reason: text }),
 ]);
 export type DraftInput = z.infer<typeof DraftInputSchema>;
@@ -32,12 +36,13 @@ export type TicketEventView = z.infer<typeof TicketEventViewSchema>;
 export const DraftViewSchema = z.strictObject({
   id, version: z.number().int().positive(), operationId: z.string().uuid(), status: z.enum(['pending', 'cancelled', 'committed']),
   input: DraftInputSchema, priority: PrioritySchema.optional(), candidates: z.array(TicketViewSchema).optional(),
+  candidateMatches: z.array(z.strictObject({ id, match: z.enum(['exact', 'possible']) })).optional(),
 }).superRefine((value, context) => {
   if (value.input.action === 'create' && (!value.priority || !value.candidates)) {
     context.addIssue({ code: 'custom', message: 'Create drafts require a priority and candidates' });
   }
 });
 export type DraftView = z.infer<typeof DraftViewSchema>;
-export const ConfirmDraftInputSchema = z.strictObject({ version: z.number().int().positive(), operationId: z.string().uuid() });
+export const ConfirmDraftInputSchema = z.strictObject({ version: z.number().int().positive(), operationId: z.string().uuid(), dismissedCandidateIds: z.array(id).max(100).optional() });
 export type ConfirmDraftInput = z.infer<typeof ConfirmDraftInputSchema>;
-export const DuplicateConflictSchema = z.strictObject({ code: z.literal('duplicate_candidates'), candidates: z.array(TicketViewSchema) });
+export const DuplicateConflictSchema = z.strictObject({ code: z.literal('duplicate_candidates'), candidates: z.array(TicketViewSchema), candidateMatches: z.array(z.strictObject({ id, match: z.enum(['exact', 'possible']) })).optional() });

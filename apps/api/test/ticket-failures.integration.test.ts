@@ -40,7 +40,7 @@ describe('B15: temporary ticket service failures', () => {
       expect(before).toHaveBeenCalledTimes(3);
       expect(await client.ticket.count({ where: { normalizedTitle: 'falha esgotada' } })).toBe(0);
       before.mockRestore();
-      const afterDraft = (await request(server).post('/api/ticket-drafts').set('Cookie', cookie).send({ ...input, title: 'Resposta perdida' }).expect(201)).body;
+      const afterDraft = (await request(server).post('/api/ticket-drafts').set('Cookie', cookie).send({ ...input, title: 'Resposta perdida', description: 'Projetor não exibe imagem' }).expect(201)).body;
       const after = vi.spyOn(simulator, 'afterCommit').mockImplementationOnce(() => { throw new TransientTicketError(); });
       const afterResult = (await request(server).post(`/api/ticket-drafts/${afterDraft.id}/confirm`).set('Cookie', cookie).send({ version: 1, operationId: afterDraft.operationId }).expect(201)).body;
       expect(after).toHaveBeenCalledTimes(1);

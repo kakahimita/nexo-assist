@@ -4,6 +4,7 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import { DatabaseService } from '../database/database.service.js';
 import type { Ticket } from '../generated/prisma/client.js';
 import { normalizeTitle } from './normalize-title.js';
+import { findTicketCandidates } from './ticket-candidates.js';
 import { FailureSimulator, isTransientTicketError } from './failure-simulator.js';
 import { canReopen, deadline, isOverdue, type Priority } from './rules.js';
 import { assertEmployee, TicketService } from './ticket-service.js';
@@ -87,8 +88,9 @@ export class PrismaTicketService extends TicketService {
         let content: string;
         if (action.action === 'create') {
           const normalizedTitle = normalizeTitle(action.title);
-          const matches = await tx.ticket.findMany({ where: { ownerId: user.id, normalizedTitle, status: 'open' } });
-          if (matches.length) throw new ConflictException({ code: 'duplicate_candidates', candidates: matches.map((match) => this.view(match, now)) });
+          const open = await tx.ticket.findMany({ where: { ownerId: user.id, status: 'open' } });
+          const matches = findTicketCandidates(action, open).filter(({ ticket, match }) => match === 'exact' || !parsed.data.dismissedCandidateIds?.includes(ticket.id));
+          if (matches.length) throw new ConflictException({ code: 'duplicate_candidates', candidates: matches.map(({ ticket: match }) => this.view(match, now)), candidateMatches: matches.map(({ ticket: match, match: kind }) => ({ id: match.id, match: kind })) });
           ticket = await tx.ticket.create({ data: { ownerId: user.id, title: action.title, normalizedTitle, description: action.description, type: action.type, category: action.category, priority: PrioritySchema.parse(version.priority), impact: action.impact, slaStartedAt: now, createdAt: now } });
           kind = 'created'; content = action.description;
         } else {
@@ -96,8 +98,9 @@ export class PrismaTicketService extends TicketService {
           if (!found) throw new NotFoundException();
           if (action.action === 'reopen') {
             if (found.status !== 'resolved' || !found.resolvedAt || !canReopen(found.resolvedAt, now)) throw new ConflictException();
-            const matches = await tx.ticket.findMany({ where: { ownerId: user.id, normalizedTitle: found.normalizedTitle, status: 'open' } });
-            if (matches.length) throw new ConflictException({ code: 'duplicate_candidates', candidates: matches.map((match) => this.view(match, now)) });
+            const open = await tx.ticket.findMany({ where: { ownerId: user.id, status: 'open' } });
+            const matches = findTicketCandidates(found, open).filter(({ ticket: candidate, match }) => match === 'exact' || !parsed.data.dismissedCandidateIds?.includes(candidate.id));
+            if (matches.length) throw new ConflictException({ code: 'duplicate_candidates', candidates: matches.map(({ ticket: match }) => this.view(match, now)), candidateMatches: matches.map(({ ticket: match, match: kind }) => ({ id: match.id, match: kind })) });
             ticket = await tx.ticket.update({ where: { id: found.id }, data: { status: 'open', resolvedAt: null, slaStartedAt: now } });
             kind = 'reopened'; content = action.reason;
           } else if (action.action === 'supplement') {
