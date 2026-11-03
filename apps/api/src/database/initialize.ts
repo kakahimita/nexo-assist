@@ -9,6 +9,7 @@ import type { PrismaClient } from '../generated/prisma/client.js';
 import { createDatabaseClient } from './client.js';
 import { identityFixtures } from '../identity/fixtures.js';
 import { initializeTicketFixtures } from '../tickets/fixtures.js';
+import { articles } from '../knowledge/articles.js';
 
 export async function initializeDatabase(client: PrismaClient): Promise<void> {
   await client.systemMetadata.upsert({
@@ -20,6 +21,9 @@ export async function initializeDatabase(client: PrismaClient): Promise<void> {
     await client.user.upsert({ where: { email: fixture.email }, update: {}, create: fixture });
   }
   await initializeTicketFixtures(client);
+  for (const article of articles) {
+    await client.knowledgeArticle.upsert({ where: { id: article.id }, update: {}, create: article });
+  }
 }
 
 async function main(): Promise<void> {

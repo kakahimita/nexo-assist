@@ -112,3 +112,14 @@ model TicketOperation {
   createdAt DateTime @default(now())
   @@index([draftId])
 }
+
+model KnowledgeArticle {
+  id String @id
+  title String
+  summary String
+  body String
+  category String
+  platform String
+  keywords String
+  createdAt DateTime @default(now())
+}
