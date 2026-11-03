@@ -1,7 +1,7 @@
 # Code formatting standardization
 
-Issue: [#27](https://github.com/kakahimita/nexo-assist/issues/27). Status: awaiting
-owner approval before implementation.
+Issue: [#27](https://github.com/kakahimita/nexo-assist/issues/27). Status: approved
+by the owner and implemented on `feature/LAB-0027` on 2026-11-03.
 
 ## Intent
 
@@ -72,9 +72,9 @@ The owner compared real diffs generated from HEAD in temporary copies and chose
 
 ## Rollout constraint
 
-PR #26 (LAB-0024) is open and touches 53 files. This change must merge **after**
-#26: reformatting first would turn its rebase into a conflict across nearly
-every modified file. The branch can be prepared now and held.
+PR #26 (LAB-0024) merged into `main` at `9909529` on 2026-11-03. This branch was
+fast-forwarded to that merge before formatting, satisfying the required order
+and avoiding a conflict-heavy rebase across its 53 changed files.
 
 ## Verification
 

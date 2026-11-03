@@ -18,4 +18,6 @@ work/
 .superpowers/
 package-lock.json
 **/*.md
+**/*.yml
+**/*.yaml
 docs/**/*.json
