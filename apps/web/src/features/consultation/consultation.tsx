@@ -1,17 +1,21 @@
 'use client';
-import type { ConsultationAction, MessageView } from '@nexo/contracts';
+import { CONVERSATION_MESSAGE_LIMIT, SessionLimitResponseSchema, type ConsultationAction, type MessageView } from '@nexo/contracts';
 import { useRef, useState, type FormEvent } from 'react';
 import { readConsultationStream } from './stream';
 import { Decision } from './decision';
 const errors: Record<string, string> = { quota: 'O limite do modelo foi atingido. Tente novamente mais tarde.', model_unavailable: 'O assistente está indisponível. Tente novamente.', invalid_output: 'Não foi possível validar a resposta. Tente novamente.', interrupted: 'A resposta foi interrompida. Tente novamente.' };
-export function Consultation({ conversationId, messages, setMessages, onBusy, onUnauthorized }: { conversationId: string; messages: MessageView[]; setMessages: React.Dispatch<React.SetStateAction<MessageView[]>>; onBusy: (busy: boolean) => void; onUnauthorized: () => void }): React.JSX.Element {
+export function Consultation({ conversationId, messages, setMessages, onBusy, onUnauthorized, onStartNew }: { conversationId: string; messages: MessageView[]; setMessages: React.Dispatch<React.SetStateAction<MessageView[]>>; onBusy: (busy: boolean) => void; onUnauthorized: () => void; onStartNew: () => void }): React.JSX.Element {
   const [content, setContent] = useState(''); const [active, setActive] = useState(false); const [partial, setPartial] = useState(''); const [actions, setActions] = useState<ConsultationAction[]>([]); const [error, setError] = useState(''); const activeRef = useRef(false);
+  const [limitReached, setLimitReached] = useState(false);
+  const used = messages.filter((message) => message.role === 'employee').length;
+  const capped = used >= CONVERSATION_MESSAGE_LIMIT || limitReached;
   async function send(value: string): Promise<void> {
-    const text = value.trim(); if (!text || activeRef.current) return;
+    const text = value.trim(); if (!text || activeRef.current || capped) return;
     activeRef.current = true; setActive(true); onBusy(true); setError(''); setPartial(''); setActions([]); setContent(''); let done = false;
     try {
       const response = await fetch(`/api/conversations/${conversationId}/messages/stream`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: text }) });
       if (response.status === 401) { onUnauthorized(); throw new Error(); }
+      if (response.status === 409 && SessionLimitResponseSchema.safeParse(await response.json().catch(() => null)).success) { setLimitReached(true); return; }
       if (!response.ok || !response.body) throw new Error();
       await readConsultationStream(response.body, (event) => {
         if (event.type === 'user-message') setMessages((current) => [...current, event.message]);
@@ -32,9 +36,11 @@ export function Consultation({ conversationId, messages, setMessages, onBusy, on
       {message.role === 'agent' && <><strong>Nexo Assist</strong>{message.status === 'completed' && message.decision && chips(message.decision.actions)}</>}
       <p>{message.content}</p>
       {message.status === 'failed' && <p role="alert">{errors[message.decision?.errorCode ?? ''] ?? 'Não foi possível concluir a resposta.'}</p>}
-      {message.decision && <><Decision decision={message.decision} />{message.status === 'completed' && <><div className="quick-replies">{message.decision.quickReplies.map((reply) => <button type="button" disabled={active} key={reply} onClick={() => void send(reply)}>{reply}</button>)}</div><div className="ticket-options">{message.decision.tickets.map((ticket) => <button type="button" disabled={active} key={ticket.id} onClick={() => void send(ticket.title)}>{ticket.title} · {ticket.status === 'open' ? 'Aberto' : 'Resolvido'}{ticket.overdue ? ' · prazo vencido' : ''}</button>)}</div></>}</>}
+      {message.decision && <><Decision decision={message.decision} />{message.status === 'completed' && <><div className="quick-replies">{message.decision.quickReplies.map((reply) => <button type="button" disabled={active || capped} key={reply} onClick={() => void send(reply)}>{reply}</button>)}</div><div className="ticket-options">{message.decision.tickets.map((ticket) => <button type="button" disabled={active || capped} key={ticket.id} onClick={() => void send(ticket.title)}>{ticket.title} · {ticket.status === 'open' ? 'Aberto' : 'Resolvido'}{ticket.overdue ? ' · prazo vencido' : ''}</button>)}</div></>}</>}
     </article>)}{active && <article className="chat-message agent" aria-live="polite"><strong>Nexo Assist</strong>{chips(actions)}<p>{partial || 'Preparando resposta...'}</p></article>}</div>
     {error && <p role="alert">{error}</p>}
-    <form onSubmit={submit}><label htmlFor="message">Mensagem</label><textarea id="message" name="content" value={content} onChange={(event) => setContent(event.target.value)} disabled={active} required maxLength={4000} placeholder="Escreva para o Nexo..." /><button disabled={active} type="submit">Enviar mensagem</button></form>
+    <p>Mensagens: {used} de {CONVERSATION_MESSAGE_LIMIT}</p>
+    {capped && <><p role="status">Você atingiu o limite de 30 mensagens nesta conversa. Inicie uma nova conversa para continuar.</p><button type="button" disabled={active} onClick={onStartNew}>Nova conversa</button></>}
+    <form onSubmit={submit}><label htmlFor="message">Mensagem</label><textarea id="message" name="content" value={content} onChange={(event) => setContent(event.target.value)} disabled={active || capped} required maxLength={4000} placeholder="Escreva para o Nexo..." /><button disabled={active || capped} type="submit">Enviar mensagem</button></form>
   </section>;
 }
