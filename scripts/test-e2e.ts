@@ -96,6 +96,7 @@ export async function runFoundationBrowserTests(): Promise<number> {
       cwd: repositoryRoot,
       env: {
         ...process.env,
+        CONSULTATION_ENGINE: 'fixture',
         API_HOST: '127.0.0.1',
         API_PORT: '3001',
         WEB_ORIGIN: webUrl,

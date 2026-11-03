@@ -1,4 +1,4 @@
-﻿import { ConsultationEngineDecisionSchema } from '@nexo/contracts';
+import { ConsultationEngineDecisionSchema } from '@nexo/contracts';
 import type { ConsultationAction, ConsultationDecisionView, ConsultationEvidence, ConsultationTicketView, ConsultationEngineDecision } from '@nexo/contracts';
 import { ConsultTicketsResultSchema, SearchKnowledgeResultSchema } from '../tools/consultation-tool-schemas.js';
 import type { ConsultationEngineEvent } from './types.js';
@@ -31,6 +31,7 @@ export class ConsultationTurn {
     }
   }
   private addEvidence(item: ConsultationEvidence): void { if (!this.evidence.some((existing) => existing.kind === item.kind && existing.id === item.id)) this.evidence.push(item); }
+  partial() { return { text: this.text, actions: [...this.actions], evidence: [...this.evidence], tickets: [...this.tickets] }; }
   snapshot(): { text: string; actions: ConsultationAction[]; evidence: ConsultationEvidence[]; tickets: ConsultationTicketView[]; decision: ConsultationEngineDecision } {
     if (!this.decision) throw new Error('invalid_output');
     return { text: this.text, actions: [...this.actions], evidence: [...this.evidence], tickets: [...this.tickets], decision: this.decision };

@@ -65,6 +65,12 @@ describe('B17: validated API environment', () => {
     );
   });
 
+  it('validates the consultation engine mode', () => {
+    expect(parseApiEnvironment({}).consultationEngine).toBe('mastra');
+    expect(parseApiEnvironment({ CONSULTATION_ENGINE: 'fixture' }).consultationEngine).toBe('fixture');
+    expect(() => parseApiEnvironment({ CONSULTATION_ENGINE: 'other' })).toThrow('CONSULTATION_ENGINE');
+  });
+
   it('B17: starts ordinary configuration without a model key', () => {
     expect(parseApiEnvironment({}).port).toBe(3001);
     expect(parseApiEnvironment({ GOOGLE_API_KEY: '' }).port).toBe(3001);
