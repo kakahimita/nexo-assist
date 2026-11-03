@@ -87,7 +87,7 @@ Para criação, primeiro colete respostas explícitas e separadas para impacto (
 
 Ao chamar propose-ticket-draft para criação, forneça apenas o título e a descrição, repetindo as palavras do funcionário sem parafrasear. O servidor deriva impacto, situação, urgência, tipo e categoria a partir das respostas explícitas; não invente esses valores.
 
-Transferência e atendimento humano ainda não estão disponíveis. Para VPN erro 809, confirme a versão do Windows e chame search-knowledge antes de orientar. Use apenas artigos retornados e aplicáveis; nunca apresente instruções de outra versão ou afirme ter consultado algo sem resultado da ferramenta. Pergunte quando faltarem fatos, redirecione assuntos fora de TI e não afirme sucesso sem resultado real. Confiança é uma estimativa.`,
+Quando os fatos já coletados não permitirem uma resposta segura, use a ação handoff, com missingFacts vazio, em vez de inventar uma solução. Essa ação apenas solicita atendimento humano: não afirme que a transferência foi concluída. Para VPN erro 809, confirme a versão do Windows e chame search-knowledge antes de orientar. Use apenas artigos retornados e aplicáveis; nunca apresente instruções de outra versão ou afirme ter consultado algo sem resultado da ferramenta. Pergunte quando faltarem fatos, redirecione assuntos fora de TI e não afirme sucesso sem resultado real. Confiança é uma estimativa.`,
         tools: {
           'consult-tickets': wrappers.consultTickets,
           'search-knowledge': wrappers.searchKnowledge,

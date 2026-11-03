@@ -245,14 +245,16 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
             { conversationId: request.conversationId, runId: request.runId, now: request.now },
           );
           yield { type: 'tool-result', toolCallId: 'draft', tool: 'propose-ticket-draft', result };
+          if (result.status === 'critical_requires_handoff') {
+            yield { type: 'handoff', reason: 'critical_incident' };
+            return;
+          }
           text =
             result.status === 'draft'
               ? 'Confira o rascunho antes de confirmar.'
               : result.status === 'duplicate_candidates'
                 ? 'Encontrei chamados que podem tratar do mesmo problema. Selecione um para verificar.'
-                : result.status === 'critical_requires_handoff'
-                  ? 'Este incidente é crítico e precisa de atendimento humano, ainda indisponível nesta demonstração.'
-                  : 'Não foi possível preparar o rascunho. Confira os dados.';
+                : 'Não foi possível preparar o rascunho. Confira os dados.';
           decision = {
             intent: 'Abertura de chamado',
             action: result.status === 'draft' ? 'answer' : 'clarify',
@@ -333,6 +335,10 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
           result,
         } as ConsultationEngineEvent;
         const selected = result.match === 'one' ? result.tickets[0] : undefined;
+        if (selected?.overdue) {
+          yield { type: 'handoff', reason: 'overdue_ticket' };
+          return;
+        }
         text = selected
           ? `${selected.title}: ${selected.status === 'open' ? 'aberto' : 'resolvido'}. Prazo: ${selected.deadline}. ${selected.overdue ? 'O prazo está vencido.' : 'O prazo não está vencido.'}`
           : 'Qual chamado você deseja consultar? Selecione uma das opções.';

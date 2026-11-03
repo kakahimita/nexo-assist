@@ -7,6 +7,7 @@ import { DraftsService } from '../../tickets/drafts.service.js';
 import { KnowledgeService } from '../../knowledge/knowledge.service.js';
 import { ConsultationTools } from '../tools/consultation-tools.js';
 import { createFixtureConsultation } from './fixture-consultation.js';
+import type { ConsultationEngineEvent } from './types.js';
 import { ConsultationTurn } from './turn.js';
 
 describe('B02/B03/B16: deterministic consultation', () => {
@@ -63,9 +64,15 @@ describe('B02/B03/B16: deterministic consultation', () => {
       expect(list.decision.action).toBe('clarify');
       expect(list.tickets).toHaveLength(2);
       expect((await run('INC-99999')).decision.action).toBe('clarify');
-      const topic = await run('Qual o status do Notebook lento?');
-      expect(topic.text).toContain('Notebook lento');
-      expect(topic.text).toContain(topic.tickets[0]!.deadline);
+      const overdueEvents: ConsultationEngineEvent[] = [];
+      for await (const event of engine.run({
+        user,
+        messages: [{ role: 'employee', content: 'Qual o status do Notebook lento?' }],
+        signal: new AbortController().signal,
+        now: new Date(),
+      }))
+        overdueEvents.push(event);
+      expect(overdueEvents).toContainEqual({ type: 'handoff', reason: 'overdue_ticket' });
       const corrected = new ConsultationTurn();
       for await (const event of engine.run({
         user,

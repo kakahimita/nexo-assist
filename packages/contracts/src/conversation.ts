@@ -62,6 +62,7 @@ export const ConsultationStreamEventSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('text-delta'), text: z.string() }),
   z.strictObject({ type: z.literal('action'), action: ConsultationActionSchema }),
   z.strictObject({ type: z.literal('done'), message: MessageViewSchema }),
+  z.strictObject({ type: z.literal('handoff-waiting') }),
   z.strictObject({ type: z.literal('error'), code: ConsultationErrorCodeSchema }),
 ]);
 export type ConsultationStreamEvent = z.infer<typeof ConsultationStreamEventSchema>;

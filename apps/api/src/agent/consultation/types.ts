@@ -1,5 +1,7 @@
-﻿import type { ConsultationEngineDecision, UserView } from '@nexo/contracts';
+import type { ConsultationEngineDecision, HandoffReason, UserView } from '@nexo/contracts';
+
 export type ConsultationToolName = import('@nexo/contracts').ConsultationToolName;
+
 export type ConsultationRequest = {
   user: UserView;
   messages: Array<{ role: 'employee' | 'agent'; content: string }>;
@@ -8,6 +10,7 @@ export type ConsultationRequest = {
   conversationId?: string;
   runId?: string;
 };
+
 export type ConsultationEngineEvent =
   | { type: 'text-delta'; text: string }
   | {
@@ -19,10 +22,13 @@ export type ConsultationEngineEvent =
     }
   | { type: 'tool-error'; toolCallId: string; tool: ConsultationToolName; code: string }
   | { type: 'decision'; decision: ConsultationEngineDecision }
+  | { type: 'handoff'; reason: HandoffReason }
   | { type: 'finish'; usage?: unknown };
+
 export interface ConsultationEngine {
   source: 'live' | 'deterministic';
   promptVersion: string;
   run(request: ConsultationRequest): AsyncIterable<ConsultationEngineEvent>;
 }
+
 export const CONSULTATION_PROMPT_VERSION = 'consultation-v6';

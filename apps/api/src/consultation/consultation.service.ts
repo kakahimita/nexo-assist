@@ -36,6 +36,7 @@ export class ConsultationService {
     message: MessageView,
     signal: AbortSignal,
     runId: string,
+    stateVersion: number,
   ): AsyncIterable<ConsultationStreamEvent> {
     yield { type: 'user-message', message };
     const turn = new ConsultationTurn();
@@ -51,9 +52,23 @@ export class ConsultationService {
         runId,
       })) {
         if (signal.aborted) throw new Error('interrupted');
+        if (event.type === 'handoff') {
+          await this.conversations.requestHandoff(user, conversationId, event.reason);
+          yield { type: 'handoff-waiting' };
+          return;
+        }
         const before = turn.partial().actions.length;
         turn.apply(event);
         if (event.type === 'text-delta') yield { type: 'text-delta', text: event.text };
+        if (
+          event.type === 'decision' &&
+          event.decision.action === 'handoff' &&
+          event.decision.missingFacts.length === 0
+        ) {
+          await this.conversations.requestHandoff(user, conversationId, 'unresolved_uncertainty');
+          yield { type: 'handoff-waiting' };
+          return;
+        }
         if (event.type === 'finish') finished = true;
         const actions = turn.partial().actions;
         if (actions.length > before) yield { type: 'action', action: actions[actions.length - 1]! };
@@ -72,13 +87,22 @@ export class ConsultationService {
         source: this.engine.source,
         draftId: snapshot.draftId,
       };
-      const final = await this.conversations.appendAgentTurn(user, conversationId, {
-        content: snapshot.text,
-        status: 'completed',
-        decision,
-        promptVersion: this.engine.promptVersion,
-        runId,
-      });
+      const final = await this.conversations.appendAgentTurnIfCurrent(
+        user,
+        conversationId,
+        stateVersion,
+        {
+          content: snapshot.text,
+          status: 'completed',
+          decision,
+          promptVersion: this.engine.promptVersion,
+          runId,
+        },
+      );
+      if (final === null) {
+        yield { type: 'handoff-waiting' };
+        return;
+      }
       yield { type: 'done', message: final };
     } catch (error) {
       const code = errorCode(error, signal);
@@ -98,12 +122,21 @@ export class ConsultationService {
         source: this.engine.source,
         draftId: null,
       };
-      const final = await this.conversations.appendAgentTurn(user, conversationId, {
-        content: 'Não foi possível concluir a resposta. Tente novamente.',
-        status: 'failed',
-        decision,
-        promptVersion: this.engine.promptVersion,
-      });
+      const final = await this.conversations.appendAgentTurnIfCurrent(
+        user,
+        conversationId,
+        stateVersion,
+        {
+          content: 'Não foi possível concluir a resposta. Tente novamente.',
+          status: 'failed',
+          decision,
+          promptVersion: this.engine.promptVersion,
+        },
+      );
+      if (final === null) {
+        yield { type: 'handoff-waiting' };
+        return;
+      }
       yield { type: 'error', code };
       yield { type: 'done', message: final };
     }

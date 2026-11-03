@@ -35,7 +35,7 @@ export const ConsultationTicketViewSchema = z.strictObject({
 });
 export const ConsultationEngineDecisionSchema = z.strictObject({
   intent: z.string(),
-  action: z.enum(['answer', 'clarify', 'redirect']),
+  action: z.enum(['answer', 'clarify', 'redirect', 'handoff']),
   appliedRule: z.string(),
   confidence: z.number().min(0).max(1),
   justification: z.string(),
@@ -45,7 +45,7 @@ export const ConsultationEngineDecisionSchema = z.strictObject({
 export const ConsultationDecisionViewSchema = z
   .strictObject({
     intent: z.string(),
-    action: z.enum(['answer', 'clarify', 'redirect', 'unavailable']),
+    action: z.enum(['answer', 'clarify', 'redirect', 'handoff', 'unavailable']),
     appliedRule: z.string(),
     confidence: z.number().min(0).max(1),
     justification: z.string(),

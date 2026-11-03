@@ -11,6 +11,92 @@ const events = (text: string) =>
     .filter(Boolean)
     .map((part) => JSON.parse(part.slice(6)));
 describe('B02/B03/B12/B13/B15/B16: authenticated consultation stream', () => {
+  it('discards a late agent answer after an employee handoff', async () => {
+    const db = await createTestDatabase();
+    let release = (): void => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const engine: ConsultationEngine = {
+      source: 'deterministic',
+      promptVersion: 'test',
+      async *run() {
+        yield { type: 'text-delta', text: 'Parcial' };
+        await gate;
+        yield {
+          type: 'decision',
+          decision: {
+            intent: 'Teste',
+            action: 'answer',
+            appliedRule: 'IT',
+            confidence: 1,
+            justification: 'Teste',
+            missingFacts: [],
+            quickReplies: [],
+          },
+        };
+        yield { type: 'finish' };
+      },
+    };
+    const app = await createApp(
+      { host: '127.0.0.1', port: 3001, webOrigin: 'http://localhost:3000', databaseUrl: db.url },
+      { consultationEngine: engine },
+    );
+    try {
+      await app.listen(0, '127.0.0.1');
+      const server = app.getHttpServer();
+      const auth = await request(server)
+        .post('/api/session')
+        .send({ email: 'ana.souza@nexo.com.br', password: 'x' })
+        .expect(201);
+      const cookie = String(auth.headers['set-cookie']?.[0]).split(';')[0]!;
+      const conversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', cookie)
+        .send({})
+        .expect(201);
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Missing server address');
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/api/conversations/${conversation.body.id}/messages/stream`,
+        {
+          method: 'POST',
+          headers: { cookie, 'content-type': 'application/json' },
+          body: JSON.stringify({ content: 'Preciso de ajuda' }),
+        },
+      );
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let text = '';
+      while (!text.includes('Parcial')) {
+        const chunk = await reader.read();
+        if (chunk.done) throw new Error('Stream ended before partial text');
+        text += decoder.decode(chunk.value);
+      }
+      await request(server)
+        .post(`/api/conversations/${conversation.body.id}/handoff`)
+        .set('Cookie', cookie)
+        .send({ reason: 'employee_request' })
+        .expect(201);
+      release();
+      for (;;) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        text += decoder.decode(chunk.value);
+      }
+      expect(text).toContain('"type":"handoff-waiting"');
+      const history = await request(server)
+        .get(`/api/conversations/${conversation.body.id}/messages`)
+        .set('Cookie', cookie)
+        .expect(200);
+      expect(history.body).toHaveLength(1);
+      expect(history.body[0]).toMatchObject({ role: 'employee', content: 'Preciso de ajuda' });
+    } finally {
+      release();
+      await app.close();
+      await db.cleanup();
+    }
+  });
   it('checks authorization and persists actual decisions through restart', async () => {
     const db = await createTestDatabase();
     const env = {
