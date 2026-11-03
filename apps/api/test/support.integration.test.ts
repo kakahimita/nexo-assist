@@ -159,6 +159,12 @@ describe('B11: analyst queue and conversation detail', () => {
       expect(returned.body).toMatchObject({ state: 'agent', assignedAnalystId: null });
 
       await request(server)
+        .post(`${path}/reply`)
+        .set('Cookie', analyst.cookie)
+        .send({ content: 'late' })
+        .expect(403);
+
+      await request(server)
         .post(`/api/conversations/${conversation.body.id}/handoff`)
         .set('Cookie', ana.cookie)
         .send({ reason: 'employee_request' })
@@ -229,6 +235,62 @@ describe('B11: analyst queue and conversation detail', () => {
       expect(queue.body).toContainEqual(
         expect.objectContaining({ id: conversation.body.id, state: 'with_analyst' }),
       );
+    } finally {
+      await app.close();
+      await db.cleanup();
+    }
+  });
+
+  it('rejects employee messages on a closed conversation', async () => {
+    const db = await createTestDatabase();
+    const env = {
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    };
+    const app = await createApp(env);
+    try {
+      const server = app.getHttpServer();
+      const login = async (email: string) =>
+        String(
+          (await request(server).post('/api/session').send({ email, password: 'x' }).expect(201))
+            .headers['set-cookie']?.[0],
+        );
+      const ana = await login('ana.souza@nexo.com.br');
+      const analyst = await login('analista@nexo.com.br');
+
+      const conversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', ana)
+        .send({})
+        .expect(201);
+      await request(server)
+        .post(`/api/conversations/${conversation.body.id}/handoff`)
+        .set('Cookie', ana)
+        .send({ reason: 'employee_request' })
+        .expect(201);
+      await request(server)
+        .post(`/api/support/conversations/${conversation.body.id}/claim`)
+        .set('Cookie', analyst)
+        .send({})
+        .expect(201);
+      await request(server)
+        .post(`/api/support/conversations/${conversation.body.id}/close`)
+        .set('Cookie', analyst)
+        .send({})
+        .expect(201);
+
+      await request(server)
+        .post(`/api/conversations/${conversation.body.id}/messages/stream`)
+        .set('Cookie', ana)
+        .send({ content: 'oi' })
+        .expect(409);
+      const messages = await request(server)
+        .get(`/api/conversations/${conversation.body.id}/messages`)
+        .set('Cookie', ana)
+        .expect(200);
+      expect(messages.body).toHaveLength(0);
     } finally {
       await app.close();
       await db.cleanup();

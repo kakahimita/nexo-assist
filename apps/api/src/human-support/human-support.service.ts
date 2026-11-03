@@ -78,24 +78,26 @@ export class HumanSupportService {
 
   async reply(user: UserView, conversationId: string, content: string): Promise<MessageView> {
     assertAnalyst(user);
-    const conversation = await this.database.client.conversation.findFirst({
-      where: { id: conversationId },
-      select: { state: true, assignedAnalystId: true },
-    });
-    if (!conversation) throw new NotFoundException();
-    if (conversation.state !== 'with_analyst' || conversation.assignedAnalystId !== user.id)
-      throw new ForbiddenException();
-    const row = await this.database.client.message.create({
-      data: { conversationId, content, role: 'analyst', status: 'completed', authorId: user.id },
-    });
-    return toMessageView({
-      id: row.id,
-      content: row.content,
-      createdAt: row.createdAt,
-      role: row.role,
-      status: row.status,
-      decision: null,
-      author: { name: user.name },
+    return this.database.client.$transaction(async (tx) => {
+      const conversation = await tx.conversation.findFirst({
+        where: { id: conversationId },
+        select: { state: true, assignedAnalystId: true },
+      });
+      if (!conversation) throw new NotFoundException();
+      if (conversation.state !== 'with_analyst' || conversation.assignedAnalystId !== user.id)
+        throw new ForbiddenException();
+      const row = await tx.message.create({
+        data: { conversationId, content, role: 'analyst', status: 'completed', authorId: user.id },
+      });
+      return toMessageView({
+        id: row.id,
+        content: row.content,
+        createdAt: row.createdAt,
+        role: row.role,
+        status: row.status,
+        decision: null,
+        author: { name: user.name },
+      });
     });
   }
 

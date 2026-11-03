@@ -157,13 +157,12 @@ export class ConversationsService {
     this.employee(user);
     const operation = this.appendQueue.then(() =>
       this.database.client.$transaction(async (tx) => {
-        if (
-          !(await tx.conversation.findFirst({
-            where: { id: conversationId, ownerId: user.id },
-            select: { id: true },
-          }))
-        )
-          throw new NotFoundException();
+        const conversation = await tx.conversation.findFirst({
+          where: { id: conversationId, ownerId: user.id },
+          select: { state: true },
+        });
+        if (!conversation) throw new NotFoundException();
+        if (conversation.state === 'closed') throw new ConflictException();
         const used = await tx.message.count({ where: { conversationId, role: 'employee' } });
         if (used >= CONVERSATION_MESSAGE_LIMIT) throw new SessionLimitReachedError(used);
         const { id, createdAt } = await tx.message.create({ data: { conversationId, content } });
