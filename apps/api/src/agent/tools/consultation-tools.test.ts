@@ -5,6 +5,17 @@ import type { ConsultationTools } from './consultation-tools.js';
 
 const user = { id: 'ana', email: 'ana@example.com', name: 'Ana', role: 'employee' as const };
 describe('B16: tool inputs cannot forge identity', () => {
+  it('does not send incompatible or unknown-platform article instructions to the model', () => {
+    const tools = createConsultationTools({} as ConsultationTools);
+    const result = { platform: 'windows11' as const, matches: [
+      { id: 'wrong', title: 'Windows 10', summary: 'old', body: 'Reinstale', platform: 'windows10' as const, applicability: 'platform_mismatch' as const, reason: 'Versão diferente' },
+      { id: 'unknown', title: 'Windows 10', summary: 'old', body: 'Reinstale', platform: 'windows10' as const, applicability: 'platform_unknown' as const, reason: 'Versão desconhecida' },
+      { id: 'right', title: 'Windows 11', summary: 'ok', body: 'Abra chamado', platform: 'windows11' as const, applicability: 'applicable' as const, reason: 'Compatível' },
+    ] };
+    const projected = JSON.stringify(tools.searchKnowledge.toModelOutput!(result));
+    expect(projected).not.toContain('Reinstale');
+    expect(projected).toContain('Abra chamado');
+  });
   it('rejects invalid arguments before invoking backing services', async () => {
     const consultTickets = vi.fn();
     const searchKnowledge = vi.fn();
