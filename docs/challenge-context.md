@@ -111,4 +111,6 @@ The [roadmap](roadmap.md) and [workflow](development-workflow.md) govern deliver
 
 The knowledge foundation for #6 was merged in PR #18 and the streaming consultation increment in [PR #20](https://github.com/kakahimita/nexo-assist/pull/20), which closed [issue #19](https://github.com/kakahimita/nexo-assist/issues/19); its deterministic and live evidence, and its remaining limits, are recorded in [agent consultation verification](agent-consultation-verification.md).
 
-The session-limit increment for #23 is under review; its evidence and remaining human-support dependency are recorded in [session limit verification](session-limit-verification.md).
+The session-limit increment for #23 was merged in PR #25; its evidence and remaining human-support dependency are recorded in [session limit verification](session-limit-verification.md).
+
+The conversational ticket-draft increment for #24 (part of #7) is under review; its deterministic evidence and the outstanding live-model reliability are recorded in [conversational drafts verification](conversational-drafts-verification.md).

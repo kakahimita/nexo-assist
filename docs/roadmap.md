@@ -6,8 +6,7 @@ Foundation #3 was merged in PR #14; the identity and conversation-history
 increment for #4 was merged in PR #15. Its verification is recorded in
 [identity and history verification](identity-history-verification.md).
 The #5 ticket-service increment was merged in PR #17; its evidence and limitations are recorded in [ticket verification](ticket-verification.md). The knowledge foundation for #6 was merged in PR #18, and the streaming consultation increment in [PR #20](https://github.com/kakahimita/nexo-assist/pull/20) (merge commit `50350d5`), which closed [#19](https://github.com/kakahimita/nexo-assist/issues/19). Its deterministic and live-model evidence, and its limits, are recorded in [agent consultation verification](agent-consultation-verification.md). Issue #6 stays open: broader live reliability and prompt-injection evidence belong to #10, the session cap to #7, human handoff to #8, and prototype fidelity to #9.
-The #23 session-limit increment is under review; its evidence and limits are recorded in [session limit verification](session-limit-verification.md). The remaining deliveries are planned. Split into smaller linked issues
-when an independently verifiable increment warrants it.
+The #23 session-limit increment was merged in PR #25; its evidence and limits are recorded in [session limit verification](session-limit-verification.md). The #24 conversational ticket-draft increment is under review; its deterministic evidence and live-model limits are recorded in [conversational drafts verification](conversational-drafts-verification.md). Issue #7 stays open: broader live reliability belongs to #10 and human handoff to #8. Split into smaller linked issues when an independently verifiable increment warrants it.
 
 Challenge context and original local references are tracked separately in
 [#12](https://github.com/kakahimita/nexo-assist/issues/12). Every implementation
