@@ -34,6 +34,7 @@ The agent stays paused while a conversation waits for or receives human care.
 - [Roadmap and acceptance criteria](docs/roadmap.md)
 - [Ticket-service verification](docs/ticket-verification.md)
 - [Agent consultation verification](docs/agent-consultation-verification.md)
+- [Session limit verification](docs/session-limit-verification.md)
 - [Development workflow](docs/development-workflow.md)
 - [Contributor instructions](AGENTS.md)
 

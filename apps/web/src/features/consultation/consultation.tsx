@@ -6,16 +6,19 @@ import { Decision } from './decision';
 const errors: Record<string, string> = { quota: 'O limite do modelo foi atingido. Tente novamente mais tarde.', model_unavailable: 'O assistente está indisponível. Tente novamente.', invalid_output: 'Não foi possível validar a resposta. Tente novamente.', interrupted: 'A resposta foi interrompida. Tente novamente.' };
 export function Consultation({ conversationId, messages, setMessages, onBusy, onUnauthorized, onStartNew }: { conversationId: string; messages: MessageView[]; setMessages: React.Dispatch<React.SetStateAction<MessageView[]>>; onBusy: (busy: boolean) => void; onUnauthorized: () => void; onStartNew: () => void }): React.JSX.Element {
   const [content, setContent] = useState(''); const [active, setActive] = useState(false); const [partial, setPartial] = useState(''); const [actions, setActions] = useState<ConsultationAction[]>([]); const [error, setError] = useState(''); const activeRef = useRef(false);
-  const [limitReached, setLimitReached] = useState(false);
-  const used = messages.filter((message) => message.role === 'employee').length;
-  const capped = used >= CONVERSATION_MESSAGE_LIMIT || limitReached;
+  const [serverUsed, setServerUsed] = useState(0);
+  const used = Math.max(serverUsed, messages.filter((message) => message.role === 'employee').length);
+  const capped = used >= CONVERSATION_MESSAGE_LIMIT;
   async function send(value: string): Promise<void> {
     const text = value.trim(); if (!text || activeRef.current || capped) return;
     activeRef.current = true; setActive(true); onBusy(true); setError(''); setPartial(''); setActions([]); setContent(''); let done = false;
     try {
       const response = await fetch(`/api/conversations/${conversationId}/messages/stream`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: text }) });
       if (response.status === 401) { onUnauthorized(); throw new Error(); }
-      if (response.status === 409 && SessionLimitResponseSchema.safeParse(await response.json().catch(() => null)).success) { setLimitReached(true); return; }
+      if (response.status === 409) {
+        const limit = SessionLimitResponseSchema.safeParse(await response.json().catch(() => null));
+        if (limit.success) { setServerUsed(limit.data.used); return; }
+      }
       if (!response.ok || !response.body) throw new Error();
       await readConsultationStream(response.body, (event) => {
         if (event.type === 'user-message') setMessages((current) => [...current, event.message]);
