@@ -70,8 +70,8 @@ test('B13: a late history response cannot change the selected conversation', asy
   await page.route('**/api/conversations', (route) =>
     route.fulfill({
       json: [
-        { id: 'one', createdAt: timestamp, state: 'agent', stateVersion: 0, handoff: null },
-        { id: 'two', createdAt: timestamp, state: 'agent', stateVersion: 0, handoff: null },
+        { id: 'one', createdAt: timestamp, state: 'agent', stateVersion: 0, handoff: null, assignedAnalystId: null, closedAt: null },
+        { id: 'two', createdAt: timestamp, state: 'agent', stateVersion: 0, handoff: null, assignedAnalystId: null, closedAt: null },
       ],
     }),
   );
@@ -94,6 +94,7 @@ test('B13: a late history response cannot change the selected conversation', asy
           role: 'employee',
           status: 'completed',
           decision: null,
+          authorName: null,
         },
       ],
     });
@@ -119,7 +120,7 @@ test('B13: pending message cannot be submitted twice or edited', async ({ page }
   await page.route('**/api/tickets', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/conversations', (route) =>
     route.fulfill({
-      json: [{ id: 'one', createdAt: timestamp, state: 'agent', stateVersion: 0, handoff: null }],
+      json: [{ id: 'one', createdAt: timestamp, state: 'agent', stateVersion: 0, handoff: null, assignedAnalystId: null, closedAt: null }],
     }),
   );
   await page.route('**/api/conversations/*/draft-proposals', (route) =>
@@ -141,6 +142,7 @@ test('B13: pending message cannot be submitted twice or edited', async ({ page }
       role: 'employee',
       status: 'completed',
       decision: null,
+      authorName: null,
     };
     await route.fulfill({
       status: 201,

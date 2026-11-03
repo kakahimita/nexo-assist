@@ -9,6 +9,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Tickets } from '../tickets/tickets';
 import { Consultation } from '../consultation/consultation';
+import { Support } from '../support/support';
 
 export function History({
   user,
@@ -104,7 +105,7 @@ export function History({
       </header>
       {error && <p role="alert">{error}</p>}
       {user.role === 'analyst' ? (
-        <p>O atendimento de analistas estará disponível em uma próxima etapa.</p>
+        <Support user={user} onLogout={onLogout} />
       ) : (
         <>
           <p>As mensagens são salvas no histórico.</p>
