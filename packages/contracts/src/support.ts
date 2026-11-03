@@ -16,6 +16,7 @@ export const SupportConversationSummarySchema = z.strictObject({
   employee: z.strictObject({ id: z.string(), name: z.string() }),
   handoff: HandoffViewSchema.nullable(),
   assignedAnalystId: z.string().nullable(),
+  closedAt: z.string().datetime().nullable(),
   lastMessage: z
     .strictObject({
       content: z.string(),

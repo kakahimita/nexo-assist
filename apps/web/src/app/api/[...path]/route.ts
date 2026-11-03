@@ -13,6 +13,9 @@ async function forward(
     request.method === 'GET' && /^conversations\/[a-z0-9]+\/draft-proposals$/.test(route);
   const supportRead =
     request.method === 'GET' && /^support\/conversations(?:\/[a-z0-9]+)?$/.test(route);
+  const supportWrite =
+    request.method === 'POST' &&
+    /^support\/conversations\/[a-z0-9]+\/(claim|reply|return|close)$/.test(route);
   const ticketRead =
     request.method === 'GET' &&
     /^(tickets|tickets\/[a-z0-9-]+(?:\/history)?|ticket-drafts\/[a-z0-9-]+)$/.test(route);
@@ -26,7 +29,8 @@ async function forward(
     !consultationStream &&
     !handoff &&
     !draftRecovery &&
-    !supportRead
+    !supportRead &&
+    !supportWrite
   )
     return new Response(null, { status: 404 });
   if (request.method !== 'GET' && request.headers.get('origin') !== new URL(request.url).origin)

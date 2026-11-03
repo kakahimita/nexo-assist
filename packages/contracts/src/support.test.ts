@@ -19,6 +19,7 @@ describe('B11 support contracts', () => {
           requestedAt: '2026-11-03T00:00:01.000Z',
         },
         assignedAnalystId: null,
+        closedAt: null,
         lastMessage: null,
       }).success,
     ).toBe(true);
@@ -37,6 +38,7 @@ describe('B11 support contracts', () => {
             requestedAt: '2026-11-03T00:00:01.000Z',
           },
           assignedAnalystId: 'a1',
+          closedAt: null,
           lastMessage: {
             content: 'oi',
             role: 'employee',
