@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import type { KnowledgePlatform } from './articles.js';
 
@@ -22,7 +22,7 @@ const stopWords = new Set(['a', 'o', 'as', 'os', 'de', 'da', 'do', 'das', 'dos',
 const tokens = (text: string): string[] => normalize(text).split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 1 && !stopWords.has(word));
 @Injectable()
 export class KnowledgeService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(@Inject(DatabaseService) private readonly database: DatabaseService) {}
   async search(query: string, platform: string | undefined): Promise<KnowledgeMatch[]> {
     const words = [...new Set(tokens(query))];
     const rows = await this.database.client.knowledgeArticle.findMany();
