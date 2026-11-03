@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import type { KnowledgePlatform } from './articles.js';
 
@@ -31,6 +31,6 @@ export class KnowledgeService {
       const score = words.filter((word) => terms.has(word)).length;
       const articlePlatform = article.platform as KnowledgePlatform;
       return { score, id: article.id, title: article.title, summary: article.summary, body: article.body, platform: articlePlatform, ...assessApplicability({ platform: articlePlatform }, normalizePlatform(platform)) };
-    }).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)).slice(0, 5).map(({ score: _score, ...match }) => match);
+    }).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)).slice(0, 5).map((item) => ({ id: item.id, title: item.title, summary: item.summary, body: item.body, platform: item.platform, applicability: item.applicability, reason: item.reason }));
   }
 }
