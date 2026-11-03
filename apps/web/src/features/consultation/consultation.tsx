@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { readConsultationStream } from './stream';
 import { Decision } from './decision';
 import { DraftCard } from './draft-card';
+import { employeeStage } from './stage';
 const errors: Record<string, string> = {
   quota: 'O limite do modelo foi atingido. Tente novamente mais tarde.',
   model_unavailable: 'O assistente está indisponível. Tente novamente.',
@@ -43,7 +44,8 @@ export function Consultation({
   const activeRef = useRef(false);
   const [serverUsed, setServerUsed] = useState(0);
   const [pendingDrafts, setPendingDrafts] = useState<string[]>([]);
-  const [waiting, setWaiting] = useState(conversation.state === 'waiting_for_analyst');
+  const [humanEngaged, setHumanEngaged] = useState(employeeStage(conversation.state) === 'human');
+  const closed = conversation.state === 'closed';
   const [handoff, setHandoff] = useState(conversation.handoff);
   useEffect(() => {
     let current = true;
@@ -82,7 +84,7 @@ export function Consultation({
   const capped = used >= CONVERSATION_MESSAGE_LIMIT;
   async function send(value: string): Promise<void> {
     const text = value.trim();
-    if (!text || activeRef.current || capped) return;
+    if (!text || activeRef.current || capped || closed) return;
     activeRef.current = true;
     setActive(true);
     onBusy(true);
@@ -115,7 +117,7 @@ export function Consultation({
         else if (event.type === 'action') setActions((current) => [...current, event.action]);
         else if (event.type === 'handoff-waiting') {
           done = true;
-          setWaiting(true);
+          setHumanEngaged(true);
           setPartial('');
           setActions([]);
         } else if (event.type === 'error') {
@@ -140,7 +142,7 @@ export function Consultation({
     }
   }
   async function requestHandoff(): Promise<void> {
-    if (active || waiting) return;
+    if (active || humanEngaged) return;
     setError('');
     const response = await fetch(`/api/conversations/${conversationId}/handoff`, {
       method: 'POST',
@@ -150,7 +152,7 @@ export function Consultation({
     if (response.status === 401) return onUnauthorized();
     if (!response.ok) return setError('Não foi possível solicitar atendimento humano.');
     const result = await response.json();
-    setWaiting(true);
+    setHumanEngaged(true);
     setHandoff(result.handoff);
   }
   function submit(event: FormEvent<HTMLFormElement>): void {
@@ -171,15 +173,23 @@ export function Consultation({
   return (
     <section className="consultation" aria-label="Conversa">
       <h2>Mensagens</h2>
-      {waiting && (
+      {humanEngaged && (
         <p role="status">
           Aguardando atendimento humano. {handoff?.summary ?? 'Sua solicitação foi encaminhada.'}
         </p>
       )}
-      {!waiting && (
+      {!humanEngaged && !closed && (
         <button type="button" disabled={active || capped} onClick={() => void requestHandoff()}>
           Falar com analista
         </button>
+      )}
+      {closed && (
+        <>
+          <p role="status">Atendimento encerrado.</p>
+          <button type="button" disabled={active} onClick={onStartNew}>
+            Nova conversa
+          </button>
+        </>
       )}
       {messages.length === 0 && !active && <p>Descreva sua dúvida de TI para começar.</p>}
       <div className="consultation-messages">
@@ -191,6 +201,12 @@ export function Consultation({
                 {message.status === 'completed' &&
                   message.decision &&
                   chips(message.decision.actions)}
+              </>
+            )}
+            {message.role === 'analyst' && (
+              <>
+                <strong>{message.authorName}</strong>
+                <span className="support-tag">Suporte</span>
               </>
             )}
             <p>{message.content}</p>
@@ -277,22 +293,24 @@ export function Consultation({
           </button>
         </>
       )}
-      <form onSubmit={submit}>
-        <label htmlFor="message">Mensagem</label>
-        <textarea
-          id="message"
-          name="content"
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          disabled={active || capped}
-          required
-          maxLength={4000}
-          placeholder="Escreva para o Nexo..."
-        />
-        <button disabled={active || capped} type="submit">
-          Enviar mensagem
-        </button>
-      </form>
+      {!closed && (
+        <form onSubmit={submit}>
+          <label htmlFor="message">Mensagem</label>
+          <textarea
+            id="message"
+            name="content"
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            disabled={active || capped}
+            required
+            maxLength={4000}
+            placeholder="Escreva para o Nexo..."
+          />
+          <button disabled={active || capped} type="submit">
+            Enviar mensagem
+          </button>
+        </form>
+      )}
     </section>
   );
 }
