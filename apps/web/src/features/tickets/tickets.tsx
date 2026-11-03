@@ -14,7 +14,7 @@ class RequestError extends Error {
   constructor(readonly status: number, readonly payload: unknown) { super('Request failed'); }
 }
 
-export function Tickets({ onUnauthorized }: { onUnauthorized: () => void }): React.JSX.Element {
+export function Tickets({ onUnauthorized, reloadToken = 0 }: { onUnauthorized: () => void; reloadToken?: number }): React.JSX.Element {
   const [tickets, setTickets] = useState<TicketView[]>([]);
   const [selected, setSelected] = useState<TicketView | null>(null);
   const [events, setEvents] = useState<TicketEventView[]>([]);
@@ -65,7 +65,7 @@ export function Tickets({ onUnauthorized }: { onUnauthorized: () => void }): Rea
       finally { if (active) setLoading(false); }
     });
     return () => { active = false; };
-  }, [call, load]);
+  }, [call, load, reloadToken]);
 
   async function choose(ticket: TicketView) {
     const version = ++selectionVersion.current;

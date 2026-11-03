@@ -1,12 +1,25 @@
 'use client';
 import { CONVERSATION_MESSAGE_LIMIT, SessionLimitResponseSchema, type ConsultationAction, type MessageView } from '@nexo/contracts';
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { readConsultationStream } from './stream';
 import { Decision } from './decision';
+import { DraftCard } from './draft-card';
 const errors: Record<string, string> = { quota: 'O limite do modelo foi atingido. Tente novamente mais tarde.', model_unavailable: 'O assistente está indisponível. Tente novamente.', invalid_output: 'Não foi possível validar a resposta. Tente novamente.', interrupted: 'A resposta foi interrompida. Tente novamente.' };
-export function Consultation({ conversationId, messages, setMessages, onBusy, onUnauthorized, onStartNew }: { conversationId: string; messages: MessageView[]; setMessages: React.Dispatch<React.SetStateAction<MessageView[]>>; onBusy: (busy: boolean) => void; onUnauthorized: () => void; onStartNew: () => void }): React.JSX.Element {
+export function Consultation({ conversationId, messages, setMessages, onBusy, onUnauthorized, onStartNew, onTicketCommitted }: { conversationId: string; messages: MessageView[]; setMessages: React.Dispatch<React.SetStateAction<MessageView[]>>; onBusy: (busy: boolean) => void; onUnauthorized: () => void; onStartNew: () => void; onTicketCommitted: () => void }): React.JSX.Element {
   const [content, setContent] = useState(''); const [active, setActive] = useState(false); const [partial, setPartial] = useState(''); const [actions, setActions] = useState<ConsultationAction[]>([]); const [error, setError] = useState(''); const activeRef = useRef(false);
   const [serverUsed, setServerUsed] = useState(0);
+  const [pendingDrafts, setPendingDrafts] = useState<string[]>([]);
+  useEffect(() => {
+    let current = true;
+    void fetch(`/api/conversations/${encodeURIComponent(conversationId)}/draft-proposals`).then(async (response) => {
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error();
+      const result: unknown = await response.json();
+      if (!Array.isArray(result) || !result.every((item: unknown) => typeof item === 'object' && item !== null && 'draftId' in item && typeof item.draftId === 'string')) throw new Error();
+      if (current) setPendingDrafts(result.map((item: { draftId: string }) => item.draftId));
+    }).catch(() => { if (current) setError('Não foi possível recuperar os rascunhos pendentes.'); });
+    return () => { current = false; };
+  }, [conversationId, messages.length, onUnauthorized]);
   const used = Math.max(serverUsed, messages.filter((message) => message.role === 'employee').length);
   const capped = used >= CONVERSATION_MESSAGE_LIMIT;
   async function send(value: string): Promise<void> {
@@ -40,7 +53,9 @@ export function Consultation({ conversationId, messages, setMessages, onBusy, on
       <p>{message.content}</p>
       {message.status === 'failed' && <p role="alert">{errors[message.decision?.errorCode ?? ''] ?? 'Não foi possível concluir a resposta.'}</p>}
       {message.decision && <><Decision decision={message.decision} />{message.status === 'completed' && <><div className="quick-replies">{message.decision.quickReplies.map((reply) => <button type="button" disabled={active || capped} key={reply} onClick={() => void send(reply)}>{reply}</button>)}</div><div className="ticket-options">{message.decision.tickets.map((ticket) => <button type="button" disabled={active || capped} key={ticket.id} onClick={() => void send(ticket.title)}>{ticket.title} · {ticket.status === 'open' ? 'Aberto' : 'Resolvido'}{ticket.overdue ? ' · prazo vencido' : ''}</button>)}</div></>}</>}
+      {message.decision?.draftId && <DraftCard draftId={message.decision.draftId} onUnauthorized={onUnauthorized} onCommitted={onTicketCommitted} />}
     </article>)}{active && <article className="chat-message agent" aria-live="polite"><strong>Nexo Assist</strong>{chips(actions)}<p>{partial || 'Preparando resposta...'}</p></article>}</div>
+    {pendingDrafts.filter((id) => !messages.some((message) => message.decision?.draftId === id)).map((id) => <DraftCard key={id} draftId={id} onUnauthorized={onUnauthorized} onCommitted={onTicketCommitted} />)}
     {error && <p role="alert">{error}</p>}
     <p>Mensagens: {used} de {CONVERSATION_MESSAGE_LIMIT}</p>
     <p>Restantes: {Math.max(0, CONVERSATION_MESSAGE_LIMIT - used)}</p>
