@@ -64,8 +64,12 @@ test('B13: browser history survives restarting the API process', async ({ page, 
     await start();
     await page.route('**/api/**', async (route) => {
       const path = new URL(route.request().url()).pathname;
-      const response = await route.fetch({ url: `http://127.0.0.1:${port}${path}` });
-      await route.fulfill({ response });
+      try {
+        const response = await route.fetch({ url: `http://127.0.0.1:${port}${path}` });
+        await route.fulfill({ response });
+      } catch {
+        await route.fulfill({ status: 503, contentType: 'application/json', body: '[]' });
+      }
     });
     await page.goto('/');
     await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
