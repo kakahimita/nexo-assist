@@ -8,4 +8,4 @@ export type ConsultationEngineEvent =
   | { type: 'decision'; decision: ConsultationEngineDecision }
   | { type: 'finish'; usage?: unknown };
 export interface ConsultationEngine { source: 'live' | 'deterministic'; promptVersion: string; run(request: ConsultationRequest): AsyncIterable<ConsultationEngineEvent> }
-export const CONSULTATION_PROMPT_VERSION = 'consultation-v4';
+export const CONSULTATION_PROMPT_VERSION = 'consultation-v5';
