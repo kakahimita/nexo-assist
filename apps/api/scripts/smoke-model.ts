@@ -11,8 +11,7 @@ import type { SmokeEvidence } from '../src/agent/smoke-runner.js';
 import { REPOSITORY_ROOT } from '../src/config/paths.js';
 
 const TIMEOUT_MS = 60_000;
-const MISSING_KEY_MESSAGE =
-  'Configure GOOGLE_API_KEY localmente para executar o teste real.';
+const MISSING_KEY_MESSAGE = 'Configure GOOGLE_API_KEY localmente para executar o teste real.';
 const GENERIC_MESSAGE =
   'Não foi possível concluir o teste real. Verifique a conexão e a configuração local.';
 

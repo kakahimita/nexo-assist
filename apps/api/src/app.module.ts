@@ -14,10 +14,24 @@ import type { ConsultationEngine } from './agent/consultation/types.js';
 
 @Module({})
 export class AppModule {
-  static register(environment: ApiEnvironment, overrides?: { consultationEngine?: ConsultationEngine }): DynamicModule {
+  static register(
+    environment: ApiEnvironment,
+    overrides?: { consultationEngine?: ConsultationEngine },
+  ): DynamicModule {
     return {
       module: AppModule,
-      imports: [DatabaseModule.register(environment.databaseUrl), HealthModule, IdentityModule.register(environment.webOrigin.startsWith('https://')), ConversationsModule, TicketsModule, KnowledgeModule, ConsultationModule.register(environment.consultationEngine ?? 'mastra', overrides?.consultationEngine)],
+      imports: [
+        DatabaseModule.register(environment.databaseUrl),
+        HealthModule,
+        IdentityModule.register(environment.webOrigin.startsWith('https://')),
+        ConversationsModule,
+        TicketsModule,
+        KnowledgeModule,
+        ConsultationModule.register(
+          environment.consultationEngine ?? 'mastra',
+          overrides?.consultationEngine,
+        ),
+      ],
       providers: [ConsultationTools],
     };
   }

@@ -22,7 +22,11 @@ export async function initializeDatabase(client: PrismaClient): Promise<void> {
   }
   await initializeTicketFixtures(client);
   for (const article of articles) {
-    await client.knowledgeArticle.upsert({ where: { id: article.id }, update: {}, create: article });
+    await client.knowledgeArticle.upsert({
+      where: { id: article.id },
+      update: {},
+      create: article,
+    });
   }
 }
 

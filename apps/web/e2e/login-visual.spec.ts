@@ -7,7 +7,11 @@ test('V01: login fits desktop and narrow screens', async ({ page }) => {
   await page.screenshot({ path: 'outputs/login-1440.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
 });
 
 test('V01: password visibility can be toggled with the keyboard', async ({ page }) => {
@@ -29,5 +33,9 @@ test('V01: unavailable recovery and persistent login are identified', async ({ p
   await expect(page.getByText('Ramal 4000 (exemplo)')).toBeVisible();
   await expect(page.getByRole('button', { name: /Esqueci minha senha/ })).toBeDisabled();
   await expect(page.getByRole('checkbox', { name: /Manter conectado/ })).toBeDisabled();
-  await expect(page.getByText('Recuperação de senha e a opção de manter conectado ainda não estão disponíveis.')).toBeVisible();
+  await expect(
+    page.getByText(
+      'Recuperação de senha e a opção de manter conectado ainda não estão disponíveis.',
+    ),
+  ).toBeVisible();
 });

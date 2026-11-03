@@ -51,12 +51,15 @@ describe('B17: validated API environment', () => {
     expect(() => parseApiEnvironment({ API_PORT: sentinel })).not.toThrow(sentinel);
   });
 
-  it.each(['*', '', 'http://localhost:3000/path', 'ftp://localhost:3000', 'http://user:pass@localhost:3000'])(
-    'B17: rejects an invalid WEB_ORIGIN without exposing it',
-    (value) => {
-      expect(() => parseApiEnvironment({ WEB_ORIGIN: value })).toThrow('WEB_ORIGIN');
-    },
-  );
+  it.each([
+    '*',
+    '',
+    'http://localhost:3000/path',
+    'ftp://localhost:3000',
+    'http://user:pass@localhost:3000',
+  ])('B17: rejects an invalid WEB_ORIGIN without exposing it', (value) => {
+    expect(() => parseApiEnvironment({ WEB_ORIGIN: value })).toThrow('WEB_ORIGIN');
+  });
 
   it('B17: rejects a blank DATABASE_URL', () => {
     expect(() => parseApiEnvironment({ DATABASE_URL: '' })).toThrow('DATABASE_URL');
@@ -67,8 +70,12 @@ describe('B17: validated API environment', () => {
 
   it('validates the consultation engine mode', () => {
     expect(parseApiEnvironment({}).consultationEngine).toBe('mastra');
-    expect(parseApiEnvironment({ CONSULTATION_ENGINE: 'fixture' }).consultationEngine).toBe('fixture');
-    expect(() => parseApiEnvironment({ CONSULTATION_ENGINE: 'other' })).toThrow('CONSULTATION_ENGINE');
+    expect(parseApiEnvironment({ CONSULTATION_ENGINE: 'fixture' }).consultationEngine).toBe(
+      'fixture',
+    );
+    expect(() => parseApiEnvironment({ CONSULTATION_ENGINE: 'other' })).toThrow(
+      'CONSULTATION_ENGINE',
+    );
   });
 
   it('B17: starts ordinary configuration without a model key', () => {

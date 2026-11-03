@@ -35,8 +35,7 @@ export interface SmokeRunOptions {
   onText: (chunk: string) => void;
 }
 
-const INCOMPLETE_EVIDENCE_MESSAGE =
-  'O teste não comprovou a execução da ferramenta e o streaming.';
+const INCOMPLETE_EVIDENCE_MESSAGE = 'O teste não comprovou a execução da ferramenta e o streaming.';
 const TIMEOUT_MESSAGE = 'O teste real excedeu o tempo limite.';
 const GENERIC_MESSAGE =
   'Não foi possível concluir o teste real. Verifique a conexão e a configuração local.';
@@ -51,7 +50,9 @@ export class IncompleteSmokeEvidenceError extends Error {
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
+  return typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 function createAbortError(): DOMException {
@@ -155,11 +156,7 @@ function findStatusCode(error: unknown, depth = 0): number | undefined {
     return undefined;
   }
 
-  for (const candidate of [
-    record.statusCode,
-    record.status,
-    asRecord(record.response)?.status,
-  ]) {
+  for (const candidate of [record.statusCode, record.status, asRecord(record.response)?.status]) {
     if (typeof candidate === 'number') {
       return candidate;
     }
@@ -179,9 +176,7 @@ function hasErrorCode(error: unknown, code: string, depth = 0): boolean {
     return true;
   }
 
-  return (
-    hasErrorCode(record.cause, code, depth + 1) || hasErrorCode(record.error, code, depth + 1)
-  );
+  return hasErrorCode(record.cause, code, depth + 1) || hasErrorCode(record.error, code, depth + 1);
 }
 
 function isAbortError(error: unknown, depth = 0): boolean {

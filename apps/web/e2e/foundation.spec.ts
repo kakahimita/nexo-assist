@@ -37,9 +37,7 @@ test('B17 / PRD pp. 2–3: reports an HTTP failure and recovers with keyboard re
   );
 
   await page.goto('/diagnostico');
-  const alert = page
-    .getByRole('alert')
-    .filter({ hasText: 'Não foi possível conectar à API.' });
+  const alert = page.getByRole('alert').filter({ hasText: 'Não foi possível conectar à API.' });
   await expect(alert).toBeVisible();
 
   await page.unroute('**/api/health');
@@ -59,9 +57,7 @@ test('B17 / PRD pp. 2–3: times out a stalled health request', async ({ page })
   await page.goto('/diagnostico');
   await expect(page.getByRole('status')).toHaveText('Verificando conexão...');
   await page.clock.fastForward(6_000);
-  const alert = page
-    .getByRole('alert')
-    .filter({ hasText: 'Não foi possível conectar à API.' });
+  const alert = page.getByRole('alert').filter({ hasText: 'Não foi possível conectar à API.' });
   await expect(alert).toBeVisible();
 });
 

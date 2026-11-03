@@ -10,6 +10,20 @@ import { CONSULTATION_ENGINE, ConsultationService } from './consultation.service
 @Module({})
 export class ConsultationModule {
   static register(mode: 'mastra' | 'fixture', override?: ConsultationEngine): DynamicModule {
-    return { module: ConsultationModule, imports: [ConversationsModule, TicketsModule, KnowledgeModule], controllers: [ConsultationController], providers: [ConsultationTools, ConsultationService, { provide: CONSULTATION_ENGINE, inject: [ConsultationTools], useFactory: (tools: ConsultationTools) => override ?? createConsultationEngine(mode, tools) }] };
+    return {
+      module: ConsultationModule,
+      imports: [ConversationsModule, TicketsModule, KnowledgeModule],
+      controllers: [ConsultationController],
+      providers: [
+        ConsultationTools,
+        ConsultationService,
+        {
+          provide: CONSULTATION_ENGINE,
+          inject: [ConsultationTools],
+          useFactory: (tools: ConsultationTools) =>
+            override ?? createConsultationEngine(mode, tools),
+        },
+      ],
+    };
   }
 }

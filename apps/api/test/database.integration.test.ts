@@ -21,30 +21,73 @@ describe('B17 / PRD p. 2: migrated, file-backed SQLite persistence', () => {
     const client = createDatabaseClient(database.url);
     try {
       const before = await client.knowledgeArticle.findMany({ orderBy: { id: 'asc' } });
-      expect(before.map((article) => article.id)).toEqual(['kb-email-quota', 'kb-monitor-not-detected', 'kb-password-lockout', 'kb-service-hours', 'kb-software-install', 'kb-vpn-809-windows-10', 'kb-vpn-809-windows-11', 'kb-wifi-corporate']);
-      await client.knowledgeArticle.update({ where: { id: 'kb-vpn-809-windows-10' }, data: { body: 'Conteúdo editado' } });
+      expect(before.map((article) => article.id)).toEqual([
+        'kb-email-quota',
+        'kb-monitor-not-detected',
+        'kb-password-lockout',
+        'kb-service-hours',
+        'kb-software-install',
+        'kb-vpn-809-windows-10',
+        'kb-vpn-809-windows-11',
+        'kb-wifi-corporate',
+      ]);
+      await client.knowledgeArticle.update({
+        where: { id: 'kb-vpn-809-windows-10' },
+        data: { body: 'Conteúdo editado' },
+      });
       await initializeDatabase(client);
       await initializeDatabase(client);
       expect(await client.knowledgeArticle.count()).toBe(8);
-      expect((await client.knowledgeArticle.findUniqueOrThrow({ where: { id: 'kb-vpn-809-windows-10' } })).body).toBe('Conteúdo editado');
-    } finally { await client.$disconnect(); await database.cleanup(); }
+      expect(
+        (
+          await client.knowledgeArticle.findUniqueOrThrow({
+            where: { id: 'kb-vpn-809-windows-10' },
+          })
+        ).body,
+      ).toBe('Conteúdo editado');
+    } finally {
+      await client.$disconnect();
+      await database.cleanup();
+    }
   });
   it('B13: initializes fictional tickets once without overwriting changes', async () => {
     const database = await createTestDatabase();
     const client = createDatabaseClient(database.url);
     try {
-      const before = await client.ticket.findMany({ include: { owner: true }, orderBy: { id: 'asc' } });
-      expect(before.some((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'open')).toBe(true);
-      expect(before.some((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'resolved')).toBe(true);
+      const before = await client.ticket.findMany({
+        include: { owner: true },
+        orderBy: { id: 'asc' },
+      });
+      expect(
+        before.some(
+          (ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'open',
+        ),
+      ).toBe(true);
+      expect(
+        before.some(
+          (ticket) =>
+            ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'resolved',
+        ),
+      ).toBe(true);
       expect(before.some((ticket) => ticket.owner.email === 'bruno.lima@nexo.com.br')).toBe(true);
-      const open = before.find((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'open')!;
+      const open = before.find(
+        (ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'open',
+      )!;
       expect(deadline(open.slaStartedAt, 'medium').getTime()).toBeLessThan(Date.now());
-      await client.ticket.update({ where: { id: open.id }, data: { description: 'Alteração preservada' } });
+      await client.ticket.update({
+        where: { id: open.id },
+        data: { description: 'Alteração preservada' },
+      });
       await initializeDatabase(client);
       await initializeDatabase(client);
       expect(await client.ticket.count()).toBe(before.length);
-      expect((await client.ticket.findUniqueOrThrow({ where: { id: open.id } })).description).toBe('Alteração preservada');
-    } finally { await client.$disconnect(); await database.cleanup(); }
+      expect((await client.ticket.findUniqueOrThrow({ where: { id: open.id } })).description).toBe(
+        'Alteração preservada',
+      );
+    } finally {
+      await client.$disconnect();
+      await database.cleanup();
+    }
   });
   it('B01: seeds the same fictional identities on repeated initialization', async () => {
     const database = await createTestDatabase();

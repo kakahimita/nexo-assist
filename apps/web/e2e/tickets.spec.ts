@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test('B03 B04 B05 B13 B15: review, edit, retry and restore an employee ticket', async ({ page }) => {
+test('B03 B04 B05 B13 B15: review, edit, retry and restore an employee ticket', async ({
+  page,
+}) => {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
@@ -22,7 +24,11 @@ test('B03 B04 B05 B13 B15: review, edit, retry and restore an employee ticket', 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.screenshot({ path: 'outputs/ticket-draft-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
   await page.screenshot({ path: 'outputs/ticket-draft-mobile.png', fullPage: true });
   await page.setViewportSize({ width: 1280, height: 720 });
   await tickets.getByRole('button', { name: 'Editar rascunho' }).click();
@@ -35,7 +41,9 @@ test('B03 B04 B05 B13 B15: review, edit, retry and restore an employee ticket', 
   await page.route('**/api/tickets', (route) => route.fulfill({ status: 503 }));
   await tickets.getByRole('button', { name: 'Confirmar alteração' }).click();
   await expect(tickets.getByText('Alteração confirmada.', { exact: true })).toBeVisible();
-  await expect(tickets.getByRole('alert')).toContainText('Alteração confirmada, mas não foi possível atualizar a lista');
+  await expect(tickets.getByRole('alert')).toContainText(
+    'Alteração confirmada, mas não foi possível atualizar a lista',
+  );
   await page.unroute('**/api/tickets');
   await page.reload();
   await expect(tickets.getByRole('button', { name: 'Falha no monitor externo' })).toHaveCount(1);
@@ -99,10 +107,15 @@ test('B04: a stale confirmation reloads the current draft for review', async ({ 
   const id = await page.evaluate(() => sessionStorage.getItem('nexo_ticket_draft'));
   expect(id).toBeTruthy();
   const current = await (await page.request.get(`/api/ticket-drafts/${id}`)).json();
-  const edit = await page.request.post(`/api/ticket-drafts/${id}/edit`, { headers: { Origin: new URL(page.url()).origin }, data: { version: current.version, input: { ...current.input, title: 'Rascunho atualizado' } } });
+  const edit = await page.request.post(`/api/ticket-drafts/${id}/edit`, {
+    headers: { Origin: new URL(page.url()).origin },
+    data: { version: current.version, input: { ...current.input, title: 'Rascunho atualizado' } },
+  });
   expect(edit.status()).toBe(201);
   await tickets.getByRole('button', { name: 'Confirmar alteração' }).click();
-  await expect(tickets.getByRole('alert')).toContainText('O rascunho foi atualizado. Confira os dados antes de confirmar.');
+  await expect(tickets.getByRole('alert')).toContainText(
+    'O rascunho foi atualizado. Confira os dados antes de confirmar.',
+  );
   await expect(tickets.getByText('Rascunho atualizado', { exact: true })).toBeVisible();
   await tickets.getByRole('button', { name: 'Confirmar alteração' }).click();
   await expect(tickets.getByText('Alteração confirmada.', { exact: true })).toBeVisible();
