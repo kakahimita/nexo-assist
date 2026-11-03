@@ -117,7 +117,7 @@ available, so this is not pixel-level visual acceptance.
 - Finish owner review of the transfer interpretation and the partial B rows
   above.
 - PR [#17](https://github.com/kakahimita/nexo-assist/pull/17) was merged and issue #5 was closed; the challenge-wide limitations above remain.
-- Continue consultation validation in #6 and #19, conversational
+- Continue consultation validation in #6, conversational
   changes and the session cap in #7, and human support in #8.
 - Complete the remaining UI and visual acceptance in #9 and submission evidence
   in #10.
