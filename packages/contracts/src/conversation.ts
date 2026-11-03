@@ -15,3 +15,7 @@ export const ConsultationStreamEventSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('error'), code: ConsultationErrorCodeSchema }),
 ]);
 export type ConsultationStreamEvent = z.infer<typeof ConsultationStreamEventSchema>;
+
+export const CONVERSATION_MESSAGE_LIMIT = 30;
+export const SessionLimitResponseSchema = z.strictObject({ code: z.literal('session_limit'), limit: z.number().int().positive(), used: z.number().int().nonnegative() });
+export type SessionLimitResponse = z.infer<typeof SessionLimitResponseSchema>;

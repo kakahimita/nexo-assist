@@ -1,10 +1,12 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { ConsultationDecisionViewSchema, MessageViewSchema } from '@nexo/contracts';
+import { CONVERSATION_MESSAGE_LIMIT, ConsultationDecisionViewSchema, MessageViewSchema } from '@nexo/contracts';
 import type { ConversationView, MessageView, UserView, ConsultationDecisionView } from '@nexo/contracts';
 import { DatabaseService } from '../database/database.service.js';
+import { SessionLimitReachedError } from './session-limit.js';
 
 @Injectable()
 export class ConversationsService {
+  private appendQueue: Promise<void> = Promise.resolve();
   constructor(@Inject(DatabaseService) private readonly database: DatabaseService) {}
   private employee(user: UserView): void { if (user.role !== 'employee') throw new ForbiddenException(); }
   async list(user: UserView): Promise<ConversationView[]> {
@@ -27,9 +29,16 @@ export class ConversationsService {
     return rows.map(({ id, content, createdAt, role, status, decision }) => MessageViewSchema.parse({ id, content, createdAt: createdAt.toISOString(), role, status, decision: decision === null ? null : ConsultationDecisionViewSchema.parse({ intent: decision.intent, action: decision.action, appliedRule: decision.appliedRule, confidence: decision.confidence, justification: decision.justification, missingFacts: JSON.parse(decision.missingFactsJson), quickReplies: JSON.parse(decision.quickRepliesJson), actions: JSON.parse(decision.actionsJson), evidence: JSON.parse(decision.evidenceJson), tickets: JSON.parse(decision.ticketsJson), outcome: decision.outcome, errorCode: decision.errorCode, source: decision.source }) }));
   }
   async append(user: UserView, conversationId: string, content: string): Promise<MessageView> {
-    await this.ensureOwned(user, conversationId);
-    const { id, createdAt } = await this.database.client.message.create({ data: { conversationId, content } });
-    return { id, content, createdAt: createdAt.toISOString(), role: 'employee', status: 'completed', decision: null };
+    this.employee(user);
+    const operation = this.appendQueue.then(() => this.database.client.$transaction(async (tx) => {
+      if (!await tx.conversation.findFirst({ where: { id: conversationId, ownerId: user.id }, select: { id: true } })) throw new NotFoundException();
+      const used = await tx.message.count({ where: { conversationId, role: 'employee' } });
+      if (used >= CONVERSATION_MESSAGE_LIMIT) throw new SessionLimitReachedError(used);
+      const { id, createdAt } = await tx.message.create({ data: { conversationId, content } });
+      return { id, content, createdAt: createdAt.toISOString(), role: 'employee' as const, status: 'completed' as const, decision: null };
+    }));
+    this.appendQueue = operation.then(() => undefined, () => undefined);
+    return operation;
   }
   async appendAgentTurn(user: UserView, conversationId: string, input: { content: string; status: 'completed' | 'failed'; decision: ConsultationDecisionView; promptVersion: string }): Promise<MessageView> {
     await this.ensureOwned(user, conversationId);
