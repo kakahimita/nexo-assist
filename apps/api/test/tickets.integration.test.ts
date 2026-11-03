@@ -34,7 +34,7 @@ describe('B03 B04 B13 B16: authorized tickets and drafts', () => {
       expect(created.priority).toBe('medium');
       expect(created.candidates.map((ticket: { id: string }) => ticket.id)).toEqual(['fixture-ana-open']);
       await request(server).get(`/api/ticket-drafts/${created.id}`).set('Cookie', bruno).expect(404);
-      const updated = (await request(server).post(`/api/ticket-drafts/${created.id}/edit`).set('Cookie', ana).send({ version: 1, input: { ...draft, title: 'Outro problema' } }).expect(201)).body;
+      const updated = (await request(server).post(`/api/ticket-drafts/${created.id}/edit`).set('Cookie', ana).send({ version: 1, input: { ...draft, title: 'Outro problema', description: 'A impressora não responde' } }).expect(201)).body;
       expect(updated.version).toBe(2);
       expect(updated.operationId).not.toBe(created.operationId);
       expect(updated.candidates).toEqual([]);

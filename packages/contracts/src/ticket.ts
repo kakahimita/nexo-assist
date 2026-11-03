@@ -36,12 +36,13 @@ export type TicketEventView = z.infer<typeof TicketEventViewSchema>;
 export const DraftViewSchema = z.strictObject({
   id, version: z.number().int().positive(), operationId: z.string().uuid(), status: z.enum(['pending', 'cancelled', 'committed']),
   input: DraftInputSchema, priority: PrioritySchema.optional(), candidates: z.array(TicketViewSchema).optional(),
+  candidateMatches: z.array(z.strictObject({ id, match: z.enum(['exact', 'possible']) })).optional(),
 }).superRefine((value, context) => {
   if (value.input.action === 'create' && (!value.priority || !value.candidates)) {
     context.addIssue({ code: 'custom', message: 'Create drafts require a priority and candidates' });
   }
 });
 export type DraftView = z.infer<typeof DraftViewSchema>;
-export const ConfirmDraftInputSchema = z.strictObject({ version: z.number().int().positive(), operationId: z.string().uuid() });
+export const ConfirmDraftInputSchema = z.strictObject({ version: z.number().int().positive(), operationId: z.string().uuid(), dismissedCandidateIds: z.array(id).max(100).optional() });
 export type ConfirmDraftInput = z.infer<typeof ConfirmDraftInputSchema>;
-export const DuplicateConflictSchema = z.strictObject({ code: z.literal('duplicate_candidates'), candidates: z.array(TicketViewSchema) });
+export const DuplicateConflictSchema = z.strictObject({ code: z.literal('duplicate_candidates'), candidates: z.array(TicketViewSchema), candidateMatches: z.array(z.strictObject({ id, match: z.enum(['exact', 'possible']) })).optional() });

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { DraftInputSchema, DraftViewSchema, type ConfirmDraftInput, type DraftInput, type DraftView, type TicketView, type UserView } from '@nexo/contracts';
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
-import { normalizeTitle } from './normalize-title.js';
+import { findTicketCandidates } from './ticket-candidates.js';
 import { classifyPriority } from './rules.js';
 import { assertEmployee, TicketService } from './ticket-service.js';
 
@@ -36,10 +36,10 @@ export class DraftsService {
     const current = draft.versions.find((item) => item.version === draft.version);
     if (!current) throw new Error('Draft version missing');
     const input = DraftInputSchema.parse(JSON.parse(current.inputJson) as unknown);
-    const candidates = input.action === 'create'
-      ? (await this.tickets.list(user, new Date())).filter((ticket) => ticket.status === 'open' && normalizeTitle(ticket.title) === normalizeTitle(input.title))
+    const matches = input.action === 'create'
+      ? findTicketCandidates(input, await this.tickets.list(user, new Date()))
       : undefined;
-    return DraftViewSchema.parse({ id: draft.id, version: draft.version, status: draft.status, operationId: current.operationId, input, ...(input.action === 'create' ? { priority: current.priority, candidates } : {}) });
+    return DraftViewSchema.parse({ id: draft.id, version: draft.version, status: draft.status, operationId: current.operationId, input, ...(input.action === 'create' ? { priority: current.priority, candidates: matches?.map(({ ticket }) => ticket), candidateMatches: matches?.map(({ ticket, match }) => ({ id: ticket.id, match })) } : {}) });
   }
 
   async edit(user: UserView, id: string, expectedVersion: number, input: DraftInput): Promise<DraftView> {

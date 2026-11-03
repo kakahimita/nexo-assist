@@ -35,12 +35,12 @@ describe('B04–B06: atomic confirmation', () => {
       await request(server).post(`/api/ticket-drafts/${cancelled.id}/cancel`).set('Cookie', ana).send({ version: 1 }).expect(201);
       await request(server).post(`/api/ticket-drafts/${cancelled.id}/confirm`).set('Cookie', ana).send({ version: 1, operationId: cancelled.operationId }).expect(409);
       await request(server).post(`/api/ticket-drafts/${cancelled.id}/confirm`).set('Cookie', ana).send(confirm).expect(409);
-      const left = (await request(server).post('/api/ticket-drafts').set('Cookie', ana).send({ ...newTicket, title: 'Tela apagada' }).expect(201)).body;
-      const right = (await request(server).post('/api/ticket-drafts').set('Cookie', ana).send({ ...newTicket, title: 'Tela apagada' }).expect(201)).body;
+      const left = (await request(server).post('/api/ticket-drafts').set('Cookie', ana).send({ ...newTicket, title: 'Tela apagada', description: 'A tela não acende' }).expect(201)).body;
+      const right = (await request(server).post('/api/ticket-drafts').set('Cookie', ana).send({ ...newTicket, title: 'Tela apagada', description: 'A tela não acende' }).expect(201)).body;
       const outcomes = await Promise.all([left, right].map((item) => request(server).post(`/api/ticket-drafts/${item.id}/confirm`).set('Cookie', ana).send({ version: item.version, operationId: item.operationId })));
       expect(outcomes.map((result) => result.status).sort()).toEqual([201, 409]);
       expect(await client.ticket.count({ where: { normalizedTitle: 'tela apagada' } })).toBe(1);
-      const contested = (await request(server).post('/api/ticket-drafts').set('Cookie', ana).send({ ...newTicket, title: 'Cabo solto' }).expect(201)).body;
+      const contested = (await request(server).post('/api/ticket-drafts').set('Cookie', ana).send({ ...newTicket, title: 'Cabo solto', description: 'O cabo está desconectado' }).expect(201)).body;
       const races = await Promise.all([contested.operationId, randomUUID()].map((operationId) => request(server).post(`/api/ticket-drafts/${contested.id}/confirm`).set('Cookie', ana).send({ version: 1, operationId })));
       expect(races.map((result) => result.status).sort()).toEqual([201, 409]);
       expect(await client.ticket.count({ where: { normalizedTitle: 'cabo solto' } })).toBe(1);
