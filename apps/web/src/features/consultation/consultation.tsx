@@ -148,7 +148,7 @@ export function Consultation({
       body: JSON.stringify({ reason: 'employee_request' }),
     });
     if (response.status === 401) return onUnauthorized();
-    if (!response.ok) return setError('NÃ£o foi possÃ­vel solicitar atendimento humano.');
+    if (!response.ok) return setError('Não foi possível solicitar atendimento humano.');
     const result = await response.json();
     setWaiting(true);
     setHandoff(result.handoff);
@@ -173,7 +173,7 @@ export function Consultation({
       <h2>Mensagens</h2>
       {waiting && (
         <p role="status">
-          Aguardando atendimento humano. {handoff?.summary ?? 'Sua solicitaÃ§Ã£o foi encaminhada.'}
+          Aguardando atendimento humano. {handoff?.summary ?? 'Sua solicitação foi encaminhada.'}
         </p>
       )}
       {!waiting && (

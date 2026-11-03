@@ -1,10 +1,10 @@
 import type { HandoffReason } from '@nexo/contracts';
 
 const reasonText: Record<HandoffReason, string> = {
-  employee_request: 'O funcionÃ¡rio solicitou atendimento humano.',
-  critical_incident: 'Um incidente crÃ­tico requer atendimento humano.',
+  employee_request: 'O funcionário solicitou atendimento humano.',
+  critical_incident: 'Um incidente crítico requer atendimento humano.',
   overdue_ticket: 'Um chamado vencido requer atendimento humano.',
-  unresolved_uncertainty: 'A solicitaÃ§Ã£o precisa de decisÃ£o humana.',
+  unresolved_uncertainty: 'A solicitação precisa de decisão humana.',
 };
 
 export function formatHandoffSummary(input: {
@@ -15,11 +15,11 @@ export function formatHandoffSummary(input: {
   const latest = input.latestMessage?.trim().slice(0, 500);
   const ticketContext =
     input.openTicketCount === 0
-      ? 'NÃ£o hÃ¡ chamados abertos vinculados ao funcionÃ¡rio.'
-      : `${input.openTicketCount} chamado(s) aberto(s) do funcionÃ¡rio.`;
+      ? 'Não há chamados abertos vinculados ao funcionário.'
+      : `${input.openTicketCount} chamado(s) aberto(s) do funcionário.`;
   return [
     reasonText[input.reason],
-    latest ? `Ãšltima mensagem: ${latest}` : undefined,
+    latest ? `Última mensagem: ${latest}` : undefined,
     ticketContext,
   ]
     .filter((value): value is string => value !== undefined)
