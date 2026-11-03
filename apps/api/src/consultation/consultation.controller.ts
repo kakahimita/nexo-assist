@@ -12,7 +12,7 @@ export class ConsultationController {
   @Post(':id/messages/stream')
   async stream(@Req() request: AuthRequest, @Res() response: ServerResponse, @Param('id') id: string, @Body() body: unknown): Promise<void> {
     const parsed = MessageInputSchema.safeParse(body); if (!parsed.success) throw new BadRequestException();
-    await this.conversations.ensureOwned(request.user, id);
+    const accepted = await this.conversations.append(request.user, id, parsed.data.content);
     const abort = new AbortController(); let complete = false;
     response.on('close', () => { if (!complete) abort.abort(); });
     response.statusCode = 201;
@@ -21,7 +21,7 @@ export class ConsultationController {
     response.setHeader('X-Accel-Buffering', 'no');
     response.flushHeaders();
     try {
-      for await (const event of this.consultation.run(request.user, id, parsed.data, abort.signal)) {
+      for await (const event of this.consultation.run(request.user, id, accepted, abort.signal)) {
         if (!response.destroyed) response.write(encodeSse(event));
       }
     } catch {

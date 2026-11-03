@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { ConsultationDecisionView, ConsultationStreamEvent, MessageInput, UserView } from '@nexo/contracts';
+import type { ConsultationDecisionView, ConsultationStreamEvent, MessageView, UserView } from '@nexo/contracts';
 import { ConversationsService } from '../conversations/conversations.service.js';
 import { ConsultationTurn } from '../agent/consultation/turn.js';
 import type { ConsultationEngine } from '../agent/consultation/types.js';
@@ -14,8 +14,7 @@ function errorCode(error: unknown, signal: AbortSignal): ErrorCode {
 @Injectable()
 export class ConsultationService {
   constructor(@Inject(ConversationsService) private readonly conversations: ConversationsService, @Inject(CONSULTATION_ENGINE) private readonly engine: ConsultationEngine) {}
-  async *run(user: UserView, conversationId: string, input: MessageInput, signal: AbortSignal): AsyncIterable<ConsultationStreamEvent> {
-    const message = await this.conversations.append(user, conversationId, input.content);
+  async *run(user: UserView, conversationId: string, message: MessageView, signal: AbortSignal): AsyncIterable<ConsultationStreamEvent> {
     yield { type: 'user-message', message };
     const turn = new ConsultationTurn();
     try {
