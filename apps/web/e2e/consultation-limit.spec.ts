@@ -13,11 +13,13 @@ test('B14: message cap preserves history and offers a new conversation', async (
   await page.getByRole('navigation', { name: 'Conversas' }).getByRole('button').last().click();
   const chat = page.getByRole('region', { name: 'Conversa' });
   await expect(chat.getByText('Mensagens: 28 de 30')).toBeVisible();
+  await expect(chat.getByText('Restantes: 2')).toBeVisible();
   await chat.getByLabel('Mensagem').fill('Meu notebook não conecta na VPN e mostra o erro 809');
   await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
   await expect(chat.getByText('Mensagens: 29 de 30')).toBeVisible();
   await chat.getByRole('button', { name: 'Windows 11' }).click();
   await expect(chat.getByText('Mensagens: 30 de 30')).toBeVisible();
+  await expect(chat.getByText('Restantes: 0')).toBeVisible();
   await expect(chat.getByLabel('Mensagem')).toBeDisabled();
   await expect(chat.getByRole('status')).toContainText('limite de 30 mensagens');
   const rejected = await page.request.post(`/api/conversations/${id}/messages`, { headers: { origin: new URL(page.url()).origin }, data: { content: 'excesso' } });

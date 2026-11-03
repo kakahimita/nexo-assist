@@ -43,6 +43,7 @@ export function Consultation({ conversationId, messages, setMessages, onBusy, on
     </article>)}{active && <article className="chat-message agent" aria-live="polite"><strong>Nexo Assist</strong>{chips(actions)}<p>{partial || 'Preparando resposta...'}</p></article>}</div>
     {error && <p role="alert">{error}</p>}
     <p>Mensagens: {used} de {CONVERSATION_MESSAGE_LIMIT}</p>
+    <p>Restantes: {Math.max(0, CONVERSATION_MESSAGE_LIMIT - used)}</p>
     {capped && <><p role="status">Você atingiu o limite de 30 mensagens nesta conversa. Inicie uma nova conversa para continuar.</p><button type="button" disabled={active} onClick={onStartNew}>Nova conversa</button></>}
     <form onSubmit={submit}><label htmlFor="message">Mensagem</label><textarea id="message" name="content" value={content} onChange={(event) => setContent(event.target.value)} disabled={active || capped} required maxLength={4000} placeholder="Escreva para o Nexo..." /><button disabled={active || capped} type="submit">Enviar mensagem</button></form>
   </section>;
