@@ -23,6 +23,12 @@ describe('B03/B16: authorized read-only consultation', () => {
       expect(all.tickets).toHaveLength(2);
       expect(all.tickets.map((ticket) => ticket.id)).toEqual(expect.arrayContaining(['fixture-ana-open', 'fixture-ana-resolved']));
       expect(all.tickets.map((ticket) => ticket.id)).not.toContain('fixture-bruno-open');
+      expect(await tools.consultTickets(ana, { query: 'status' }, new Date())).toMatchObject({ match: 'multiple', tickets: all.tickets });
+      expect(await tools.consultTickets(ana, { query: 'Qual o status do meu chamado?', kind: 'topic' }, new Date())).toMatchObject({ match: 'multiple', tickets: all.tickets });
+      expect(await tools.consultTickets(ana, { query: 'Meus chamados' }, new Date())).toMatchObject({ match: 'multiple', tickets: all.tickets });
+      expect(await tools.consultTickets(ana, { query: 'INC-99999' }, new Date())).toMatchObject({ match: 'unknown_reference', tickets: all.tickets });
+      expect(await tools.consultTickets(ana, { query: 'INC-99999', kind: 'topic' }, new Date())).toMatchObject({ match: 'unknown_reference', tickets: all.tickets });
+      expect(await tools.consultTickets(ana, { query: 'fixture-bruno-open', kind: 'reference' }, new Date())).toMatchObject({ match: 'unknown_reference', tickets: all.tickets });
       expect((await tools.consultTickets(ana, { query: 'Notebook lento', kind: 'topic' }, new Date())).tickets.map((ticket) => ticket.id)).toEqual(['fixture-ana-open']);
       expect(await tools.consultTickets(ana, { query: 'INC-99999', kind: 'reference' }, new Date())).toMatchObject({ match: 'unknown_reference', tickets: all.tickets });
       expect(await tools.consultTickets(ana, { query: 'VPN', kind: 'topic' }, new Date())).toMatchObject({ match: 'none', tickets: [] });

@@ -25,4 +25,14 @@ describe('B12: decisions use actual tool results', () => {
     const turn = new ConsultationTurn();
     expect(() => turn.apply({ type: 'decision', decision: { ...decision, evidence: ['fake'] } } as never)).toThrow('invalid_output');
   });
+  it('removes quick replies offering unsupported ticket writes or human handoff', () => {
+    const turn = new ConsultationTurn();
+    turn.apply({ type: 'decision', decision: { ...decision, quickReplies: ['Abrir chamado', 'Criar novo chamado', 'Falar com atendente', 'Windows 11'] } });
+    expect(turn.snapshot().decision.quickReplies).toEqual(['Windows 11']);
+  });
+  it('does not offer device operations the assistant cannot execute', () => {
+    const turn = new ConsultationTurn();
+    turn.apply({ type: 'decision', decision: { ...decision, quickReplies: ['Reinstalar cliente VPN', 'Reiniciar o computador', 'Preciso de ajuda'] } });
+    expect(turn.snapshot().decision.quickReplies).toEqual(['Preciso de ajuda']);
+  });
 });

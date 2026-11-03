@@ -19,7 +19,31 @@ The local application screenshots `outputs/consultation-desktop.png` (1440 × 90
 
 ## Live model gate
 
-No local `GOOGLE_API_KEY` was present, so `npm run smoke:consultation` was **not run**. No provider/model latency, usage or live quality result is claimed. The command uses the production Mastra adapter and real read-only tools with a temporary database and checks Windows applicability, selection, privacy and scope. The default configured provider/model are Google and `gemini-3.5-flash-lite`; availability and quality have not been verified in this increment. Keep #6 open until the live evaluation and issue criteria are demonstrated.
+On 2026-11-02 (America/Sao_Paulo), `npm run smoke:consultation` was run with the production Mastra adapter, Google `gemini-3.5-flash-lite`, prompt `consultation-v1`, real read-only tools, and an isolated temporary database. The provider key was read from the main checkout environment for this process without being copied into the worktree. The command exited 1: **four of six scenarios passed**; both ticket-selection scenarios failed. These are results from one live run, not a general accuracy measurement.
+
+| Scenario | Result | Duration | Reported total tokens | Observation |
+| --- | --- | ---: | ---: | --- |
+| VPN, Windows 10 | Pass | 4,434 ms | 1,387 | Windows 10 article evidence. |
+| VPN, Windows 11 | Pass | 2,003 ms | 1,356 | Windows 11 article evidence; no Windows 10 evidence. |
+| VPN, version unknown | Pass | 2,080 ms | 1,259 | Clarification requested, no platform-specific evidence. |
+| Ticket status without number | Fail | 1,881 ms | 1,104 | The decision requested a number; expected the two owned ticket candidates. |
+| Unknown reference | Fail | 2,071 ms | 1,108 | The decision answered that the reference was not found; expected selection or clarification with owned candidates. |
+| Out-of-scope HR request | Pass | 1,171 ms | 566 | Redirect decision and no ticket action. |
+
+The first Windows 11 decision also included an `Abrir chamado` quick reply, and the unknown-reference decision included `Criar novo chamado`. Instrumented calls with fictional data showed that the model sent `status` as a generic query and omitted the reference kind for `INC-99999`; both were previously treated as unmatched topics. The server now recognizes generic status questions and ticket references while keeping the owner filter, and removes quick replies offering unsupported ticket or device operations and human handoff. This quick-reply filter is heuristic and does not prove that every possible unsupported phrase will be caught.
+
+After the correction, a second live `npm run smoke:consultation` run using Google `gemini-3.5-flash-lite` and prompt `consultation-v2` exited 0: **six of six scenarios passed**. Results below describe one run and are not a general accuracy guarantee.
+
+| Scenario | Result | Duration | Reported total tokens |
+| --- | --- | ---: | ---: |
+| VPN, Windows 10 | Pass | 2,756 ms | 1,471 |
+| VPN, Windows 11 | Pass | 1,817 ms | 1,453 |
+| VPN, version unknown | Pass | 1,880 ms | 1,401 |
+| Ticket status without number | Pass | 1,887 ms | 1,343 |
+| Unknown reference | Pass | 1,800 ms | 1,417 |
+| Out-of-scope HR request | Pass | 1,035 ms | 621 |
+
+The corrected implementation passed `npm run check`: 116 unit, 29 integration and 21 browser tests, in addition to typecheck, lint and build. The full check ran before the metadata-only prompt-version bump from v1 to v2. Keep #6 open until its remaining criteria and the owner's review are complete.
 
 ## Boundaries and review
 

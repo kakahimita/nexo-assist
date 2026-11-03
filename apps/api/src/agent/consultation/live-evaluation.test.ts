@@ -12,4 +12,7 @@ describe('live evaluation assertions', () => {
     const foreign = { ...snapshot, tickets: [{ id: 'fixture-bruno-open', title: 'VPN', status: 'open' as const, priority: 'low' as const, deadline: '2026-11-02T12:00:00.000Z', overdue: false }], evidence: [{ kind: 'ticket' as const, id: 'fixture-bruno-open', title: 'VPN' }] };
     expect(validateLiveCase('status', foreign)).not.toEqual([]);
   });
+  it('rejects a model offering unsupported conversational ticket creation', () => {
+    expect(validateLiveCase('vpn11', { ...snapshot, decision: { ...decision, quickReplies: ['Abrir chamado'] } })).toContain('unsupported quick reply');
+  });
 });

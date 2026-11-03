@@ -5,7 +5,7 @@ confirmed ticket changes, and human handoff with context.
 
 ## Current status
 
-**Identity, history, an initial ticket service, and an agent consultation path are available.** Demo login, employee-isolated history, ticket consultation and confirmed ticket changes use SQLite. The agent consultation streams read-only answers and decision evidence; live-model behavior remains unverified until the separate evaluation passes. Human support workflows and production authentication are not yet implemented.
+**Identity, history, an initial ticket service, and an agent consultation path are available.** Demo login, employee-isolated history, ticket consultation and confirmed ticket changes use SQLite. The agent consultation streams read-only answers and decision evidence; a live evaluation passed six consultation scenarios after correcting ticket selection; broader model reliability remains under evaluation. Human support workflows and production authentication are not yet implemented.
 The project is built collaboratively in small, reviewable deliveries so the
 developer can understand, explain, and modify the implementation.
 
@@ -102,8 +102,7 @@ conversational writes, the session cap, or human handoff.
 `npm run smoke:consultation` separately exercises the production engine with an
 isolated temporary database. It requires a local `GOOGLE_API_KEY`, records model,
 prompt version, latency, available usage, decision, actions and evidence, and
-fails when its assertions fail. No paid fallback is configured. The live gate
-has not been run for this increment; see [consultation verification](docs/agent-consultation-verification.md).
+fails when its assertions fail. No paid fallback is configured. The six-scenario live gate passed on its second run; see [consultation verification](docs/agent-consultation-verification.md).
 
 The optional `npm run smoke:model` explicitly contacts Google using the
 server-only `GOOGLE_API_KEY` in `.env`. Configure a project with free-tier

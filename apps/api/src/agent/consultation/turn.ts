@@ -2,6 +2,7 @@ import { ConsultationEngineDecisionSchema } from '@nexo/contracts';
 import type { ConsultationAction, ConsultationDecisionView, ConsultationEvidence, ConsultationTicketView, ConsultationEngineDecision } from '@nexo/contracts';
 import { ConsultTicketsResultSchema, SearchKnowledgeResultSchema } from '../tools/consultation-tool-schemas.js';
 import type { ConsultationEngineEvent } from './types.js';
+import { isUnsupportedQuickReply } from './quick-replies.js';
 
 export class ConsultationTurn {
   private text = '';
@@ -14,7 +15,7 @@ export class ConsultationTurn {
     if (event.type === 'decision') {
       const parsed = ConsultationEngineDecisionSchema.safeParse(event.decision);
       if (!parsed.success || this.decision) throw new Error('invalid_output');
-      this.decision = parsed.data; return;
+      this.decision = { ...parsed.data, quickReplies: parsed.data.quickReplies.filter((reply) => !isUnsupportedQuickReply(reply)) }; return;
     }
     if (event.type !== 'tool-result' && event.type !== 'tool-error') return;
     if (this.actions.some((item) => item.id === event.toolCallId)) return;

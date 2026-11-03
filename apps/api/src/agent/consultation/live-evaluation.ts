@@ -1,8 +1,10 @@
 ﻿import type { ConsultationTurn } from './turn.js';
+import { isUnsupportedQuickReply } from './quick-replies.js';
 export type LiveCase = 'vpn10' | 'vpn11' | 'unknown-platform' | 'status' | 'unknown-reference' | 'out-of-scope';
 type Snapshot = ReturnType<ConsultationTurn['snapshot']>;
 export function validateLiveCase(name: LiveCase, result: Snapshot): string[] {
   const errors: string[] = [];
+  if (result.decision.quickReplies.some(isUnsupportedQuickReply)) errors.push('unsupported quick reply');
   const known = new Set(['fixture-ana-open', 'fixture-ana-resolved']);
   if (!result.text.trim()) errors.push('empty answer');
   if (result.tickets.some((ticket) => !known.has(ticket.id)) || result.evidence.some((item) => item.kind === 'ticket' && !known.has(item.id))) errors.push('unauthorized ticket');
