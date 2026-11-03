@@ -1,5 +1,5 @@
 ﻿import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConsultationActionSchema, ConsultationTicketViewSchema, type UserView } from '@nexo/contracts';
+import { ConsultationActionSchema, ConsultationTicketViewSchema, type TicketChangeInput, type UserView } from '@nexo/contracts';
 import { z } from 'zod';
 import { KnowledgeService, normalizePlatform } from '../../knowledge/knowledge.service.js';
 import { assertEmployee, TicketService } from '../../tickets/ticket-service.js';
@@ -8,8 +8,8 @@ import { findTicketCandidates } from '../../tickets/ticket-candidates.js';
 import { canReopen, classifyPriority } from '../../tickets/rules.js';
 import { DatabaseService } from '../../database/database.service.js';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { activeRequestMessages, explicitFacts, supportedClassification } from './explicit-facts.js';
-import { ConsultTicketsInputSchema, ConsultTicketsResultSchema, ConversationalDraftInputSchema, ProposeTicketDraftResultSchema, SearchKnowledgeInputSchema, SearchKnowledgeResultSchema } from './consultation-tool-schemas.js';
+import { activeRequestMessages, deriveClassification, explicitFacts } from './explicit-facts.js';
+import { ConsultTicketsInputSchema, ConsultTicketsResultSchema, ProposalInputSchema, ProposeTicketDraftResultSchema, SearchKnowledgeInputSchema, SearchKnowledgeResultSchema } from './consultation-tool-schemas.js';
 
 const normalize = (value: string): string => value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 @Injectable()
@@ -19,21 +19,26 @@ export class ConsultationTools {
     if (!user) throw new UnauthorizedException();
     assertEmployee(user);
     if (!await this.database.client.conversation.findFirst({ where: { id: context.conversationId, ownerId: user.id }, select: { id: true } })) throw new NotFoundException();
-    const parsed = ConversationalDraftInputSchema.parse(input);
-    if (parsed.action === 'create') {
+    const proposal = ProposalInputSchema.parse(input);
+    let change: TicketChangeInput;
+    if (proposal.action === 'create') {
       const messages = await this.database.client.message.findMany({ where: { conversationId: context.conversationId, role: 'employee' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { content: true } });
       const source = messages.map(({ content }) => content);
       const facts = explicitFacts(source);
-      if (facts.impact !== parsed.impact || facts.workState !== parsed.workState || facts.urgency !== parsed.urgency) throw new BadRequestException('Explicit impact, work state and urgency are required');
+      if (!facts.impact || !facts.workState || !facts.urgency) throw new BadRequestException('Explicit impact, work state and urgency are required');
+      if (classifyPriority({ impact: facts.impact, workState: facts.workState, urgency: facts.urgency }) === 'critical') return ProposeTicketDraftResultSchema.parse({ status: 'critical_requires_handoff' });
+      const classification = deriveClassification(source, facts.workState);
+      if (!classification) throw new BadRequestException('Ticket type and category must be supported by the employee');
       const parts = activeRequestMessages(source).map((message) => normalize(message).replace(/[^\p{L}\p{N}]+/gu, ' ').trim());
       const supported = (value: string) => { const text = normalize(value).replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); return text.length > 0 && parts.some((part) => part.includes(text)); };
-      if (!supported(parsed.title) || !supported(parsed.description)) throw new BadRequestException('Title and description must be supported by the employee');
-      if (classifyPriority(parsed) === 'critical') return ProposeTicketDraftResultSchema.parse({ status: 'critical_requires_handoff' });
-      if (!supportedClassification(source, parsed)) throw new BadRequestException('Ticket type and category must be supported by the employee');
+      if (!supported(proposal.title) || !supported(proposal.description)) throw new BadRequestException('Title and description must be supported by the employee');
+      change = { action: 'create', title: proposal.title, description: proposal.description, type: classification.type, category: classification.category, impact: facts.impact, workState: facts.workState, urgency: facts.urgency };
+    } else {
+      change = proposal;
     }
     const owned = await this.tickets.list(user, context.now);
-    if (parsed.action === 'create') {
-      const matches = findTicketCandidates(parsed, owned);
+    if (change.action === 'create') {
+      const matches = findTicketCandidates(change, owned);
       if (matches.length) {
         let reviewed = false;
         if (matches.every(({ match }) => match === 'possible')) {
@@ -51,21 +56,21 @@ export class ConsultationTools {
         if (!reviewed) return ProposeTicketDraftResultSchema.parse({ status: 'duplicate_candidates', candidates: matches.map(({ ticket }) => ticket), candidateMatches: matches.map(({ ticket, match }) => ({ id: ticket.id, match })) });
       }
     } else {
-      const ticket = owned.find((item) => item.id === parsed.ticketId);
+      const ticket = owned.find((item) => item.id === change.ticketId);
       if (!ticket) return ProposeTicketDraftResultSchema.parse({ status: 'ticket_not_found' });
       const latest = await this.database.client.message.findFirst({ where: { conversationId: context.conversationId, role: 'employee' }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { content: true } });
       const employeeText = normalize(latest?.content ?? '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-      const proposedText = normalize(parsed.action === 'supplement' ? parsed.content : parsed.reason).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+      const proposedText = normalize(change.action === 'supplement' ? change.content : change.reason).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
       if (!proposedText || !employeeText.includes(proposedText)) throw new BadRequestException('The employee must provide the proposed content');
-      if (parsed.action === 'supplement' && ticket.status !== 'open') return ProposeTicketDraftResultSchema.parse({ status: 'not_open' });
-      if (parsed.action === 'reopen') {
+      if (change.action === 'supplement' && ticket.status !== 'open') return ProposeTicketDraftResultSchema.parse({ status: 'not_open' });
+      if (change.action === 'reopen') {
         if (ticket.status === 'open') return ProposeTicketDraftResultSchema.parse({ status: 'already_open' });
         if (!ticket.resolvedAt || !canReopen(new Date(ticket.resolvedAt), context.now)) return ProposeTicketDraftResultSchema.parse({ status: 'reopen_not_allowed' });
         const matches = findTicketCandidates(ticket, owned);
         if (matches.length) return ProposeTicketDraftResultSchema.parse({ status: 'duplicate_candidates', candidates: matches.map(({ ticket: match }) => match) });
       }
     }
-    const draft = await this.drafts.createForRun(user, parsed, context);
+    const draft = await this.drafts.createForRun(user, change, context);
     return ProposeTicketDraftResultSchema.parse({ status: 'draft', draftId: draft.id });
   }
   async consultTickets(user: UserView, input: unknown, now: Date) {

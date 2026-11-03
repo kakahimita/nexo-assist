@@ -27,7 +27,7 @@ export function explicitFacts(messages: readonly string[]): Partial<ExplicitFact
   return facts;
 }
 
-export function supportedClassification(messages: readonly string[], input: CreateInput): boolean {
+export function deriveClassification(messages: readonly string[], workState: CreateInput['workState']): { type: CreateInput['type']; category: CreateInput['category'] } | null {
   const source = activeRequestMessages(messages);
   const details = source.map(normalize);
   let explicitCategory: CreateInput['category'] | undefined;
@@ -42,6 +42,7 @@ export function supportedClassification(messages: readonly string[], input: Crea
   if (/\b(?:software|aplicativo)\b/u.test(text)) categories.push('software');
   const category = explicitCategory ?? (categories.length === 1 ? categories[0] : undefined);
   const failure = /nao liga|nao funciona|parou|falha|erro|travou|lento|devagar|bloquead/u.test(text);
-  const expectedType = input.workState === 'request' ? 'REQ' : failure ? 'INC' : undefined;
-  return category === input.category && expectedType === input.type;
+  const type = workState === 'request' ? 'REQ' : failure ? 'INC' : undefined;
+  if (!category || !type) return null;
+  return { type, category };
 }

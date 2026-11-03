@@ -13,7 +13,7 @@ describe('B13: recover an interrupted draft proposal', () => {
     const engine: ConsultationEngine = { source: 'deterministic', promptVersion: 'test', async *run(input) {
       if (!input.runId || !input.conversationId) throw new Error('Missing server context');
       if (!holder.tools) throw new Error('Missing consultation tools');
-      const result = await holder.tools.proposeDraft(input.user, { action: 'create', title: 'Impressora travou', description: 'A impressora travou', type: 'INC', category: 'hardware', impact: 'self', workState: 'workaround', urgency: 'normal' }, { runId: input.runId, conversationId: input.conversationId, now: input.now });
+      const result = await holder.tools.proposeDraft(input.user, { action: 'create', title: 'Impressora travou', description: 'A impressora travou' }, { runId: input.runId, conversationId: input.conversationId, now: input.now });
       yield { type: 'tool-result', toolCallId: 'proposal', tool: 'propose-ticket-draft', result };
       throw new Error('interrupted');
     } };

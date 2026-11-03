@@ -50,34 +50,37 @@ provider key was read from the main checkout environment without being copied
 into the worktree. The six pre-existing consultation scenarios passed.
 
 The four draft scenarios were less reliable. With prompt `consultation-v4` and the
-free-tier `gemini-3.5-flash-lite`, three of four failed: complete draft creation
-(the `propose-ticket-draft` call failed validation, so no pending draft persisted),
-incomplete draft request (the decision returned `answer` instead of `clarify`),
-and duplicate draft request (the open `Notebook lento` ticket was not surfaced).
-Only draft prompt injection passed.
+free-tier `gemini-3.5-flash-lite`, three of four failed: complete draft creation,
+incomplete draft request, and duplicate draft request. Only draft prompt injection
+passed.
 
-The prompt was tightened to `consultation-v5`, spelling out the exact tool enums,
-requiring verbatim title and description, using `clarify` whenever facts are
-missing, and always calling `propose-ticket-draft` so the tool reports duplicates.
-This fixed the incomplete-draft scenario on the free-tier model, but complete
-creation and duplicate detection still fail there. Running the same prompt on
-`gemini-3.5-flash` (the non-lite sibling, which is a paid tier) passed all three
-remaining draft scenarios in one clean run; the run was noisy and the free key is
-rate-limited, so this is one observation, not a reliability guarantee.
+Two changes followed. The tool contract was refactored so the model proposes only
+a title and description, and the server derives impact, work state, urgency, type
+and category from the employee's explicit answers (`ProposalInputSchema` plus
+`deriveClassification`). This removes the model's ability to mis-classify a ticket
+and reduces its burden to verbatim title and description. The prompt was tightened
+to `consultation-v6` to use `clarify` while facts are missing and always call
+`propose-ticket-draft`. The incomplete-draft scenario now passes. Complete creation
+and duplicate detection still fail on the free-tier model, but for a different
+reason: the model returns a structured `answer` without invoking the tool at all,
+rather than failing validation — a tool-calling reliability limit, not an enum
+problem. Running the same flow on `gemini-3.5-flash` (the paid non-lite sibling)
+passed all three draft scenarios in one clean run.
 
 | Model / prompt | create-draft | draft-incomplete | draft-duplicate | draft-injection |
 | --- | --- | --- | --- | --- |
 | `gemini-3.5-flash-lite` / v4 | Fail | Fail | Fail | Pass |
-| `gemini-3.5-flash-lite` / v5 | Fail | Pass | Fail | Pass |
-| `gemini-3.5-flash` / v5 (paid) | Pass | Pass | Pass | Pass* |
+| `gemini-3.5-flash-lite` / v6 | Fail | Pass | Fail | Pass |
+| `gemini-3.5-flash` / v6 (paid) | Pass* | Pass* | Pass* | Pass* |
 
 \* one observation on a rate-limited free key.
 
-The deterministic draft flow is complete, but the free-tier live model does not
-yet reliably drive `propose-ticket-draft` for complete creation or recognize an
-open ticket as a duplicate. Broader live reliability and prompt-injection
-resistance belong to #10, consistent with how #6 was closed. Switching the default
-to a paid model was deliberately not done, to keep the no-paid-fallback principle.
+The deterministic draft flow is complete and the server is now authoritative for
+classification facts, but the free-tier live model does not yet reliably invoke
+`propose-ticket-draft` for complete creation or duplicate detection. Broader live
+reliability and prompt-injection resistance belong to #10, consistent with how #6
+was closed. Switching the default to a paid model was deliberately not done, to
+keep the no-paid-fallback principle.
 
 ## Boundaries and review
 

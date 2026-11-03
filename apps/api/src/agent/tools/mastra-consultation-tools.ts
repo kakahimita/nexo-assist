@@ -1,11 +1,11 @@
 import { createTool } from '@mastra/core/tools';
 import { UserViewSchema } from '@nexo/contracts';
-import { ConsultTicketsInputSchema, ConsultTicketsResultSchema, ConversationalDraftInputSchema, ProposeTicketDraftResultSchema, SearchKnowledgeInputSchema, SearchKnowledgeResultSchema } from './consultation-tool-schemas.js';
+import { ConsultTicketsInputSchema, ConsultTicketsResultSchema, ProposalInputSchema, ProposeTicketDraftResultSchema, SearchKnowledgeInputSchema, SearchKnowledgeResultSchema } from './consultation-tool-schemas.js';
 import type { ConsultationTools } from './consultation-tools.js';
 
 export function createConsultationTools(tools: ConsultationTools) {
   return {
-    proposeDraft: createTool({ id: 'propose-ticket-draft', description: 'Propose a draft for employee review. Never writes a ticket.', inputSchema: ConversationalDraftInputSchema, outputSchema: ProposeTicketDraftResultSchema, execute: async (input, context) => {
+    proposeDraft: createTool({ id: 'propose-ticket-draft', description: 'Propose a draft for employee review. Never writes a ticket.', inputSchema: ProposalInputSchema, outputSchema: ProposeTicketDraftResultSchema, execute: async (input, context) => {
       const user = UserViewSchema.parse(context?.requestContext?.get('user'));
       const now = context?.requestContext?.get('now');
       const conversationId = context?.requestContext?.get('conversationId');
