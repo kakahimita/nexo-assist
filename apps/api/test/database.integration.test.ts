@@ -39,11 +39,11 @@ describe('B17 / PRD p. 2: migrated, file-backed SQLite persistence', () => {
       expect(before.some((ticket) => ticket.owner.email === 'bruno.lima@nexo.com.br')).toBe(true);
       const open = before.find((ticket) => ticket.owner.email === 'ana.souza@nexo.com.br' && ticket.status === 'open')!;
       expect(deadline(open.slaStartedAt, 'medium').getTime()).toBeLessThan(Date.now());
-      await client.ticket.update({ where: { id: open.id }, data: { description: 'AlteraÃ§Ã£o preservada' } });
+      await client.ticket.update({ where: { id: open.id }, data: { description: 'Alteração preservada' } });
       await initializeDatabase(client);
       await initializeDatabase(client);
       expect(await client.ticket.count()).toBe(before.length);
-      expect((await client.ticket.findUniqueOrThrow({ where: { id: open.id } })).description).toBe('AlteraÃ§Ã£o preservada');
+      expect((await client.ticket.findUniqueOrThrow({ where: { id: open.id } })).description).toBe('Alteração preservada');
     } finally { await client.$disconnect(); await database.cleanup(); }
   });
   it('B01: seeds the same fictional identities on repeated initialization', async () => {
