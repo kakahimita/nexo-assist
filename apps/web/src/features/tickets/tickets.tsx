@@ -11,6 +11,7 @@ import {
   type TicketView,
 } from '@nexo/contracts';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { priorities } from './labels';
 
 const draftKey = 'nexo_ticket_draft';
 const categories: Record<string, string> = {
@@ -20,12 +21,6 @@ const categories: Record<string, string> = {
   software: 'Software',
   email: 'E-mail',
   other: 'Outros',
-};
-const priorities: Record<string, string> = {
-  critical: 'Crítica',
-  high: 'Alta',
-  medium: 'Média',
-  low: 'Baixa',
 };
 const impacts: Record<string, string> = {
   self: 'Somente eu',
