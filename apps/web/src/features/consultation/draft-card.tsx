@@ -198,8 +198,13 @@ export function DraftCard({
   }
   const value = draft?.input;
   return (
-    <article className="ticket-card" aria-label="Rascunho do chamado">
-      <h3>Rascunho do chamado</h3>
+    <article className="ticket-card draft-card" aria-label="Rascunho do chamado">
+      <div className="draft-card-heading">
+        <h3>Rascunho do chamado</h3>
+        {draft?.status === 'pending' && (
+          <span className="draft-pending">Aguardando confirmação</span>
+        )}
+      </div>
       {error && <p role="alert">{error}</p>}
       {!draft && !error && <p role="status">Carregando rascunho...</p>}
       {draft?.status === 'committed' && <p>Chamado confirmado.</p>}
@@ -293,17 +298,19 @@ export function DraftCard({
           <>
             {value.action === 'create' ? (
               <>
-                <p>{value.title}</p>
-                <p>{value.description}</p>
-                <p>
-                  Tipo: {value.type === 'INC' ? 'Incidente' : 'Requisição'} · Categoria:{' '}
-                  {categories[value.category]}
-                </p>
-                <p>Prioridade: {draft.priority && priorities[draft.priority]}</p>
-                <p>Pessoas afetadas: {impacts[value.impact]}</p>
-                <p>
-                  {states[value.workState]} · {urgencies[value.urgency]}
-                </p>
+                <h4 className="draft-title">{value.title}</h4>
+                <p className="draft-description">{value.description}</p>
+                <div className="draft-details">
+                  <p>
+                    Tipo: {value.type === 'INC' ? 'Incidente' : 'Requisição'} · Categoria:{' '}
+                    {categories[value.category]}
+                  </p>
+                  <p>Prioridade: {draft.priority && priorities[draft.priority]}</p>
+                  <p>Pessoas afetadas: {impacts[value.impact]}</p>
+                  <p>
+                    {states[value.workState]} · {urgencies[value.urgency]}
+                  </p>
+                </div>
                 {!!draft.candidates?.length && (
                   <div>
                     <p>Confira se algum chamado trata do mesmo problema:</p>
@@ -362,27 +369,29 @@ export function DraftCard({
                 ))}
               </div>
             )}
-            <button
-              type="button"
-              disabled={
-                busy ||
-                !!draft.candidates?.some((candidate) => !dismissed.includes(candidate.id)) ||
-                conflicts.some((candidate) => !dismissed.includes(candidate.id))
-              }
-              onClick={() => void perform('confirm')}
-            >
-              Confirmar rascunho
-            </button>
-            <button
-              type="button"
-              disabled={busy || value.action === 'transfer'}
-              onClick={() => setEditing(true)}
-            >
-              Editar rascunho
-            </button>
-            <button type="button" disabled={busy} onClick={() => void perform('cancel')}>
-              Cancelar rascunho
-            </button>
+            <div className="draft-actions">
+              <button
+                type="button"
+                disabled={
+                  busy ||
+                  !!draft.candidates?.some((candidate) => !dismissed.includes(candidate.id)) ||
+                  conflicts.some((candidate) => !dismissed.includes(candidate.id))
+                }
+                onClick={() => void perform('confirm')}
+              >
+                Confirmar rascunho
+              </button>
+              <button
+                type="button"
+                disabled={busy || value.action === 'transfer'}
+                onClick={() => setEditing(true)}
+              >
+                Editar rascunho
+              </button>
+              <button type="button" disabled={busy} onClick={() => void perform('cancel')}>
+                Cancelar rascunho
+              </button>
+            </div>
           </>
         ))}
     </article>

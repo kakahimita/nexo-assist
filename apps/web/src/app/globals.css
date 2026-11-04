@@ -687,6 +687,81 @@ textarea {
 .ticket-form button {
   margin: 0.3rem 0.4rem 0.3rem 0;
 }
+.draft-card {
+  padding: 1rem 1.1rem 0;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px #1b24310d,
+    0 6px 18px #1b24310a;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.draft-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+.draft-card-heading h3 {
+  margin: 0;
+  color: #697386;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.draft-pending {
+  color: #875400;
+  font-size: 0.85rem;
+}
+.draft-pending::before {
+  content: '●';
+  color: #e59a00;
+  margin-right: 0.4rem;
+}
+.draft-title {
+  margin: 0.65rem 0 0.4rem;
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+.draft-description {
+  color: #52606d;
+  margin: 0 0 1rem;
+}
+.draft-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid #e6e8ec;
+  font-size: 0.9rem;
+}
+.draft-details p {
+  margin: 0;
+}
+.draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem -1.1rem 0;
+  padding: 0.65rem 1.1rem;
+  background: #f5f6f8;
+}
+.draft-actions button {
+  margin: 0;
+  background: #fff;
+  border: 1px solid #d7dce3;
+  color: #1b2431;
+}
+.draft-actions button:first-child {
+  background: #0062c4;
+  border-color: #0062c4;
+  color: #fff;
+}
+@media (max-width: 480px) {
+  .draft-details {
+    grid-template-columns: 1fr;
+  }
+}
 [role='alert'] {
   color: #9b1c1c;
 }
