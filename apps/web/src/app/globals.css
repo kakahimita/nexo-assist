@@ -466,13 +466,149 @@ textarea {
 .history textarea {
   min-height: 7rem;
 }
+.employee-layout {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  min-height: 100vh;
+  background: #fff;
+  color: #1b2431;
+  font-family: 'Schibsted Grotesk', sans-serif;
+}
+.employee-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px 14px 14px;
+  border-right: 1px solid #e6e8ec;
+}
+.employee-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.employee-brand svg {
+  width: 20px;
+  height: 20px;
+  color: #037af6;
+}
+.profile-navigation {
+  display: grid;
+  gap: 2px;
+  margin-top: 22px;
+}
 .profile-navigation button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 500;
   background: transparent;
   color: #52606d;
+}
+.profile-navigation svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 .profile-navigation button[aria-current='page'] {
   background: #eaf4fd;
   color: #0062c4;
+  font-weight: 600;
+}
+.employee-account {
+  margin-top: auto;
+  padding: 14px 8px 0;
+  border-top: 1px solid #e6e8ec;
+  font-size: 13px;
+}
+.employee-account p {
+  display: grid;
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.employee-account span {
+  color: #697386;
+  font-size: 11.5px;
+}
+.employee-account button {
+  background: transparent;
+  color: #52606d;
+  padding: 6px 0;
+}
+.employee-main {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+.employee-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 0 32px;
+  border-bottom: 1px solid #e6e8ec;
+  color: #697386;
+  font-size: 13.5px;
+}
+.employee-topbar strong {
+  color: #1b2431;
+}
+.employee-content {
+  max-width: 900px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 24px 40px 48px;
+}
+.employee-content nav[aria-label='Conversas'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.employee-content textarea {
+  min-height: 7rem;
+}
+@media (max-width: 700px) {
+  .employee-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .employee-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #e6e8ec;
+  }
+  .profile-navigation {
+    display: flex;
+    margin-top: 12px;
+  }
+  .profile-navigation button {
+    width: auto;
+  }
+  .employee-account {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .employee-account p {
+    min-width: 0;
+    margin: 0;
+  }
+  .employee-topbar {
+    padding: 0 20px;
+  }
+  .employee-content {
+    padding: 20px;
+  }
 }
 .profile {
   max-width: 600px;
