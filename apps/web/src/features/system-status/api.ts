@@ -3,7 +3,7 @@ import type { HealthResponse } from '@nexo/contracts';
 
 export type ApiHealthErrorCode = 'network' | 'http' | 'invalid-response';
 
-const DEFAULT_API_BASE_URL = 'http://localhost:3001/api';
+const DEFAULT_API_BASE_URL = '/api';
 
 export class ApiHealthError extends Error {
   readonly code: ApiHealthErrorCode;
@@ -16,7 +16,7 @@ export class ApiHealthError extends Error {
 }
 
 export function getApiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+  return DEFAULT_API_BASE_URL;
 }
 
 export async function fetchApiHealth(
@@ -25,7 +25,7 @@ export async function fetchApiHealth(
 ): Promise<HealthResponse> {
   const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
 
-  if (!/^https?:\/\//i.test(normalizedBaseUrl)) {
+  if (!/^(https?:\/\/|\/)/i.test(normalizedBaseUrl)) {
     throw new ApiHealthError('network');
   }
 

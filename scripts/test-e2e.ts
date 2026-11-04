@@ -12,9 +12,11 @@ const webBuildDirectory = resolve(repositoryRoot, 'apps', 'web', '.next');
 const nextCli = resolve(repositoryRoot, 'node_modules', 'next', 'dist', 'bin', 'next');
 const playwrightCli = resolve(repositoryRoot, 'node_modules', '@playwright', 'test', 'cli.js');
 
-const apiUrl = 'http://127.0.0.1:3001/api';
-const webUrl = 'http://localhost:3000';
-const webReadinessUrl = 'http://127.0.0.1:3000';
+const apiPort = Number(process.env.E2E_API_PORT ?? '3001');
+const webPort = Number(process.env.E2E_WEB_PORT ?? '3000');
+const apiUrl = `http://127.0.0.1:${apiPort}/api`;
+const webUrl = `http://localhost:${webPort}`;
+const webReadinessUrl = `http://127.0.0.1:${webPort}`;
 const startupDeadlineMs = 30_000;
 
 function delay(milliseconds: number): Promise<void> {
@@ -77,8 +79,8 @@ export async function runFoundationBrowserTests(): Promise<number> {
   }
 
   for (const [port, label] of [
-    [3000, 'web'],
-    [3001, 'API'],
+    [webPort, 'web'],
+    [apiPort, 'API'],
   ] as const) {
     if (!(await isPortFree(port))) {
       throw new Error(
@@ -98,7 +100,7 @@ export async function runFoundationBrowserTests(): Promise<number> {
         ...process.env,
         CONSULTATION_ENGINE: 'fixture',
         API_HOST: '127.0.0.1',
-        API_PORT: '3001',
+        API_PORT: String(apiPort),
         WEB_ORIGIN: webUrl,
         DATABASE_URL: database.url,
       },
@@ -106,9 +108,9 @@ export async function runFoundationBrowserTests(): Promise<number> {
       stdio: 'inherit',
     });
 
-    webProcess = spawn(process.execPath, [nextCli, 'start', '-p', '3000'], {
+    webProcess = spawn(process.execPath, [nextCli, 'start', '-p', String(webPort)], {
       cwd: resolve(repositoryRoot, 'apps', 'web'),
-      env: process.env,
+      env: { ...process.env, API_BASE_URL: apiUrl },
       shell: false,
       stdio: 'inherit',
     });
@@ -121,7 +123,7 @@ export async function runFoundationBrowserTests(): Promise<number> {
 
     const playwright = spawn(process.execPath, [playwrightCli, 'test'], {
       cwd: repositoryRoot,
-      env: process.env,
+      env: { ...process.env, PLAYWRIGHT_BASE_URL: webUrl },
       shell: false,
       stdio: 'inherit',
     });

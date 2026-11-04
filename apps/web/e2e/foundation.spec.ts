@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('B17 / PRD pp. 2–3: browser reaches the real API', async ({ page }) => {
-  const healthResponse = page.waitForResponse('http://localhost:3001/api/health');
+  const healthResponse = page.waitForResponse('**/api/health');
   await page.goto('/diagnostico');
 
   expect((await healthResponse).ok()).toBe(true);
