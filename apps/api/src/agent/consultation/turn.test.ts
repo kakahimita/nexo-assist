@@ -6,6 +6,9 @@ const ticket = {
   status: 'open',
   priority: 'medium',
   deadline: '2026-11-02T12:00:00.000Z',
+  lastUpdate: '2026-10-30T12:00:00.000Z',
+  category: 'hardware',
+  createdAt: '2026-10-20T12:00:00.000Z',
   overdue: true,
 };
 const article = (id: string, applicability: string) => ({
@@ -82,7 +85,12 @@ describe('B12: decisions use actual tool results', () => {
     } as never);
     turn.apply({ type: 'decision', decision });
     expect(turn.snapshot().tickets).toEqual([
-      expect.objectContaining({ id: 't2', lastUpdate: '2026-11-01T12:00:00.000Z' }),
+      expect.objectContaining({
+        id: 't2',
+        lastUpdate: '2026-11-01T12:00:00.000Z',
+        category: 'hardware',
+        createdAt: '2026-10-20T12:00:00.000Z',
+      }),
     ]);
   });
   it('does not offer a misleading creation shortcut while duplicate candidates need review', () => {

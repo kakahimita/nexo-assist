@@ -106,7 +106,33 @@ describe('B12/B13: consultation wire contracts', () => {
       ConsultationTicketViewSchema.parse({ ...ticket, lastUpdate: '2026-11-01T12:00:00.000Z' })
         .lastUpdate,
     ).toBe('2026-11-01T12:00:00.000Z');
-    expect(ConsultationTicketViewSchema.parse(ticket).lastUpdate).toBeNull();
+    const legacy = ConsultationTicketViewSchema.parse(ticket);
+    expect(legacy.lastUpdate).toBeNull();
+    expect(legacy.category).toBeNull();
+    expect(legacy.createdAt).toBeNull();
+  });
+  it('preserves the ticket category and creation date and rejects unknown values', () => {
+    const ticket = {
+      id: 'INC-1',
+      title: 'Notebook lento',
+      status: 'open',
+      priority: 'medium',
+      deadline: '2026-11-03T12:00:00.000Z',
+      overdue: true,
+    };
+    expect(
+      ConsultationTicketViewSchema.parse({
+        ...ticket,
+        category: 'hardware',
+        createdAt: '2026-11-04T01:00:00.000Z',
+      }),
+    ).toMatchObject({ category: 'hardware', createdAt: '2026-11-04T01:00:00.000Z' });
+    expect(ConsultationTicketViewSchema.safeParse({ ...ticket, category: 'printer' }).success).toBe(
+      false,
+    );
+    expect(
+      ConsultationTicketViewSchema.safeParse({ ...ticket, createdAt: '04/11/2026' }).success,
+    ).toBe(false);
   });
   it('rejects invalid or forged decisions', () => {
     for (const patch of [

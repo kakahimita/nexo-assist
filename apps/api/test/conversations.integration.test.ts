@@ -123,4 +123,74 @@ describe('B01 B13 B16: authorized persistent history', () => {
       await db.cleanup();
     }
   });
+  it('restores a stored ticket decision that predates category and creation metadata', async () => {
+    const db = await createTestDatabase();
+    const env = {
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    };
+    let app = await createApp(env);
+    try {
+      let server = app.getHttpServer();
+      const login = await request(server)
+        .post('/api/session')
+        .send({ email: 'ana.souza@nexo.com.br', password: 'x' })
+        .expect(201);
+      const cookie = String(login.headers['set-cookie']?.[0]);
+      const conversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', cookie)
+        .send({})
+        .expect(201);
+      const path = `/api/conversations/${conversation.body.id}/messages`;
+      const client = createDatabaseClient(db.url);
+      try {
+        await client.message.create({
+          data: {
+            conversationId: conversation.body.id,
+            content: 'O chamado está aberto.',
+            role: 'agent',
+            status: 'completed',
+            decision: {
+              create: {
+                intent: 'Consulta de chamado',
+                action: 'answer',
+                appliedRule: 'Somente chamados do funcionário',
+                confidence: 0.8,
+                justification: 'Chamado identificado.',
+                missingFactsJson: '[]',
+                quickRepliesJson: '[]',
+                actionsJson: '[]',
+                evidenceJson: '[]',
+                ticketsJson:
+                  '[{"id":"INC-legacy","title":"Notebook antigo","status":"open","priority":"medium","deadline":"2026-11-07T12:00:00.000Z","lastUpdate":"2026-10-21T12:00:00.000Z","overdue":false}]',
+                outcome: 'completed',
+                source: 'deterministic',
+                promptVersion: 'consultation-v1',
+              },
+            },
+          },
+        });
+      } finally {
+        await client.$disconnect();
+      }
+      await app.close();
+      app = await createApp(env);
+      server = app.getHttpServer();
+      const messages = (await request(server).get(path).set('Cookie', cookie).expect(200)).body;
+      expect(messages).toHaveLength(1);
+      expect(messages[0].decision.tickets).toEqual([
+        expect.objectContaining({
+          id: 'INC-legacy',
+          category: null,
+          createdAt: null,
+        }),
+      ]);
+    } finally {
+      await app.close();
+      await db.cleanup();
+    }
+  });
 });

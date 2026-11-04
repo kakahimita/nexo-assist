@@ -18,3 +18,11 @@ export function formatDeadline(value: string): string {
     timeStyle: 'short',
   }).format(new Date(value));
 }
+
+export function formatCreatedAt(value: string | null): string {
+  if (value === null) return '—';
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    dateStyle: 'short',
+  }).format(new Date(value));
+}

@@ -187,11 +187,13 @@ export class ConsultationTools {
     const { query, kind = 'any' } = ConsultTicketsInputSchema.parse(input);
     const owned = await this.tickets.list(user, now);
     const candidates = owned.map(
-      ({ id, title, status, priority, deadline, slaStartedAt, overdue }) => ({
+      ({ id, title, status, priority, category, createdAt, deadline, slaStartedAt, overdue }) => ({
         id,
         title,
         status,
         priority,
+        category,
+        createdAt,
         deadline,
         lastUpdate: slaStartedAt,
         overdue,

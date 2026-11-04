@@ -865,6 +865,86 @@ textarea {
 .consultation-actions .failed {
   color: #9b1c1c;
 }
+.consultation-ticket-card {
+  margin: 0.75rem 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e3e6ea;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px #1b24310d,
+    0 6px 18px #1b24310a;
+  overflow-wrap: anywhere;
+}
+.consultation-ticket-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+}
+.consultation-ticket-kind {
+  color: #697386;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.consultation-ticket-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #eef6f1;
+  color: #1f5c43;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.consultation-ticket-status::before {
+  content: '●';
+  font-size: 0.6rem;
+}
+.consultation-ticket-status.resolved {
+  background: #f3f4f6;
+  color: #4a5565;
+}
+.consultation-ticket-card h3 {
+  margin: 0.55rem 0 0.4rem;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.consultation-ticket-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid #e6e8ec;
+  font-size: 0.85rem;
+}
+.consultation-ticket-meta p,
+.consultation-ticket-update {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.consultation-ticket-label {
+  color: #697386;
+}
+.consultation-ticket-update {
+  padding-top: 0.7rem;
+  border-top: 1px solid #e6e8ec;
+  font-size: 0.85rem;
+}
+.consultation-ticket-update-value {
+  color: #875400;
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .consultation-ticket-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .decision-detail {
   margin: 0.5rem 0;
   color: #52606d;

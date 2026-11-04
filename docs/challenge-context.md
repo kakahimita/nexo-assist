@@ -117,4 +117,6 @@ The conversational ticket-draft increment for #24 (part of #7) was merged in PR 
 
 The chat ticket-consultation increment for [#36](https://github.com/kakahimita/nexo-assist/issues/36) (part of #9) adds the detail card and the automatic overdue transfer; its evidence and remaining differences from Screen 3 are recorded in [ticket consultation verification](ticket-consultation-verification.md).
 
+The ticket-card follow-up [#38](https://github.com/kakahimita/nexo-assist/issues/38) (part of #9) adds server-owned category and creation metadata, the status badge, the amber last update, and the responsive legacy fallback; its executed checks and remaining visual differences are recorded in the same verification document.
+
 The analyst-console increment for [#30](https://github.com/kakahimita/nexo-assist/issues/30) (part of #8) delivers the analyst queue, atomic claim, reply, return, and close on top of the employee handoff core; its deterministic evidence and boundaries are recorded in [human support verification](human-support-verification.md).

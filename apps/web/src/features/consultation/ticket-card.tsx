@@ -1,7 +1,7 @@
 'use client';
 import type { ConsultationTicketView } from '@nexo/contracts';
-import { priorities, ticketStatusLabel } from '../tickets/labels';
-import { formatDeadline, formatElapsed } from './ticket-card-format';
+import { categories, priorities, ticketStatusLabel } from '../tickets/labels';
+import { formatCreatedAt, formatDeadline, formatElapsed } from './ticket-card-format';
 
 export function TicketCard({
   ticket,
@@ -11,16 +11,46 @@ export function TicketCard({
   now: Date;
 }): React.JSX.Element {
   return (
-    <article className="ticket-card" aria-label={`Chamado ${ticket.title}`}>
+    <article
+      className="ticket-card consultation-ticket-card"
+      aria-label={`Chamado ${ticket.title}`}
+    >
+      <div className="consultation-ticket-heading">
+        <span className="consultation-ticket-kind">Chamado</span>
+        <span className={`consultation-ticket-status ${ticket.status}`}>
+          {ticketStatusLabel(ticket.status)}
+        </span>
+      </div>
       <h3>{ticket.title}</h3>
-      <p>
-        Situação: {ticketStatusLabel(ticket.status)} · Prioridade: {priorities[ticket.priority]}
+      <div className="consultation-ticket-meta">
+        <p>
+          <span className="consultation-ticket-label">Categoria:</span>{' '}
+          {ticket.category ? categories[ticket.category] : '—'}
+        </p>
+        <p>
+          <span className="consultation-ticket-label">Prioridade:</span>{' '}
+          {priorities[ticket.priority]}
+        </p>
+        <p>
+          <span className="consultation-ticket-label">Criado em:</span>{' '}
+          {ticket.createdAt ? (
+            <time dateTime={ticket.createdAt}>{formatCreatedAt(ticket.createdAt)}</time>
+          ) : (
+            '—'
+          )}
+        </p>
+        <p>
+          <span className="consultation-ticket-label">Prazo:</span>{' '}
+          {formatDeadline(ticket.deadline)}
+          {ticket.overdue && <strong> · Prazo vencido</strong>}
+        </p>
+      </div>
+      <p className="consultation-ticket-update">
+        <span className="consultation-ticket-label">Última atualização:</span>{' '}
+        <span className="consultation-ticket-update-value">
+          {formatElapsed(ticket.lastUpdate, now)}
+        </span>
       </p>
-      <p>
-        Prazo: {formatDeadline(ticket.deadline)}
-        {ticket.overdue && <strong> · Prazo vencido</strong>}
-      </p>
-      <p>Última atualização: {formatElapsed(ticket.lastUpdate, now)}</p>
     </article>
   );
 }

@@ -53,6 +53,14 @@ describe('B03/B16: authorized read-only consultation', () => {
         expect.arrayContaining(['fixture-ana-open', 'fixture-ana-resolved']),
       );
       expect(all.tickets.map((ticket) => ticket.id)).not.toContain('fixture-bruno-open');
+      expect(all.tickets.find((ticket) => ticket.id === 'fixture-ana-open')).toMatchObject({
+        category: 'hardware',
+        createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+      });
+      expect(all.tickets.find((ticket) => ticket.id === 'fixture-ana-resolved')).toMatchObject({
+        category: 'access',
+        createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+      });
       expect(await tools.consultTickets(ana, { query: 'status' }, new Date())).toMatchObject({
         match: 'multiple',
         tickets: all.tickets,

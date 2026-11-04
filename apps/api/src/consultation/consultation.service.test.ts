@@ -8,6 +8,8 @@ const ticket = {
   title: 'Notebook lento',
   status: 'open',
   priority: 'medium',
+  category: 'hardware',
+  createdAt: '2026-10-18T12:00:00.000Z',
   deadline: '2026-10-30T12:00:00.000Z',
   lastUpdate: '2026-10-20T12:00:00.000Z',
   overdue: true,

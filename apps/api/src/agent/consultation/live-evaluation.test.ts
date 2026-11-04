@@ -58,6 +58,8 @@ describe('live evaluation assertions', () => {
           title: 'VPN',
           status: 'open' as const,
           priority: 'low' as const,
+          category: null,
+          createdAt: null,
           deadline: '2026-11-02T12:00:00.000Z',
           lastUpdate: null,
           overdue: false,
