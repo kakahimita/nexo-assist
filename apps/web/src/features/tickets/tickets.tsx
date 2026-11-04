@@ -551,8 +551,16 @@ export function Tickets({
           <button
             disabled={
               busy ||
-              !!draft.candidates?.some((candidate) => !dismissed.includes(candidate.id)) ||
-              conflicts.some((candidate) => !dismissed.includes(candidate.id))
+              !!draft.candidates?.some(
+                (candidate) =>
+                  draft.candidateMatches?.find((match) => match.id === candidate.id)?.match ===
+                    'possible' && !dismissed.includes(candidate.id),
+              ) ||
+              conflicts.some(
+                (candidate) =>
+                  conflictMatches.find((match) => match.id === candidate.id)?.match === 'possible' &&
+                  !dismissed.includes(candidate.id),
+              )
             }
             onClick={() => void confirmDraft()}
           >
