@@ -123,6 +123,7 @@ export function History({
             <Consultation
               key={selected}
               conversationId={selected}
+              conversation={conversations.find((item) => item.id === selected)!}
               messages={messages}
               setMessages={setMessages}
               onUnauthorized={onLogout}

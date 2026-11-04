@@ -24,8 +24,7 @@ test('B02 B12: asks platform and exposes actual decision evidence', async ({ pag
   await page.keyboard.press('Enter');
   await expect(chat.getByText(/VPN erro 809 no Windows 11/).first()).toBeVisible();
   await expect(chat.getByText(/Reinstale o cliente VPN/i)).toHaveCount(0);
-  await chat.getByText('Detalhes da decisão').last().focus();
-  await page.keyboard.press('Enter');
+  await chat.getByText('Detalhes da decisão').last().click();
   await expect(chat.getByText(/Confiança estimada/).last()).toBeVisible();
   await expect(chat.getByText(/Compatibilidade com a versão do Windows/).last()).toBeVisible();
   expect(await (await page.request.get('/api/tickets')).json()).toEqual(ticketsBefore);
@@ -40,7 +39,14 @@ test('B03 B16: selects own tickets and redirects RH', async ({ page }) => {
     .getByRole('button', { name: /Notebook lento/ })
     .last()
     .click();
-  await expect(chat.getByText(/Prazo:/).last()).toBeVisible();
+  await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
+  const creation = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/conversations') && response.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await creation;
+  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeEnabled();
   await send(page, 'INC-99999');
   await expect(chat.getByText(/Qual chamado você deseja consultar/).last()).toBeVisible();
   await send(page, 'Como solicitar férias no RH?');

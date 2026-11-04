@@ -9,7 +9,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { MessageInputSchema } from '@nexo/contracts';
+import { MessageInputSchema, RequestHandoffInputSchema } from '@nexo/contracts';
 import { z } from 'zod';
 import { IdentityGuard, type AuthRequest } from '../identity/identity.guard.js';
 import { ConversationsService } from './conversations.service.js';
@@ -39,5 +39,14 @@ export class ConversationsController {
     const parsed = MessageInputSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException();
     return this.conversations.append(request.user, id, parsed.data.content);
+  }
+  @Post(':id/handoff') handoff(
+    @Req() request: AuthRequest,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    const parsed = RequestHandoffInputSchema.safeParse(body);
+    if (!parsed.success) throw new BadRequestException();
+    return this.conversations.requestHandoff(request.user, id, parsed.data.reason);
   }
 }

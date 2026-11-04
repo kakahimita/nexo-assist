@@ -33,6 +33,7 @@ export class ConsultationController {
     const parsed = MessageInputSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException();
     const accepted = await this.conversations.append(request.user, id, parsed.data.content);
+    const stateVersion = await this.conversations.captureAgentRun(request.user, id);
     const abort = new AbortController();
     let complete = false;
     response.on('close', () => {
@@ -44,12 +45,18 @@ export class ConsultationController {
     response.setHeader('X-Accel-Buffering', 'no');
     response.flushHeaders();
     try {
+      if (stateVersion === null) {
+        response.write(encodeSse({ type: 'user-message', message: accepted }));
+        response.write(encodeSse({ type: 'handoff-waiting' }));
+        return;
+      }
       for await (const event of this.consultation.run(
         request.user,
         id,
         accepted,
         abort.signal,
         randomUUID(),
+        stateVersion,
       )) {
         if (!response.destroyed) response.write(encodeSse(event));
       }

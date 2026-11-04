@@ -15,12 +15,13 @@ describe('SSE consultation parser', () => {
     await readConsultationStream(
       stream(
         ': ping\n\ndata: {"type":"text-',
-        'delta","text":"Olá"}\n\ndata: {"type":"error","code":"quota"}\n\n',
+        'delta","text":"Olá"}\n\ndata: {"type":"handoff-waiting"}\n\ndata: {"type":"error","code":"quota"}\n\n',
       ),
       (event) => events.push(event),
     );
     expect(events).toEqual([
       { type: 'text-delta', text: 'Olá' },
+      { type: 'handoff-waiting' },
       { type: 'error', code: 'quota' },
     ]);
   });
