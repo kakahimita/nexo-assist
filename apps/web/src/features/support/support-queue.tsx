@@ -43,6 +43,7 @@ export function SupportQueue({
 }): React.JSX.Element {
   return (
     <section aria-label="Conversas" className="support-list">
+      <h2>Conversas</h2>
       <nav aria-label="Filtros" className="support-filters">
         {filters.map(({ value, label }) => (
           <button
@@ -75,13 +76,19 @@ export function SupportQueue({
                 aria-current={selectedId === item.id ? 'true' : undefined}
                 onClick={() => onSelect(item.id)}
               >
-                <span aria-hidden="true">{item.employee.name.slice(0, 2).toUpperCase()}</span>
-                <strong>{item.employee.name}</strong>
-                <span>{item.lastMessage?.content ?? 'Sem mensagens.'}</span>
-                <span>{stateLabels[item.state]}</span>
-                {item.handoff && <span>{reasonLabels[item.handoff.reason]}</span>}
+                <span aria-hidden="true" className="support-queue-initials">
+                  {item.employee.name.slice(0, 2).toUpperCase()}
+                </span>
+                <strong className="support-queue-name">{item.employee.name}</strong>
+                <span className="support-queue-preview">
+                  {item.lastMessage?.content ?? 'Sem mensagens.'}
+                </span>
+                <span className="support-queue-state">{stateLabels[item.state]}</span>
+                {item.handoff && (
+                  <span className="support-queue-reason">{reasonLabels[item.handoff.reason]}</span>
+                )}
                 {item.lastMessage && (
-                  <time dateTime={item.lastMessage.createdAt}>
+                  <time className="support-queue-time" dateTime={item.lastMessage.createdAt}>
                     {new Intl.DateTimeFormat('pt-BR', {
                       dateStyle: 'short',
                       timeStyle: 'short',

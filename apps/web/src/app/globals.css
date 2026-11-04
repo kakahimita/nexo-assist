@@ -1061,6 +1061,10 @@ button:disabled {
   gap: 0.5rem;
   min-width: 0;
 }
+.support-list h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
 .support-list ul {
   display: grid;
   gap: 0.5rem;
@@ -1085,8 +1089,8 @@ button:disabled {
   border-color: #0062c4;
   box-shadow: 0 0 0 2px #0062c426;
 }
-.support-list li > button > span:first-child {
-  grid-row: span 2;
+.support-queue-initials {
+  grid-row: span 3;
   display: grid;
   place-items: center;
   width: 2rem;
@@ -1095,7 +1099,11 @@ button:disabled {
   background: #eaf4fd;
   color: #0062c4;
 }
-.support-list li > button > span:nth-of-type(2) {
+.support-queue-name {
+  grid-column: 2;
+  overflow-wrap: anywhere;
+}
+.support-queue-preview {
   grid-column: 2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1103,7 +1111,13 @@ button:disabled {
   color: #52606d;
   font-size: 0.85rem;
 }
-.support-list li > button > time {
+.support-queue-state,
+.support-queue-reason {
+  grid-column: 2;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+.support-queue-time {
   grid-column: 3;
   grid-row: 1;
   color: #697386;
@@ -1113,9 +1127,8 @@ button:disabled {
   .support-list li > button {
     grid-template-columns: auto minmax(0, 1fr);
   }
-  .support-list li > button > time {
+  .support-queue-time {
     grid-column: 2;
-    grid-row: auto;
   }
 }
 .support-detail {

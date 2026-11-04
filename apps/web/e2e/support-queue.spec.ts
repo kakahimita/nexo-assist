@@ -21,9 +21,11 @@ test('B11 V04: announces queue loading without presenting it as empty', async ({
 
   await expect(page.getByText('Carregando conversas…')).toBeVisible();
   await expect(page.getByText('Nenhuma conversa.')).toHaveCount(0);
+  await page.screenshot({ path: 'outputs/analyst-queue-loading-1440x900.png', fullPage: true });
 
   release();
   await expect(page.getByText('Nenhuma conversa neste filtro.')).toBeVisible();
+  await page.screenshot({ path: 'outputs/analyst-queue-empty-1440x900.png', fullPage: true });
 });
 
 test('B11: retries a failed queue request without treating it as empty', async ({ page }) => {
@@ -37,6 +39,7 @@ test('B11: retries a failed queue request without treating it as empty', async (
 
   await expect(page.getByText('Não foi possível carregar as conversas.')).toBeVisible();
   await expect(page.getByText('Nenhuma conversa neste filtro.')).toHaveCount(0);
+  await page.screenshot({ path: 'outputs/analyst-queue-error-1440x900.png', fullPage: true });
   await page.getByRole('button', { name: 'Tentar novamente' }).click();
   await expect(page.getByText('Nenhuma conversa neste filtro.')).toBeVisible();
   await expect(page.getByText('Não foi possível carregar as conversas.')).toHaveCount(0);
@@ -179,6 +182,7 @@ test('B11 V04: presents supported queue facts, filters, and keyboard selection',
   await expect(page.getByRole('region', { name: 'Atendimento' })).toContainText(
     selectedItem.employee.name,
   );
+  await page.screenshot({ path: 'outputs/analyst-queue-selected-1440x900.png', fullPage: true });
 });
 
 for (const viewport of [
@@ -219,5 +223,9 @@ for (const viewport of [
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
+    await page.screenshot({
+      path: `outputs/analyst-queue-populated-${viewport.width}x${viewport.height}.png`,
+      fullPage: true,
+    });
   });
 }
