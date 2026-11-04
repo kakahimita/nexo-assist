@@ -48,8 +48,8 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
     }
   }
 
-  async function act(path: string, body: string) {
-    if (busy) return;
+  async function act(path: string, body: string): Promise<boolean> {
+    if (busy) return false;
     setBusy(true);
     try {
       await call(`/api/support/conversations/${selectedId}/${path}`, {
@@ -57,15 +57,17 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
         headers: { 'content-type': 'application/json' },
         body,
       });
+      return true;
     } catch {
       setError('Não foi possível concluir a ação.');
+      return false;
     } finally {
       setBusy(false);
     }
   }
 
   async function claim() {
-    await act('claim', '{}');
+    if (!(await act('claim', '{}'))) return;
     await select(selectedId);
     await loadQueue();
   }
@@ -75,19 +77,19 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
     const text = content.trim();
     if (!text || busy) return;
     setContent('');
-    await act('reply', JSON.stringify({ content: text }));
+    if (!(await act('reply', JSON.stringify({ content: text })))) return;
     await select(selectedId);
   }
 
   async function returnToAgent() {
-    await act('return', '{}');
+    if (!(await act('return', '{}'))) return;
     setDetail(null);
     setSelectedId('');
     await loadQueue();
   }
 
   async function close() {
-    await act('close', '{}');
+    if (!(await act('close', '{}'))) return;
     setNotice('Atendimento encerrado.');
     setDetail(null);
     setSelectedId('');

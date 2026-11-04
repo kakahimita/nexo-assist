@@ -78,6 +78,83 @@ test('B11: ignores an older filter response after the analyst changes filters', 
   await expect(page.getByText('Fila antiga')).toHaveCount(0);
 });
 
+test('B11: ignores an obsolete queue failure after the analyst changes filters', async ({
+  page,
+}) => {
+  const summary = (id: string, name: string) => ({
+    id,
+    state: 'waiting_for_analyst',
+    stateVersion: 0,
+    employee: { id: `${id}-employee`, name },
+    handoff: null,
+    assignedAnalystId: null,
+    closedAt: null,
+    lastMessage: null,
+  });
+  let releaseWaiting!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    releaseWaiting = resolve;
+  });
+  await page.route('**/api/support/conversations?filter=waiting', async (route) => {
+    await waiting;
+    await route.fulfill({ status: 500 });
+  });
+  await page.route('**/api/support/conversations?filter=owned', async (route) => {
+    await route.fulfill({ json: [summary('owned', 'Fila atual')] });
+  });
+
+  await loginAsAnalyst(page);
+  await page.getByRole('button', { name: 'Minhas' }).click();
+  await expect(page.getByText('Fila atual')).toBeVisible();
+  releaseWaiting();
+  await expect(page.getByText('Não foi possível carregar as conversas.')).toHaveCount(0);
+});
+
+test('B11: queue retry preserves the selected detail, reply, and action error', async ({
+  page,
+}) => {
+  const item = {
+    id: 'owned',
+    state: 'with_analyst' as const,
+    stateVersion: 0,
+    employee: { id: 'employee', name: 'Conversa preservada' },
+    handoff: null,
+    assignedAnalystId: 'analyst',
+    closedAt: null,
+    lastMessage: null,
+  };
+  let allRequests = 0;
+  await page.route('**/api/support/conversations?filter=waiting', async (route) => {
+    await route.fulfill({ json: [item] });
+  });
+  await page.route('**/api/support/conversations?filter=all', async (route) => {
+    allRequests += 1;
+    await route.fulfill({ status: allRequests === 1 ? 500 : 200, json: [] });
+  });
+  await page.route('**/api/support/conversations/owned', async (route) => {
+    await route.fulfill({ json: { conversation: item, messages: [], tickets: [] } });
+  });
+  await page.route('**/api/support/conversations/owned/close', async (route) => {
+    await route.fulfill({ status: 500 });
+  });
+
+  await loginAsAnalyst(page);
+  await page.locator('[data-conversation-id="owned"]').click();
+  await page.getByLabel('Resposta').fill('Rascunho que não pode ser perdido');
+  await page.getByRole('button', { name: 'Encerrar atendimento' }).click();
+  await expect(page.getByText('Não foi possível concluir a ação.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Todas' }).click();
+  await expect(page.getByText('Não foi possível carregar as conversas.')).toBeVisible();
+  await page.getByRole('button', { name: 'Tentar novamente' }).click();
+  await expect(page.getByText('Não foi possível carregar as conversas.')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Atendimento' })).toContainText(
+    'Conversa preservada',
+  );
+  await expect(page.getByLabel('Resposta')).toHaveValue('Rascunho que não pode ser perdido');
+  await expect(page.getByText('Não foi possível concluir a ação.')).toBeVisible();
+});
+
 test('B11 V04: presents supported queue facts, filters, and keyboard selection', async ({
   page,
 }) => {
@@ -126,7 +203,9 @@ test('B11 V04: presents supported queue facts, filters, and keyboard selection',
   ];
   const selectedItem = items[0]!;
   let selected = false;
+  const requestedFilters: string[] = [];
   await page.route('**/api/support/conversations?filter=*', async (route) => {
+    requestedFilters.push(new URL(route.request().url()).searchParams.get('filter') ?? '');
     await route.fulfill({ json: items });
   });
   await page.route('**/api/support/conversations/one', async (route) => {
@@ -159,6 +238,18 @@ test('B11 V04: presents supported queue facts, filters, and keyboard selection',
       'Mensagem longa que pode ser truncada visualmente sem perder o conteúdo do documento.',
     ),
   ).toBeAttached();
+
+  await queue.getByRole('button', { name: 'Todas' }).click();
+  await expect(queue.getByRole('button', { name: 'Todas' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect.poll(() => requestedFilters).toContain('all');
+  await queue.getByRole('button', { name: 'Para você' }).click();
+  await expect(queue.getByRole('button', { name: 'Para você' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 
   await queue.getByRole('button', { name: 'Todas' }).focus();
   await page.keyboard.press('Tab');

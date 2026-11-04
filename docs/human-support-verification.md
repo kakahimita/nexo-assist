@@ -9,7 +9,7 @@ thread messages.
 
 Using the fixture engine, fictional accounts and isolated temporary SQLite
 databases, the final local verification passed: typecheck, lint, formatting,
-unit tests, the full integration suite, production build, and 44 Chromium
+unit tests, the full integration suite, production build, and 46 Chromium
 browser tests. No model key was used; `npm run smoke:model` was not run.
 
 - B11 / PRD pp. 1-2, 4: an analyst lists and filters waiting conversations
@@ -34,7 +34,8 @@ browser tests. No model key was used; `npm run smoke:model` was not run.
 On 2026-11-04, `npm run check` passed with isolated temporary databases.
 The queue-specific browser coverage verifies the default `waiting` request,
 the `all` and `owned` filters, loading, empty, failed-refresh/retry, stale
-request rejection, readable supported states and handoff reasons, timestamp
+success and error rejection, preservation of selected detail/draft/action
+error across retry, readable supported states and handoff reasons, timestamp
 semantics, keyboard selection, and no horizontal overflow at 1440 x 900 and
 375 x 812. The existing end-to-end analyst claim/reply/close workflow also
 passed without replacing its backend interactions.
