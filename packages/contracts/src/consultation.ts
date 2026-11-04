@@ -1,5 +1,5 @@
 ﻿import { z } from 'zod';
-import { PrioritySchema } from './ticket.js';
+import { PrioritySchema, TicketCategorySchema } from './ticket.js';
 
 export const ConsultationErrorCodeSchema = z.enum([
   'model_unavailable',
@@ -30,6 +30,8 @@ export const ConsultationTicketViewSchema = z.strictObject({
   title: z.string(),
   status: z.enum(['open', 'resolved']),
   priority: PrioritySchema,
+  category: TicketCategorySchema.nullable().default(null),
+  createdAt: z.string().datetime().nullable().default(null),
   deadline: z.string().datetime(),
   lastUpdate: z.string().datetime().nullable().default(null),
   overdue: z.boolean(),

@@ -36,6 +36,10 @@ describe('B03: consulted tickets report their clock start as last update', () =>
       ['INC-1', created],
       ['INC-2', reopened],
     ]);
+    expect(result.tickets.map(({ category, createdAt }) => [category, createdAt])).toEqual([
+      ['hardware', created],
+      ['hardware', created],
+    ]);
   });
 });
 describe('B16: tool inputs cannot forge identity', () => {
