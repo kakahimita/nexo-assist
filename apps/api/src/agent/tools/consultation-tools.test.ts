@@ -1,9 +1,43 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createConsultationTools } from './mastra-consultation-tools.js';
 import { createConsultationRequestContext } from '../consultation/request-context.js';
-import type { ConsultationTools } from './consultation-tools.js';
+import { ConsultationTools } from './consultation-tools.js';
 
 const user = { id: 'ana', email: 'ana@example.com', name: 'Ana', role: 'employee' as const };
+describe('B03: consulted tickets report their clock start as last update', () => {
+  it('returns the clock start of each owned ticket', async () => {
+    const created = '2026-10-20T12:00:00.000Z';
+    const reopened = '2026-11-03T12:00:00.000Z';
+    const view = (id: string, slaStartedAt: string) => ({
+      id,
+      ownerId: user.id,
+      title: `Chamado ${id}`,
+      description: 'Descrição',
+      type: 'INC' as const,
+      category: 'hardware' as const,
+      priority: 'medium' as const,
+      impact: 'self' as const,
+      status: 'open' as const,
+      transferRequested: false,
+      createdAt: created,
+      resolvedAt: null,
+      slaStartedAt,
+      deadline: '2026-11-06T12:00:00.000Z',
+      overdue: false,
+    });
+    const tickets = new ConsultationTools(
+      { list: async () => [view('INC-1', created), view('INC-2', reopened)] } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+    const result = await tickets.consultTickets(user, {}, new Date('2026-11-04T12:00:00.000Z'));
+    expect(result.tickets.map(({ id, lastUpdate }) => [id, lastUpdate])).toEqual([
+      ['INC-1', created],
+      ['INC-2', reopened],
+    ]);
+  });
+});
 describe('B16: tool inputs cannot forge identity', () => {
   it('does not send incompatible or unknown-platform article instructions to the model', () => {
     const tools = createConsultationTools({} as ConsultationTools);

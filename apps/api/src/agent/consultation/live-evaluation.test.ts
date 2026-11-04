@@ -59,6 +59,7 @@ describe('live evaluation assertions', () => {
           status: 'open' as const,
           priority: 'low' as const,
           deadline: '2026-11-02T12:00:00.000Z',
+          lastUpdate: null,
           overdue: false,
         },
       ],

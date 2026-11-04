@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { readConsultationStream } from './stream';
 import { Decision } from './decision';
 import { DraftCard } from './draft-card';
+import { TicketCard } from './ticket-card';
 import { employeeStage } from './stage';
 const errors: Record<string, string> = {
   quota: 'O limite do modelo foi atingido. Tente novamente mais tarde.',
@@ -46,6 +47,7 @@ export function Consultation({
   const [pendingDrafts, setPendingDrafts] = useState<string[]>([]);
   const [humanEngaged, setHumanEngaged] = useState(employeeStage(conversation.state) === 'human');
   const closed = conversation.state === 'closed';
+  const now = new Date();
   const [handoff, setHandoff] = useState(conversation.handoff);
   useEffect(() => {
     let current = true;
@@ -226,7 +228,10 @@ export function Consultation({
             {message.decision && (
               <>
                 <Decision decision={message.decision} />
-                {message.status === 'completed' && (
+                {message.status === 'completed' && message.decision.tickets.length === 1 && (
+                  <TicketCard ticket={message.decision.tickets[0]!} now={now} />
+                )}
+                {message.status === 'completed' && message.decision.action !== 'handoff' && (
                   <>
                     <div className="quick-replies">
                       {message.decision.quickReplies.map((reply) => (

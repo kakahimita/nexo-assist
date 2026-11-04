@@ -2,13 +2,23 @@ import { Inject, Injectable } from '@nestjs/common';
 import type {
   ConsultationDecisionView,
   ConsultationStreamEvent,
+  ConsultationTicketView,
   MessageView,
   UserView,
 } from '@nexo/contracts';
 import { ConversationsService } from '../conversations/conversations.service.js';
 import { ConsultationTurn } from '../agent/consultation/turn.js';
-import type { ConsultationEngine } from '../agent/consultation/types.js';
+import type { ConsultationEngine, ConsultationEngineEvent } from '../agent/consultation/types.js';
+import { ConsultTicketsResultSchema } from '../agent/tools/consultation-tool-schemas.js';
 export const CONSULTATION_ENGINE = Symbol('CONSULTATION_ENGINE');
+function overdueConsultedTicket(event: ConsultationEngineEvent): ConsultationTicketView | null {
+  if (event.type !== 'tool-result' || event.tool !== 'consult-tickets' || event.isError)
+    return null;
+  const parsed = ConsultTicketsResultSchema.safeParse(event.result);
+  if (!parsed.success || parsed.data.match !== 'one') return null;
+  const [ticket] = parsed.data.tickets;
+  return ticket?.overdue ? ticket : null;
+}
 type ErrorCode = 'quota' | 'model_unavailable' | 'invalid_output' | 'interrupted';
 function errorCode(error: unknown, signal: AbortSignal): ErrorCode {
   if (signal.aborted) return 'interrupted';
@@ -61,6 +71,18 @@ export class ConsultationService {
         }
         const before = turn.partial().actions.length;
         turn.apply(event);
+        const overdue = overdueConsultedTicket(event);
+        if (overdue) {
+          yield* this.transferOverdue(
+            user,
+            conversationId,
+            stateVersion,
+            overdue,
+            turn,
+            this.engine,
+          );
+          return;
+        }
         if (event.type === 'text-delta') yield { type: 'text-delta', text: event.text };
         if (
           event.type === 'decision' &&
@@ -142,5 +164,49 @@ export class ConsultationService {
       yield { type: 'error', code };
       yield { type: 'done', message: final };
     }
+  }
+  private async *transferOverdue(
+    user: UserView,
+    conversationId: string,
+    stateVersion: number,
+    ticket: ConsultationTicketView,
+    turn: ConsultationTurn,
+    engine: ConsultationEngine,
+  ): AsyncIterable<ConsultationStreamEvent> {
+    const partial = turn.partial();
+    const decision: ConsultationDecisionView = {
+      intent: 'Consulta de chamado',
+      action: 'handoff',
+      appliedRule: 'Chamado vencido é transferido a um analista',
+      confidence: 1,
+      justification: 'O prazo do chamado consultado está vencido.',
+      missingFacts: [],
+      quickReplies: [],
+      actions: partial.actions,
+      evidence: partial.evidence,
+      tickets: [ticket],
+      outcome: 'completed',
+      errorCode: null,
+      source: engine.source,
+      draftId: null,
+    };
+    const message = await this.conversations.appendAgentTurnIfCurrent(
+      user,
+      conversationId,
+      stateVersion,
+      {
+        content: `${ticket.title} está com o prazo vencido. Transferi a conversa para um analista, com o resumo do caso. Até ele devolver a conversa, eu não respondo por aqui.`,
+        status: 'completed',
+        decision,
+        promptVersion: engine.promptVersion,
+      },
+    );
+    if (message === null) {
+      yield { type: 'handoff-waiting' };
+      return;
+    }
+    yield { type: 'done', message };
+    await this.conversations.requestHandoff(user, conversationId, 'overdue_ticket');
+    yield { type: 'handoff-waiting' };
   }
 }

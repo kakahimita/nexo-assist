@@ -2,6 +2,7 @@
 import {
   ConsultationDecisionViewSchema,
   ConsultationEngineDecisionSchema,
+  ConsultationTicketViewSchema,
 } from './consultation.js';
 import { MessageViewSchema } from './conversation.js';
 import { TicketChangeInputSchema } from './ticket.js';
@@ -91,6 +92,21 @@ describe('B12/B13: consultation wire contracts', () => {
       }).success,
     ).toBe(true);
     expect(MessageViewSchema.safeParse(base).success).toBe(false);
+  });
+  it('keeps the ticket last update and accepts tickets stored before it existed', () => {
+    const ticket = {
+      id: 'INC-1',
+      title: 'Notebook lento',
+      status: 'open',
+      priority: 'medium',
+      deadline: '2026-11-03T12:00:00.000Z',
+      overdue: true,
+    };
+    expect(
+      ConsultationTicketViewSchema.parse({ ...ticket, lastUpdate: '2026-11-01T12:00:00.000Z' })
+        .lastUpdate,
+    ).toBe('2026-11-01T12:00:00.000Z');
+    expect(ConsultationTicketViewSchema.parse(ticket).lastUpdate).toBeNull();
   });
   it('rejects invalid or forged decisions', () => {
     for (const patch of [

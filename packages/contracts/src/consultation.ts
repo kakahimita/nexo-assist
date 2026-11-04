@@ -31,6 +31,7 @@ export const ConsultationTicketViewSchema = z.strictObject({
   status: z.enum(['open', 'resolved']),
   priority: PrioritySchema,
   deadline: z.string().datetime(),
+  lastUpdate: z.string().datetime().nullable().default(null),
   overdue: z.boolean(),
 });
 export const ConsultationEngineDecisionSchema = z.strictObject({

@@ -68,12 +68,13 @@ export class ConsultationTurn {
     if (proposal?.status === 'duplicate_candidates') {
       this.duplicateNeedsReview = true;
       this.tickets = proposal.candidates.map(
-        ({ id, title, status, priority, deadline, overdue }) => ({
+        ({ id, title, status, priority, deadline, slaStartedAt, overdue }) => ({
           id,
           title,
           status,
           priority,
           deadline,
+          lastUpdate: slaStartedAt,
           overdue,
         }),
       );

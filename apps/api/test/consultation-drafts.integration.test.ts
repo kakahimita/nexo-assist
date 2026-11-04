@@ -154,6 +154,10 @@ describe('B04: collect missing facts before proposing a ticket draft', () => {
           .map((chunk) => JSON.parse(chunk.slice(6)))
           .at(-1).message;
       };
+      await client.ticket.update({
+        where: { id: 'fixture-ana-open' },
+        data: { slaStartedAt: new Date() },
+      });
       const before = await client.ticket.count();
       for (const content of [
         'Abrir chamado: Notebook lento',
@@ -224,6 +228,10 @@ describe('B04: collect missing facts before proposing a ticket draft', () => {
           .map((chunk) => JSON.parse(chunk.slice(6)))
           .at(-1).message;
       };
+      await client.ticket.update({
+        where: { id: 'fixture-ana-open' },
+        data: { slaStartedAt: new Date() },
+      });
       const before = await client.ticketEvent.count();
       expect((await turn('Complementar chamado: Notebook lento')).decision.missingFacts).toContain(
         'informações adicionais',
