@@ -16,6 +16,7 @@ async function send(page: import('@playwright/test').Page, text: string) {
 test('B09 B10 B13: an overdue ticket transfers the conversation and keeps it after reload', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await start(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await send(page, 'Qual o status do meu chamado?');
@@ -26,6 +27,7 @@ test('B09 B10 B13: an overdue ticket transfers the conversation and keeps it aft
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
   const card = chat.getByRole('article', { name: 'Chamado Notebook lento' }).last();
   await expect(card.getByText('Prazo vencido')).toBeVisible();
+  await page.screenshot({ path: 'outputs/ticket-overdue-transfer-desktop.png', fullPage: true });
   const handoffMessage = chat.locator('article.chat-message.agent', { has: card });
   await expect(handoffMessage.getByRole('button', { name: /Notebook lento/ })).toHaveCount(0);
   await page.reload();
