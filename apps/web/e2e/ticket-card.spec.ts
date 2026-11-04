@@ -139,7 +139,7 @@ test('B09 B10: an overdue handoff shows the card, the waiting state, and no tick
   await expect(chat.getByRole('button', { name: /Notebook lento/ })).toHaveCount(0);
 });
 
-test('B03 B13: a stored ticket without metadata renders an honest fallback', async ({ page }) => {
+test('B03: a streamed ticket without metadata renders an honest fallback', async ({ page }) => {
   await start(page);
   const legacyTicket = {
     id: 'fixture-legacy-open',

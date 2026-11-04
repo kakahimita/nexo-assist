@@ -20,7 +20,7 @@ Run on branch `feature/LAB-0038` after the last code change.
 | Lint | `npm run lint` | passed |
 | Format | `npm run format:check` | passed |
 | Unit | `npm test` | 26 files, 144 tests passed |
-| Integration | `npm run test:integration` | 20 files, 52 tests passed |
+| Integration | `npm run test:integration` | 20 files, 53 tests passed |
 | Build | `npm run build` | passed |
 | Browser | `npm run test:e2e` | 38 tests passed |
 | Full gate | `npm run check` | passed |
@@ -37,7 +37,7 @@ One intermediate browser run marked `restart.spec.ts` (B13) as flaky: it passed 
 | B09 | `consultation.service.test.ts` (overdue transfer, model text ignored, multiple matches do not transfer); `consultation.service.integration.test.ts` (persisted handoff reason and state); `ticket-overdue-transfer.spec.ts` (real browser flow) |
 | B10 | `captureAgentRun` returns `null` once the conversation is not `agent`, so the agent stays silent; `consultation.service.test.ts` covers a stale save with no second handoff |
 | B12 | Handoff message decision shows the `handoff` action and the consulted ticket |
-| B13 | `ticket-card.spec.ts` (stored ticket without metadata still renders); `ticket-overdue-transfer.spec.ts` reloads the page and restores the waiting state and card; the integration test reloads messages from the database |
+| B13 | `conversations.integration.test.ts` persists an agent decision whose `ticketsJson` predates the new fields, restarts the app, and reloads it as `null` metadata; `ticket-overdue-transfer.spec.ts` reloads the page, restores the waiting state and card, and confirms the restored handoff message still has no ticket choices or quick replies; `ticket-card.spec.ts` covers the streamed legacy payload |
 | B16 | `consultation-tools.integration.test.ts` confirms only the authenticated employee's tickets and metadata are visible |
 | V03 | `ticket-card.spec.ts` checks the card at 1440×900 and 375×812; visual comparison below remains partial |
 

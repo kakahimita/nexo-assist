@@ -37,10 +37,11 @@ test('B09 B10 B13: an overdue ticket transfers the conversation and keeps it aft
     .click();
   const restored = page.getByRole('region', { name: 'Conversa' });
   await expect(restored.getByRole('status')).toContainText('Aguardando atendimento humano');
-  await expect(
-    restored
-      .getByRole('article', { name: 'Chamado Notebook lento' })
-      .last()
-      .getByText('Prazo vencido'),
-  ).toBeVisible();
+  const restoredCard = restored.getByRole('article', { name: 'Chamado Notebook lento' }).last();
+  await expect(restoredCard.getByText('Prazo vencido')).toBeVisible();
+  await expect(restoredCard).toContainText('Categoria: Hardware');
+  await expect(restoredCard).toContainText(/Criado em: \d{2}\/\d{2}\/\d{4}/);
+  const restoredMessage = restored.locator('article.chat-message.agent', { has: restoredCard });
+  await expect(restoredMessage.locator('.ticket-options, .quick-replies')).toHaveCount(0);
+  await expect(restoredMessage.getByRole('button')).toHaveCount(0);
 });
