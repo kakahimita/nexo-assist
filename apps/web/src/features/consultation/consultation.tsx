@@ -179,7 +179,12 @@ export function Consultation({
         </p>
       )}
       {!humanEngaged && !closed && (
-        <button type="button" disabled={active || capped} onClick={() => void requestHandoff()}>
+        <button
+          className="human-support-button"
+          type="button"
+          disabled={active || capped}
+          onClick={() => void requestHandoff()}
+        >
           Falar com analista
         </button>
       )}
@@ -191,7 +196,9 @@ export function Consultation({
           </button>
         </>
       )}
-      {messages.length === 0 && !active && <p>Descreva sua dúvida de TI para começar.</p>}
+      {messages.length === 0 && !active && (
+        <p className="consultation-empty">Descreva sua dúvida de TI para começar.</p>
+      )}
       <div className="consultation-messages">
         {messages.map((message) => (
           <article key={message.id} className={`chat-message ${message.role}`}>
@@ -278,10 +285,10 @@ export function Consultation({
           />
         ))}
       {error && <p role="alert">{error}</p>}
-      <p>
+      <p className="message-counter">
         Mensagens: {used} de {CONVERSATION_MESSAGE_LIMIT}
       </p>
-      <p>Restantes: {Math.max(0, CONVERSATION_MESSAGE_LIMIT - used)}</p>
+      <p className="message-counter">Restantes: {Math.max(0, CONVERSATION_MESSAGE_LIMIT - used)}</p>
       {capped && (
         <>
           <p role="status">
@@ -294,21 +301,23 @@ export function Consultation({
         </>
       )}
       {!closed && (
-        <form onSubmit={submit}>
+        <form className="consultation-composer" onSubmit={submit}>
           <label htmlFor="message">Mensagem</label>
-          <textarea
-            id="message"
-            name="content"
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            disabled={active || capped}
-            required
-            maxLength={4000}
-            placeholder="Escreva para o Nexo..."
-          />
-          <button disabled={active || capped} type="submit">
-            Enviar mensagem
-          </button>
+          <div className="composer-row">
+            <textarea
+              id="message"
+              name="content"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              disabled={active || capped}
+              required
+              maxLength={4000}
+              placeholder="Escreva para o Nexo..."
+            />
+            <button disabled={active || capped} type="submit">
+              Enviar mensagem
+            </button>
+          </div>
         </form>
       )}
     </section>
