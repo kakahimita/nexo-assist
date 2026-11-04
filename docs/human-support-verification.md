@@ -63,7 +63,9 @@ On 2026-11-04, implementation revision `cf130ac` passed `npm run check` with
 unit tests, the full integration suite, production build, and 64 Chromium
 tests. Integration and browser checks used isolated temporary SQLite
 databases; the owner instance on ports 3000/3001 was left untouched. No model
-key was used and `npm run smoke:model` was not run.
+key was used and `npm run smoke:model` was not run. A post-review configuration
+correction replaced the unused `NEXT_PUBLIC_API_BASE_URL` example with the
+server-side `API_BASE_URL`; the full check was rerun green on that state.
 
 - B11 / PRD pp. 1-2, 4: waiting, assigned-to-self, assigned-to-another, agent
   and closed states show honest labels. Only waiting offers claim; only the
