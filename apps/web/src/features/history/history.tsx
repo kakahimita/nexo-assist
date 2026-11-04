@@ -95,36 +95,83 @@ export function History({
       setError('Não foi possível sair. Tente novamente.');
     }
   }
-  return (
-    <main className="history">
-      <header>
-        <h1>Nexo Assist</h1>
-        <p>Olá, {user.name}</p>
-        <button disabled={busy} onClick={() => void logout()}>
-          Sair
-        </button>
-      </header>
-      {error && <p role="alert">{error}</p>}
-      {user.role === 'analyst' ? (
+  if (user.role === 'analyst') {
+    return (
+      <main className="history">
+        <header>
+          <h1>Nexo Assist</h1>
+          <p>Olá, {user.name}</p>
+          <button disabled={busy} onClick={() => void logout()}>
+            Sair
+          </button>
+        </header>
+        {error && <p role="alert">{error}</p>}
         <Support onLogout={onLogout} />
-      ) : (
-        <>
-          <nav aria-label="Navegação principal" className="profile-navigation">
-            <button
-              type="button"
-              aria-current={page === 'support' ? 'page' : undefined}
-              onClick={() => setPage('support')}
+      </main>
+    );
+  }
+  return (
+    <div className="employee-layout">
+      <aside className="employee-sidebar">
+        <div className="employee-brand">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21.763 2.245 18.389 3.932c-.623.308-.973.903-.973 1.631v6.293L6.223 2.427c-.623-.469-1.372-.553-2.03-.245L1.008 3.813C.357 4.135 0 4.737 0 5.486v15.218c0 1.477 1.526 2.289 2.716 1.785l3.073-1.617c.693-.322 1.057-.952 1.057-1.722v-7.7l11.732 10.591c.602.546 1.421.679 2.086.364l2.786-1.505c.602-.315.786-.931.786-1.68V3.932c0-1.463-1.505-2.275-2.625-1.687Z" />
+          </svg>{' '}
+          Nexo Assist
+        </div>
+        <nav aria-label="Navegação principal" className="profile-navigation">
+          <button
+            type="button"
+            aria-current={page === 'support' ? 'page' : undefined}
+            onClick={() => setPage('support')}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
             >
-              Atendimento
-            </button>
-            <button
-              type="button"
-              aria-current={page === 'profile' ? 'page' : undefined}
-              onClick={() => setPage('profile')}
+              <path d="M4 4h16v13H8l-4 3z" />
+            </svg>{' '}
+            Atendimento
+          </button>
+          <button
+            type="button"
+            aria-current={page === 'profile' ? 'page' : undefined}
+            onClick={() => setPage('profile')}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
             >
-              Meu perfil
-            </button>
-          </nav>
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
+            </svg>{' '}
+            Meu perfil
+          </button>
+        </nav>
+        <div className="employee-account">
+          <p>
+            <strong>{user.name}</strong>
+            <span>{user.email}</span>
+          </p>
+          <button type="button" disabled={busy} onClick={() => void logout()}>
+            Sair
+          </button>
+        </div>
+      </aside>
+      <main className="employee-main">
+        <header className="employee-topbar">
+          <span>Service desk de TI</span>
+          <span aria-hidden="true">›</span>
+          <strong>{page === 'support' ? 'Atendimento' : 'Meu perfil'}</strong>
+        </header>
+        <div className="employee-content">
+          {error && <p role="alert">{error}</p>}
           {page === 'profile' && (
             <section className="profile" aria-labelledby="profile-heading">
               <h2 id="profile-heading">Meu perfil</h2>
@@ -172,8 +219,8 @@ export function History({
             )}
             <Tickets onUnauthorized={onLogout} reloadToken={ticketsVersion} />
           </div>
-        </>
-      )}
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

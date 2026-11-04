@@ -113,6 +113,6 @@ The knowledge foundation for #6 was merged in PR #18 and the streaming consultat
 
 The session-limit increment for #23 was merged in PR #25; its evidence and remaining human-support dependency are recorded in [session limit verification](session-limit-verification.md).
 
-The conversational ticket-draft increment for #24 (part of #7) is under review; its deterministic evidence and the outstanding live-model reliability are recorded in [conversational drafts verification](conversational-drafts-verification.md).
+The conversational ticket-draft increment for #24 (part of #7) was merged in PR #26; its deterministic evidence and the outstanding live-model reliability are recorded in [conversational drafts verification](conversational-drafts-verification.md).
 
 The analyst-console increment for [#30](https://github.com/kakahimita/nexo-assist/issues/30) (part of #8) delivers the analyst queue, atomic claim, reply, return, and close on top of the employee handoff core; its deterministic evidence and boundaries are recorded in [human support verification](human-support-verification.md).
