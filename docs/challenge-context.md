@@ -115,4 +115,6 @@ The session-limit increment for #23 was merged in PR #25; its evidence and remai
 
 The conversational ticket-draft increment for #24 (part of #7) was merged in PR #26; its deterministic evidence and the outstanding live-model reliability are recorded in [conversational drafts verification](conversational-drafts-verification.md).
 
+The chat ticket-consultation increment for [#36](https://github.com/kakahimita/nexo-assist/issues/36) (part of #9) adds the detail card and the automatic overdue transfer; its evidence and remaining differences from Screen 3 are recorded in [ticket consultation verification](ticket-consultation-verification.md).
+
 The analyst-console increment for [#30](https://github.com/kakahimita/nexo-assist/issues/30) (part of #8) delivers the analyst queue, atomic claim, reply, return, and close on top of the employee handoff core; its deterministic evidence and boundaries are recorded in [human support verification](human-support-verification.md).
