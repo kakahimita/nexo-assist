@@ -640,3 +640,56 @@ button:disabled {
     max-width: 95%;
   }
 }
+
+.support {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.support-filters {
+  display: flex;
+  gap: 0.5rem;
+}
+.support-filters button {
+  padding: 0.4rem 0.8rem;
+}
+.support-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.support-list button {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+}
+.support-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid #e3e3e3;
+  padding-top: 1rem;
+}
+.support-detail-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.support-detail-header [role='status'] {
+  font-size: 0.85rem;
+}
+.support-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.support-messages p {
+  margin: 0;
+}
+.support-detail form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.support-detail form textarea {
+  min-height: 4rem;
+}

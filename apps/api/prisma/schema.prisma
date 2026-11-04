@@ -24,6 +24,8 @@ model User {
   tickets Ticket[]
   ticketDrafts TicketDraft[]
   draftProposalRuns DraftProposalRun[]
+  assignedConversations Conversation[] @relation("AssignedConversations")
+  authoredMessages Message[] @relation("MessageAuthor")
 }
 
 model Session {
@@ -44,6 +46,9 @@ model Conversation {
   handoffReason String?
   handoffSummary String?
   handoffRequestedAt DateTime?
+  assignedAnalystId String?
+  assignedAnalyst User? @relation("AssignedConversations", fields: [assignedAnalystId], references: [id])
+  closedAt DateTime?
   messages Message[]
   draftProposalRuns DraftProposalRun[]
 }
@@ -54,6 +59,8 @@ model Message {
   role String @default("employee")
   status String @default("completed")
   decision AgentDecision?
+  authorId String?
+  author User? @relation("MessageAuthor", fields: [authorId], references: [id])
   createdAt DateTime @default(now())
   conversationId String
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

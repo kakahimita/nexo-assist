@@ -72,6 +72,7 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
     role: 'employee',
     status: 'completed',
     decision: null,
+    authorName: null,
   };
   const agent = {
     id: 'agent-test',
@@ -79,6 +80,7 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
     createdAt: timestamp,
     role: 'agent',
     status: 'failed',
+    authorName: null,
     decision: {
       intent: 'Consulta indisponível',
       action: 'unavailable',

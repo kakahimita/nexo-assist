@@ -22,6 +22,7 @@ import type {
 import { DatabaseService } from '../database/database.service.js';
 import { SessionLimitReachedError } from './session-limit.js';
 import { formatHandoffSummary } from './handoff-summary.js';
+import { toMessageView } from './message-view.js';
 
 @Injectable()
 export class ConversationsService {
@@ -51,6 +52,8 @@ export class ConversationsService {
     handoffReason: string | null;
     handoffSummary: string | null;
     handoffRequestedAt: Date | null;
+    assignedAnalystId: string | null;
+    closedAt: Date | null;
   }): ConversationView {
     return ConversationViewSchema.parse({
       id: row.id,
@@ -65,6 +68,8 @@ export class ConversationsService {
               summary: row.handoffSummary,
               requestedAt: row.handoffRequestedAt.toISOString(),
             },
+      assignedAnalystId: row.assignedAnalystId,
+      closedAt: row.closedAt?.toISOString() ?? null,
     });
   }
   async requestHandoff(
@@ -125,37 +130,10 @@ export class ConversationsService {
     await this.ensureOwned(user, conversationId);
     const rows = await this.database.client.message.findMany({
       where: { conversationId },
-      include: { decision: true },
+      include: { decision: true, author: true },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
-    return rows.map(({ id, content, createdAt, role, status, decision }) =>
-      MessageViewSchema.parse({
-        id,
-        content,
-        createdAt: createdAt.toISOString(),
-        role,
-        status,
-        decision:
-          decision === null
-            ? null
-            : ConsultationDecisionViewSchema.parse({
-                intent: decision.intent,
-                action: decision.action,
-                appliedRule: decision.appliedRule,
-                confidence: decision.confidence,
-                justification: decision.justification,
-                missingFacts: JSON.parse(decision.missingFactsJson),
-                quickReplies: JSON.parse(decision.quickRepliesJson),
-                actions: JSON.parse(decision.actionsJson),
-                evidence: JSON.parse(decision.evidenceJson),
-                tickets: JSON.parse(decision.ticketsJson),
-                outcome: decision.outcome,
-                errorCode: decision.errorCode,
-                source: decision.source,
-                draftId: decision.draftId,
-              }),
-      }),
-    );
+    return rows.map(toMessageView);
   }
   async pendingDrafts(user: UserView, conversationId: string): Promise<Array<{ draftId: string }>> {
     await this.ensureOwned(user, conversationId);
@@ -179,13 +157,12 @@ export class ConversationsService {
     this.employee(user);
     const operation = this.appendQueue.then(() =>
       this.database.client.$transaction(async (tx) => {
-        if (
-          !(await tx.conversation.findFirst({
-            where: { id: conversationId, ownerId: user.id },
-            select: { id: true },
-          }))
-        )
-          throw new NotFoundException();
+        const conversation = await tx.conversation.findFirst({
+          where: { id: conversationId, ownerId: user.id },
+          select: { state: true },
+        });
+        if (!conversation) throw new NotFoundException();
+        if (conversation.state === 'closed') throw new ConflictException();
         const used = await tx.message.count({ where: { conversationId, role: 'employee' } });
         if (used >= CONVERSATION_MESSAGE_LIMIT) throw new SessionLimitReachedError(used);
         const { id, createdAt } = await tx.message.create({ data: { conversationId, content } });
@@ -196,6 +173,7 @@ export class ConversationsService {
           role: 'employee' as const,
           status: 'completed' as const,
           decision: null,
+          authorName: null,
         };
       }),
     );
@@ -262,6 +240,7 @@ export class ConversationsService {
       status: row.status,
       createdAt: row.createdAt.toISOString(),
       decision,
+      authorName: null,
     });
   }
   async appendAgentTurnIfCurrent(
@@ -318,6 +297,7 @@ export class ConversationsService {
         status: row.status,
         createdAt: row.createdAt.toISOString(),
         decision,
+        authorName: null,
       });
     });
   }
