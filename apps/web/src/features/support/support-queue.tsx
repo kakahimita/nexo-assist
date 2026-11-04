@@ -28,6 +28,7 @@ export function SupportQueue({
   selectedId,
   status,
   error,
+  busy,
   onFilterChange,
   onSelect,
   onRetry,
@@ -37,6 +38,7 @@ export function SupportQueue({
   selectedId: string;
   status: 'loading' | 'ready' | 'error';
   error: string;
+  busy: boolean;
   onFilterChange: (filter: SupportConversationFilter) => void;
   onSelect: (id: string) => void;
   onRetry: () => void;
@@ -50,6 +52,7 @@ export function SupportQueue({
             type="button"
             key={value}
             aria-pressed={filter === value}
+            disabled={busy}
             onClick={() => onFilterChange(value)}
           >
             {label}
@@ -74,6 +77,7 @@ export function SupportQueue({
                 type="button"
                 data-conversation-id={item.id}
                 aria-current={selectedId === item.id ? 'true' : undefined}
+                disabled={busy}
                 onClick={() => onSelect(item.id)}
               >
                 <span aria-hidden="true" className="support-queue-initials">

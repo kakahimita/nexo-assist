@@ -106,7 +106,7 @@ export function History({
           </button>
         </header>
         {error && <p role="alert">{error}</p>}
-        <Support onLogout={onLogout} />
+        <Support user={user} onLogout={onLogout} />
       </main>
     );
   }

@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-async function loginAsAnalyst(page: import('@playwright/test').Page) {
+async function loginAsAnalyst(page: import('@playwright/test').Page): Promise<string> {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('analista@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
+  await expect(page.getByRole('button', { name: 'Sair' })).toBeVisible();
+  return page.evaluate(async () => (await (await fetch('/api/session')).json()).id as string);
 }
 
 test('B11 V04: announces queue loading without presenting it as empty', async ({ page }) => {
@@ -138,7 +140,8 @@ test('B11: queue retry preserves the selected detail, reply, and action error', 
     await route.fulfill({ status: 500 });
   });
 
-  await loginAsAnalyst(page);
+  const analystId = await loginAsAnalyst(page);
+  item.assignedAnalystId = analystId;
   await page.locator('[data-conversation-id="owned"]').click();
   await page.getByLabel('Resposta').fill('Rascunho que não pode ser perdido');
   await page.getByRole('button', { name: 'Encerrar atendimento' }).click();
