@@ -558,8 +558,8 @@ export function Tickets({
               ) ||
               conflicts.some(
                 (candidate) =>
-                  conflictMatches.find((match) => match.id === candidate.id)?.match === 'possible' &&
-                  !dismissed.includes(candidate.id),
+                  conflictMatches.find((match) => match.id === candidate.id)?.match ===
+                    'possible' && !dismissed.includes(candidate.id),
               )
             }
             onClick={() => void confirmDraft()}

@@ -39,7 +39,8 @@ export function useSupportQueue(filter: SupportConversationFilter, onLogout: () 
       setItems(data.map((item) => SupportConversationSummarySchema.parse(item)));
       setStatus('ready');
     } catch (cause) {
-      if (id !== request.current || (cause instanceof DOMException && cause.name === 'AbortError')) return;
+      if (id !== request.current || (cause instanceof DOMException && cause.name === 'AbortError'))
+        return;
       setItems([]);
       setStatus('error');
       setError('Não foi possível carregar as conversas.');

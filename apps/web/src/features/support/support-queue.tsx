@@ -59,7 +59,9 @@ export function SupportQueue({
       {status === 'error' && (
         <div role="alert">
           <p>{error}</p>
-          <button type="button" onClick={onRetry}>Tentar novamente</button>
+          <button type="button" onClick={onRetry}>
+            Tentar novamente
+          </button>
         </div>
       )}
       {status === 'ready' && items.length === 0 && <p>Nenhuma conversa neste filtro.</p>}
@@ -81,7 +83,9 @@ export function SupportQueue({
                 {item.lastMessage && (
                   <time dateTime={item.lastMessage.createdAt}>
                     {new Intl.DateTimeFormat('pt-BR', {
-                      dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo',
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                      timeZone: 'America/Sao_Paulo',
                     }).format(new Date(item.lastMessage.createdAt))}
                   </time>
                 )}

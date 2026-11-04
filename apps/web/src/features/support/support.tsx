@@ -16,10 +16,12 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
-  const { items: queue, status: queueStatus, error: queueError, reload: loadQueue } = useSupportQueue(
-    filter,
-    onLogout,
-  );
+  const {
+    items: queue,
+    status: queueStatus,
+    error: queueError,
+    reload: loadQueue,
+  } = useSupportQueue(filter, onLogout);
 
   const call = useCallback(
     async (url: string, options?: RequestInit) => {
