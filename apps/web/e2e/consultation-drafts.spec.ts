@@ -15,6 +15,11 @@ test('B04: employee reviews and confirms a conversation draft', async ({ page })
   const draft = chat.getByRole('article', { name: 'Rascunho do chamado' });
   await expect(draft.getByText('Meu notebook não liga no setor 234').first()).toBeVisible();
   await expect(draft.getByText(/Prioridade: Média/)).toBeVisible();
+  await expect(draft.getByText('Aguardando confirmação')).toBeVisible();
+  await expect(draft.getByText(/Pessoas afetadas: Somente eu/)).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'outputs/conversational-draft-mobile.png', fullPage: true });
   await expect(chat.getByText('Não foi possível recuperar os rascunhos pendentes.')).toHaveCount(0);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.screenshot({ path: 'outputs/conversational-draft-desktop.png', fullPage: true });
