@@ -335,6 +335,12 @@ test('B11: loading a new selection hides the previous detail and failed loads re
   pending.resolve();
   await expect(page.getByText('Não foi possível carregar a conversa.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Tentar novamente' })).toBeVisible();
+  const queueBox = await page.getByRole('region', { name: 'Conversas' }).boundingBox();
+  const errorBox = await page
+    .locator('[role="alert"]')
+    .filter({ hasText: 'Não foi possível carregar a conversa.' })
+    .boundingBox();
+  expect(queueBox!.x + queueBox!.width).toBeLessThanOrEqual(errorBox!.x + 1);
 
   mode = 'ok';
   await page.getByRole('button', { name: 'Tentar novamente' }).click();

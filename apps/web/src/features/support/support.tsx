@@ -158,45 +158,49 @@ export function Support({
 
   return (
     <div className="support">
-      {detailError && (
-        <div role="alert">
-          <p>{detailError}</p>
-          {selectedId && (
-            <button type="button" onClick={() => void select(selectedId)}>
-              Tentar novamente
-            </button>
-          )}
-        </div>
-      )}
-      {notice && <p role="status">{notice}</p>}
-      <SupportQueue
-        items={queue}
-        filter={filter}
-        selectedId={selectedId}
-        status={queueStatus}
-        error={queueError}
-        busy={busy}
-        onFilterChange={setFilter}
-        onSelect={(id) => {
-          if (!busyRef.current) void select(id);
-        }}
-        onRetry={() => void loadQueue()}
-      />
-      {detailLoading && <p role="status">Carregando conversa…</p>}
-      {detail && (
-        <SupportDetail
-          detail={detail}
-          user={user}
+      <div className="support-queue-column">
+        <SupportQueue
+          items={queue}
+          filter={filter}
+          selectedId={selectedId}
+          status={queueStatus}
+          error={queueError}
           busy={busy}
-          draft={drafts[selectedId] ?? ''}
-          error={actionError}
-          onDraftChange={(value) => setDrafts((current) => ({ ...current, [selectedId]: value }))}
-          onClaim={() => void claim()}
-          onReply={() => void reply()}
-          onReturn={() => void returnToAgent()}
-          onClose={() => void close()}
+          onFilterChange={setFilter}
+          onSelect={(id) => {
+            if (!busyRef.current) void select(id);
+          }}
+          onRetry={() => void loadQueue()}
         />
-      )}
+      </div>
+      <div className="support-detail-column">
+        {notice && <p role="status">{notice}</p>}
+        {detailError && (
+          <div role="alert">
+            <p>{detailError}</p>
+            {selectedId && (
+              <button type="button" onClick={() => void select(selectedId)}>
+                Tentar novamente
+              </button>
+            )}
+          </div>
+        )}
+        {detailLoading && <p role="status">Carregando conversa…</p>}
+        {detail && (
+          <SupportDetail
+            detail={detail}
+            user={user}
+            busy={busy}
+            draft={drafts[selectedId] ?? ''}
+            error={actionError}
+            onDraftChange={(value) => setDrafts((current) => ({ ...current, [selectedId]: value }))}
+            onClaim={() => void claim()}
+            onReply={() => void reply()}
+            onReturn={() => void returnToAgent()}
+            onClose={() => void close()}
+          />
+        )}
+      </div>
     </div>
   );
 }

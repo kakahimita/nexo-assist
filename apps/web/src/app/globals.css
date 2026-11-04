@@ -1050,6 +1050,10 @@ button:disabled {
   grid-template-columns: minmax(16rem, 23.75rem) minmax(0, 1fr);
   gap: 1rem;
 }
+.support-queue-column,
+.support-detail-column {
+  min-width: 0;
+}
 .support-filters {
   display: flex;
   flex-wrap: wrap;
@@ -1262,8 +1266,8 @@ button:disabled {
   .support {
     grid-template-columns: minmax(0, 1fr);
   }
-  .support-list,
-  .support-detail {
+  .support-queue-column,
+  .support-detail-column {
     grid-column: 1;
   }
   .support-message {
