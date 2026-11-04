@@ -1,28 +1,27 @@
 'use client';
 import {
-  SupportConversationSummarySchema,
   SupportConversationViewSchema,
-  type SupportConversationSummary,
+  type SupportConversationFilter,
   type SupportConversationView,
 } from '@nexo/contracts';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-
-const reasonTag: Record<string, string> = {
-  employee_request: 'Transferida',
-  critical_incident: 'Incidente crítico',
-  overdue_ticket: 'Chamado vencido',
-  unresolved_uncertainty: 'Sem segurança',
-};
+import { useCallback, useState, type FormEvent } from 'react';
+import { SupportQueue } from './support-queue';
+import { useSupportQueue } from './use-support-queue';
 
 export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Element {
-  const [filter, setFilter] = useState<'all' | 'waiting' | 'owned'>('waiting');
-  const [queue, setQueue] = useState<SupportConversationSummary[]>([]);
+  const [filter, setFilter] = useState<SupportConversationFilter>('waiting');
   const [selectedId, setSelectedId] = useState('');
   const [detail, setDetail] = useState<SupportConversationView | null>(null);
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const {
+    items: queue,
+    status: queueStatus,
+    error: queueError,
+    reload: loadQueue,
+  } = useSupportQueue(filter, onLogout);
 
   const call = useCallback(
     async (url: string, options?: RequestInit) => {
@@ -37,22 +36,6 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
     [onLogout],
   );
 
-  const loadQueue = useCallback(async () => {
-    try {
-      const data: unknown = await (
-        await call(`/api/support/conversations?filter=${filter}`)
-      ).json();
-      if (!Array.isArray(data)) throw new Error();
-      setQueue(data.map((item: unknown) => SupportConversationSummarySchema.parse(item)));
-    } catch {
-      setError('Não foi possível carregar as conversas.');
-    }
-  }, [call, filter]);
-
-  useEffect(() => {
-    void Promise.resolve().then(loadQueue);
-  }, [loadQueue]);
-
   async function select(id: string) {
     setSelectedId(id);
     setNotice('');
@@ -65,8 +48,8 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
     }
   }
 
-  async function act(path: string, body: string) {
-    if (busy) return;
+  async function act(path: string, body: string): Promise<boolean> {
+    if (busy) return false;
     setBusy(true);
     try {
       await call(`/api/support/conversations/${selectedId}/${path}`, {
@@ -74,15 +57,17 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
         headers: { 'content-type': 'application/json' },
         body,
       });
+      return true;
     } catch {
       setError('Não foi possível concluir a ação.');
+      return false;
     } finally {
       setBusy(false);
     }
   }
 
   async function claim() {
-    await act('claim', '{}');
+    if (!(await act('claim', '{}'))) return;
     await select(selectedId);
     await loadQueue();
   }
@@ -92,19 +77,19 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
     const text = content.trim();
     if (!text || busy) return;
     setContent('');
-    await act('reply', JSON.stringify({ content: text }));
+    if (!(await act('reply', JSON.stringify({ content: text })))) return;
     await select(selectedId);
   }
 
   async function returnToAgent() {
-    await act('return', '{}');
+    if (!(await act('return', '{}'))) return;
     setDetail(null);
     setSelectedId('');
     await loadQueue();
   }
 
   async function close() {
-    await act('close', '{}');
+    if (!(await act('close', '{}'))) return;
     setNotice('Atendimento encerrado.');
     setDetail(null);
     setSelectedId('');
@@ -115,33 +100,18 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
 
   return (
     <div className="support">
-      <nav aria-label="Filtros" className="support-filters">
-        <button type="button" onClick={() => setFilter('all')}>
-          Todas
-        </button>
-        <button type="button" onClick={() => setFilter('waiting')}>
-          Para você
-        </button>
-        <button type="button" onClick={() => setFilter('owned')}>
-          Minhas
-        </button>
-      </nav>
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
-      <section aria-label="Conversas" className="support-list">
-        {queue.length === 0 && <p>Nenhuma conversa.</p>}
-        {queue.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            data-conversation-id={item.id}
-            onClick={() => void select(item.id)}
-          >
-            {item.employee.name}
-            {item.handoff ? ` · ${reasonTag[item.handoff.reason] ?? 'Transferida'}` : ''}
-          </button>
-        ))}
-      </section>
+      <SupportQueue
+        items={queue}
+        filter={filter}
+        selectedId={selectedId}
+        status={queueStatus}
+        error={queueError}
+        onFilterChange={setFilter}
+        onSelect={(id) => void select(id)}
+        onRetry={() => void loadQueue()}
+      />
       {detail && (
         <section aria-label="Atendimento" className="support-detail">
           <header className="support-detail-header">

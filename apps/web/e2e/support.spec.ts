@@ -27,7 +27,9 @@ test('B11: analyst claims, replies, and closes a handed-off conversation', async
   await page.getByRole('button', { name: 'Para você' }).click();
   await item.click();
   await page.getByRole('button', { name: 'Assumir atendimento' }).click();
-  await expect(page.getByRole('status').first()).toContainText('Você está atendendo');
+  await expect(page.getByRole('region', { name: 'Atendimento' }).getByRole('status')).toContainText(
+    'Você está atendendo',
+  );
   await page.getByLabel('Resposta').fill('Já li o histórico.');
   await page.getByRole('button', { name: 'Enviar resposta' }).click();
   await expect(page.getByText('Já li o histórico.')).toBeVisible();
@@ -46,5 +48,5 @@ test('B11: analyst claims, replies, and closes a handed-off conversation', async
   await page.getByRole('button', { name: 'Minhas' }).click();
   await item.click();
   await page.getByRole('button', { name: 'Encerrar atendimento' }).click();
-  await expect(page.getByRole('status').first()).toContainText('Atendimento encerrado');
+  await expect(page.getByText('Atendimento encerrado.', { exact: true })).toBeVisible();
 });
