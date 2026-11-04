@@ -24,6 +24,7 @@ export function History({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [ticketsVersion, setTicketsVersion] = useState(0);
+  const [page, setPage] = useState<'support' | 'profile'>('support');
   const busyRef = useRef(false);
   const selectionVersion = useRef(0);
   const call = useCallback(
@@ -108,35 +109,69 @@ export function History({
         <Support onLogout={onLogout} />
       ) : (
         <>
-          <p>As mensagens são salvas no histórico.</p>
-          <button disabled={busy} onClick={() => void create()}>
-            Nova conversa
-          </button>
-          <nav aria-label="Conversas">
-            {conversations.length === 0 && <p>Nenhuma conversa ainda.</p>}
-            {conversations.map((item, index) => (
-              <button disabled={busy} key={item.id} onClick={() => void choose(item.id)}>
-                Conversa {index + 1}
-              </button>
-            ))}
+          <nav aria-label="Navegação principal" className="profile-navigation">
+            <button
+              type="button"
+              aria-current={page === 'support' ? 'page' : undefined}
+              onClick={() => setPage('support')}
+            >
+              Atendimento
+            </button>
+            <button
+              type="button"
+              aria-current={page === 'profile' ? 'page' : undefined}
+              onClick={() => setPage('profile')}
+            >
+              Meu perfil
+            </button>
           </nav>
-          {selected && (
-            <Consultation
-              key={selected}
-              conversationId={selected}
-              conversation={conversations.find((item) => item.id === selected)!}
-              messages={messages}
-              setMessages={setMessages}
-              onUnauthorized={onLogout}
-              onStartNew={() => void create()}
-              onTicketCommitted={() => setTicketsVersion((value) => value + 1)}
-              onBusy={(value) => {
-                busyRef.current = value;
-                setBusy(value);
-              }}
-            />
+          {page === 'profile' && (
+            <section className="profile" aria-labelledby="profile-heading">
+              <h2 id="profile-heading">Meu perfil</h2>
+              <p>Seus dados de acesso ao service desk de TI.</p>
+              <dl className="profile-card">
+                <div>
+                  <dt>Nome</dt>
+                  <dd>{user.name}</dd>
+                </div>
+                <div>
+                  <dt>E-mail corporativo</dt>
+                  <dd>{user.email}</dd>
+                </div>
+              </dl>
+            </section>
           )}
-          <Tickets onUnauthorized={onLogout} reloadToken={ticketsVersion} />
+          <div hidden={page !== 'support'}>
+            <p>As mensagens são salvas no histórico.</p>
+            <button disabled={busy} onClick={() => void create()}>
+              Nova conversa
+            </button>
+            <nav aria-label="Conversas">
+              {conversations.length === 0 && <p>Nenhuma conversa ainda.</p>}
+              {conversations.map((item, index) => (
+                <button disabled={busy} key={item.id} onClick={() => void choose(item.id)}>
+                  Conversa {index + 1}
+                </button>
+              ))}
+            </nav>
+            {selected && (
+              <Consultation
+                key={selected}
+                conversationId={selected}
+                conversation={conversations.find((item) => item.id === selected)!}
+                messages={messages}
+                setMessages={setMessages}
+                onUnauthorized={onLogout}
+                onStartNew={() => void create()}
+                onTicketCommitted={() => setTicketsVersion((value) => value + 1)}
+                onBusy={(value) => {
+                  busyRef.current = value;
+                  setBusy(value);
+                }}
+              />
+            )}
+            <Tickets onUnauthorized={onLogout} reloadToken={ticketsVersion} />
+          </div>
         </>
       )}
     </main>
