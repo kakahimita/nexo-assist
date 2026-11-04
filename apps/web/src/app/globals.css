@@ -466,6 +466,57 @@ textarea {
 .history textarea {
   min-height: 7rem;
 }
+.profile-navigation button {
+  background: transparent;
+  color: #52606d;
+}
+.profile-navigation button[aria-current='page'] {
+  background: #eaf4fd;
+  color: #0062c4;
+}
+.profile {
+  max-width: 600px;
+  margin: 3rem auto;
+}
+.profile h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.profile > p {
+  color: #697386;
+  margin: 0.4rem 0 2rem;
+}
+.profile-card {
+  margin: 0;
+  border: 1px solid #e3e6ea;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px #1b24310d,
+    0 6px 18px #1b24310a;
+}
+.profile-card > div {
+  display: grid;
+  grid-template-columns: minmax(0, 160px) minmax(0, 1fr);
+  gap: 16px;
+  padding: 20px 24px;
+}
+.profile-card > div + div {
+  border-top: 1px solid #e3e6ea;
+}
+.profile-card dt {
+  color: #697386;
+}
+.profile-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+  .profile-card > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
 .tickets {
   margin-top: 2rem;
   padding-top: 1.5rem;
