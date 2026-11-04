@@ -51,6 +51,40 @@ describe('B12: decisions use actual tool results', () => {
     failed.apply({ type: 'decision', decision });
     expect(failed.snapshot()).toMatchObject({ draftId: null, actions: [{ status: 'failed' }] });
   });
+  it('keeps the clock start of duplicate candidates as their last update', () => {
+    const turn = new ConsultationTurn();
+    turn.apply({
+      type: 'tool-result',
+      toolCallId: 'd',
+      tool: 'propose-ticket-draft',
+      result: {
+        status: 'duplicate_candidates',
+        candidates: [
+          {
+            id: 't2',
+            ownerId: 'ana',
+            title: 'Notebook',
+            description: 'Lento',
+            type: 'INC',
+            category: 'hardware',
+            priority: 'medium',
+            impact: 'self',
+            status: 'open',
+            transferRequested: false,
+            createdAt: '2026-10-20T12:00:00.000Z',
+            resolvedAt: null,
+            slaStartedAt: '2026-11-01T12:00:00.000Z',
+            deadline: '2026-11-04T12:00:00.000Z',
+            overdue: false,
+          },
+        ],
+      },
+    } as never);
+    turn.apply({ type: 'decision', decision });
+    expect(turn.snapshot().tickets).toEqual([
+      expect.objectContaining({ id: 't2', lastUpdate: '2026-11-01T12:00:00.000Z' }),
+    ]);
+  });
   it('does not offer a misleading creation shortcut while duplicate candidates need review', () => {
     const turn = new ConsultationTurn();
     turn.apply({

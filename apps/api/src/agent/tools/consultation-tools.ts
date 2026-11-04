@@ -186,14 +186,17 @@ export class ConsultationTools {
     assertEmployee(user);
     const { query, kind = 'any' } = ConsultTicketsInputSchema.parse(input);
     const owned = await this.tickets.list(user, now);
-    const candidates = owned.map(({ id, title, status, priority, deadline, overdue }) => ({
-      id,
-      title,
-      status,
-      priority,
-      deadline,
-      overdue,
-    }));
+    const candidates = owned.map(
+      ({ id, title, status, priority, deadline, slaStartedAt, overdue }) => ({
+        id,
+        title,
+        status,
+        priority,
+        deadline,
+        lastUpdate: slaStartedAt,
+        overdue,
+      }),
+    );
     const normalizedQuery =
       query === undefined
         ? ''
