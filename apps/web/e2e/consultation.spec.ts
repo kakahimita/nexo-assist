@@ -24,8 +24,7 @@ test('B02 B12: asks platform and exposes actual decision evidence', async ({ pag
   await page.keyboard.press('Enter');
   await expect(chat.getByText(/VPN erro 809 no Windows 11/).first()).toBeVisible();
   await expect(chat.getByText(/Reinstale o cliente VPN/i)).toHaveCount(0);
-  await chat.getByText('Detalhes da decisão').last().focus();
-  await page.keyboard.press('Enter');
+  await chat.getByText('Detalhes da decisão').last().click();
   await expect(chat.getByText(/Confiança estimada/).last()).toBeVisible();
   await expect(chat.getByText(/Compatibilidade com a versão do Windows/).last()).toBeVisible();
   expect(await (await page.request.get('/api/tickets')).json()).toEqual(ticketsBefore);
