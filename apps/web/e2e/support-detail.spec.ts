@@ -11,21 +11,101 @@ async function loginAsAnalyst(page: Page): Promise<string> {
   return page.evaluate(async () => (await (await fetch('/api/session')).json()).id as string);
 }
 
-function conversation(id: string, state: ConversationState, assignedAnalystId: string | null) {
+type HandoffFixture = {
+  reason: 'employee_request' | 'critical_incident' | 'overdue_ticket' | 'unresolved_uncertainty';
+  summary: string;
+  requestedAt: string;
+};
+
+type MessageFixture = {
+  id: string;
+  content: string;
+  createdAt: string;
+  role: 'employee' | 'agent' | 'analyst';
+  status: 'completed';
+  decision: null;
+  authorName: string | null;
+};
+
+type TicketFixture = {
+  id: string;
+  ownerId: string;
+  title: string;
+  description: string;
+  type: 'INC' | 'REQ';
+  category: 'access' | 'network_vpn' | 'hardware' | 'software' | 'email' | 'other';
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  impact: 'self' | 'team' | 'company';
+  status: 'open' | 'resolved';
+  transferRequested: boolean;
+  createdAt: string;
+  resolvedAt: string | null;
+  slaStartedAt: string;
+  deadline: string;
+  overdue: boolean;
+};
+
+function conversation(
+  id: string,
+  state: ConversationState,
+  assignedAnalystId: string | null,
+  handoff: HandoffFixture | null = null,
+) {
   return {
     id,
     state,
     stateVersion: 0,
     employee: { id: `${id}-employee`, name: `Pessoa ${id}` },
-    handoff: null,
+    handoff,
     assignedAnalystId,
     closedAt: state === 'closed' ? '2026-11-04T12:10:00.000Z' : null,
     lastMessage: null,
   };
 }
 
-function detail(item: ReturnType<typeof conversation>) {
-  return { conversation: item, messages: [], tickets: [] };
+function detail(
+  item: ReturnType<typeof conversation>,
+  messages: MessageFixture[] = [],
+  tickets: TicketFixture[] = [],
+) {
+  return { conversation: item, messages, tickets };
+}
+
+function message(
+  id: string,
+  role: MessageFixture['role'],
+  content: string,
+  createdAt: string,
+  authorName: string | null = null,
+): MessageFixture {
+  return { id, content, createdAt, role, status: 'completed', decision: null, authorName };
+}
+
+function ticket(
+  id: string,
+  title: string,
+  category: TicketFixture['category'],
+  priority: TicketFixture['priority'],
+  status: TicketFixture['status'],
+  overdue: boolean,
+): TicketFixture {
+  return {
+    id,
+    ownerId: 'owned-employee',
+    title,
+    description: `Descrição de ${title}`,
+    type: 'INC',
+    category,
+    priority,
+    impact: 'self',
+    status,
+    transferRequested: false,
+    createdAt: '2026-11-04T11:00:00.000Z',
+    resolvedAt: status === 'resolved' ? '2026-11-04T11:30:00.000Z' : null,
+    slaStartedAt: '2026-11-04T11:00:00.000Z',
+    deadline: '2026-11-04T15:00:00.000Z',
+    overdue,
+  };
 }
 
 function deferred() {
@@ -479,3 +559,231 @@ test('B11 B15: committed return and close succeed even when the queue refresh fa
   await expect(region).toHaveCount(0);
   expect(closes).toBe(1);
 });
+
+test('B11 V05: presents role-distinct messages, handoff context, and authorized tickets', async ({
+  page,
+}) => {
+  const { items } = await prepareQueue(page, (analystId) => [
+    conversation('owned', 'with_analyst', analystId, {
+      reason: 'critical_incident',
+      summary: 'Resumo da transferência com <detalhes> & contexto.',
+      requestedAt: '2026-11-04T12:00:00.000Z',
+    }),
+  ]);
+  const item = items[0]!;
+  item.employee.name = 'Ana & Cia <TI>';
+  await page.route('**/api/support/conversations/owned', (route) =>
+    route.fulfill({
+      json: detail(
+        item,
+        [
+          message(
+            'm1',
+            'employee',
+            'Pergunta <b>importante</b> & detalhes',
+            '2026-11-04T12:01:00.000Z',
+          ),
+          message('m2', 'agent', 'Resposta do agente', '2026-11-04T12:02:00.000Z'),
+          message(
+            'm3',
+            'analyst',
+            'Resposta do analista',
+            '2026-11-04T12:03:00.000Z',
+            'Rafael Lima',
+          ),
+          message('m4', 'analyst', 'Resposta sem autor', '2026-11-04T12:04:00.000Z'),
+        ],
+        [
+          ticket('t1', 'Notebook lento', 'network_vpn', 'high', 'open', true),
+          ticket('t2', 'Acesso à pasta', 'access', 'low', 'resolved', false),
+        ],
+      ),
+    }),
+  );
+
+  const region = page.getByRole('region', { name: 'Atendimento' });
+  await page.locator('[data-conversation-id="owned"]').click();
+
+  await expect(region.getByRole('heading', { name: 'Resumo da transferência' })).toBeVisible();
+  await expect(region).toContainText('Motivo: Incidente crítico');
+  await expect(region).toContainText('Resumo da transferência com <detalhes> & contexto.');
+  await expect(region.locator('.support-handoff time')).toHaveAttribute(
+    'dateTime',
+    '2026-11-04T12:00:00.000Z',
+  );
+
+  const messages = region.locator('.support-message');
+  await expect(messages).toHaveCount(4);
+  await expect(messages.nth(0)).toContainText('Ana & Cia <TI>');
+  await expect(messages.nth(1)).toContainText('Nexo Assist');
+  await expect(messages.nth(2)).toContainText('Rafael Lima');
+  await expect(messages.nth(3)).toContainText('Suporte');
+  await expect(messages.nth(0)).toContainText('Pergunta <b>importante</b> & detalhes');
+  await expect(region.locator('.support-messages img, .support-messages b')).toHaveCount(0);
+
+  const times = messages.locator('time');
+  await expect(times).toHaveCount(4);
+  for (const [index, value] of [
+    '2026-11-04T12:01:00.000Z',
+    '2026-11-04T12:02:00.000Z',
+    '2026-11-04T12:03:00.000Z',
+    '2026-11-04T12:04:00.000Z',
+  ].entries()) {
+    await expect(times.nth(index)).toHaveAttribute('dateTime', value);
+  }
+
+  const ticketPanel = region.getByRole('region', { name: 'Chamados de Ana & Cia <TI>' });
+  await expect(ticketPanel).toContainText('Notebook lento');
+  await expect(ticketPanel).toContainText('Rede e VPN · prioridade Alta');
+  await expect(ticketPanel).toContainText('Aberto');
+  await expect(ticketPanel).toContainText('Atrasado');
+  await expect(ticketPanel).toContainText('Acesso · prioridade Baixa');
+  await expect(ticketPanel).toContainText('Resolvido');
+  await expect(ticketPanel.locator('time').first()).toHaveAttribute(
+    'dateTime',
+    '2026-11-04T15:00:00.000Z',
+  );
+  await expect(ticketPanel).not.toContainText('Desta conversa');
+  await expect(ticketPanel).not.toContainText('Outros chamados');
+});
+
+test('B11: empty message and ticket lists stay honest', async ({ page }) => {
+  const { items } = await prepareQueue(page, (analystId) => [
+    conversation('owned', 'with_analyst', analystId),
+  ]);
+  await detailRoute(page, items);
+  const region = page.getByRole('region', { name: 'Atendimento' });
+  await page.locator('[data-conversation-id="owned"]').click();
+
+  await expect(region.getByText('Nenhuma mensagem.')).toBeVisible();
+  await expect(region.getByText('Nenhum chamado.')).toBeVisible();
+  await expect(region.getByText('Atrasado')).toHaveCount(0);
+});
+
+test('B11 V05: read-only states never expose an enabled composer', async ({ page }) => {
+  const { items } = await prepareQueue(page, () => [
+    conversation('waiting', 'waiting_for_analyst', null),
+    conversation('another', 'with_analyst', 'other-analyst'),
+    conversation('agent', 'agent', null),
+    conversation('closed', 'closed', null),
+  ]);
+  await detailRoute(page, items);
+  const region = page.getByRole('region', { name: 'Atendimento' });
+
+  for (const [id, explanation] of [
+    ['waiting', 'Assuma o atendimento para responder.'],
+    ['another', 'Somente o analista responsável pode responder.'],
+    ['agent', 'O atendimento está com o agente.'],
+    ['closed', 'Atendimento encerrado.'],
+  ] as const) {
+    await page.locator(`[data-conversation-id="${id}"]`).click();
+    await expect(region.getByText(explanation)).toBeVisible();
+    await expect(region.getByLabel('Resposta')).toHaveCount(0);
+    await expect(region.getByRole('button', { name: 'Enviar resposta' })).toHaveCount(0);
+  }
+});
+
+test('B11 V05: keyboard reaches selection, composer, and send action', async ({ page }) => {
+  const { items } = await prepareQueue(page, (analystId) => [
+    conversation('owned', 'with_analyst', analystId),
+  ]);
+  await detailRoute(page, items);
+  let posts = 0;
+  await page.route('**/api/support/conversations/owned/reply', (route) => {
+    posts += 1;
+    return route.fulfill({ status: 200, json: { ok: true } });
+  });
+
+  const region = page.getByRole('region', { name: 'Atendimento' });
+  await page.locator('[data-conversation-id="owned"]').focus();
+  await page.keyboard.press('Enter');
+  await expect(region).toContainText('Pessoa owned');
+
+  await page.getByLabel('Resposta').focus();
+  await page.keyboard.type('Resposta via teclado');
+  await expect(page.getByLabel('Resposta')).toBeFocused();
+  await page.getByRole('button', { name: 'Enviar resposta' }).focus();
+  await expect(page.getByRole('button', { name: 'Enviar resposta' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => posts).toBe(1);
+  await expect(page.getByLabel('Resposta')).toHaveValue('');
+});
+
+for (const viewport of [
+  { width: 1567, height: 900 },
+  { width: 1440, height: 900 },
+  { width: 375, height: 812 },
+]) {
+  test(`B11 V05: long content stays readable without overflow at ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    const { items } = await prepareQueue(page, (analystId) => [
+      conversation('owned', 'with_analyst', analystId),
+    ]);
+    const item = items[0]!;
+    await page.route('**/api/support/conversations/owned', (route) =>
+      route.fulfill({
+        json: detail(
+          item,
+          [
+            message('long', 'employee', 'M'.repeat(400), '2026-11-04T12:01:00.000Z'),
+            message(
+              'special',
+              'analyst',
+              'Ação & suporte <ok> ção',
+              '2026-11-04T12:02:00.000Z',
+              'Ana',
+            ),
+          ],
+          [
+            ticket(
+              'long-ticket',
+              `Chamado-${'x'.repeat(180)}`,
+              'hardware',
+              'critical',
+              'open',
+              true,
+            ),
+          ],
+        ),
+      }),
+    );
+    const region = page.getByRole('region', { name: 'Atendimento' });
+    await page.locator('[data-conversation-id="owned"]').click();
+    await expect(region).toContainText('Ação & suporte <ok> ção');
+
+    const layout = await page.evaluate(() => {
+      const box = (selector: string) => {
+        const rect = document.querySelector(selector)!.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+      };
+      const detailElement = document.querySelector<HTMLElement>('.support-detail')!;
+      const ticketElement = document.querySelector<HTMLElement>('.support-ticket-context')!;
+      return {
+        documentWidth: document.documentElement.scrollWidth,
+        windowWidth: window.innerWidth,
+        detailOverflow: detailElement.scrollWidth - detailElement.clientWidth,
+        ticketOverflow: ticketElement.scrollWidth - ticketElement.clientWidth,
+        queue: box('.support-list'),
+        detail: box('.support-detail'),
+        messages: box('.support-messages'),
+        ticket: box('.support-ticket-context'),
+        form: box('.support-detail form'),
+      };
+    });
+
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.windowWidth);
+    expect(layout.detailOverflow).toBeLessThanOrEqual(0);
+    expect(layout.ticketOverflow).toBeLessThanOrEqual(0);
+
+    if (viewport.width >= 1200) {
+      expect(layout.queue.right).toBeLessThanOrEqual(layout.detail.left + 1);
+      expect(layout.messages.right).toBeLessThanOrEqual(layout.ticket.left + 1);
+    } else {
+      expect(layout.queue.bottom).toBeLessThanOrEqual(layout.detail.top + 1);
+      expect(layout.messages.bottom).toBeLessThanOrEqual(layout.ticket.top + 1);
+      expect(layout.ticket.bottom).toBeLessThanOrEqual(layout.form.top + 1);
+    }
+  });
+}

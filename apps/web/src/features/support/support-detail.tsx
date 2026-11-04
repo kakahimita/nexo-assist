@@ -1,6 +1,7 @@
 'use client';
 
 import type { SupportConversationView, UserView } from '@nexo/contracts';
+import { reasonLabels } from './support-queue';
 import { SupportTicketContext } from './support-ticket-context';
 
 function stateLabel(detail: SupportConversationView, owned: boolean): string {
@@ -50,12 +51,29 @@ export function SupportDetail({
   return (
     <section aria-label="Atendimento" className="support-detail">
       <header className="support-detail-header">
-        <strong>{detail.conversation.employee.name}</strong>
-        <span role="status">{stateLabel(detail, owned)}</span>
+        <div className="support-detail-title">
+          <strong>{detail.conversation.employee.name}</strong>
+          <span role="status">{stateLabel(detail, owned)}</span>
+        </div>
+        {detail.conversation.state === 'waiting_for_analyst' ? (
+          <button type="button" disabled={busy} onClick={onClaim}>
+            Assumir atendimento
+          </button>
+        ) : owned ? (
+          <div className="support-detail-actions">
+            <button type="button" disabled={busy} onClick={onReturn}>
+              Devolver ao agente
+            </button>
+            <button type="button" disabled={busy} onClick={onClose}>
+              Encerrar atendimento
+            </button>
+          </div>
+        ) : null}
       </header>
       {detail.conversation.handoff && (
         <section className="support-handoff" aria-label="Resumo da transferência">
           <h2>Resumo da transferência</h2>
+          <p>Motivo: {reasonLabels[detail.conversation.handoff.reason]}</p>
           <p>{detail.conversation.handoff.summary}</p>
           <time dateTime={detail.conversation.handoff.requestedAt}>
             Solicitada em{' '}
@@ -68,20 +86,6 @@ export function SupportDetail({
         </section>
       )}
       {error && <p role="alert">{error}</p>}
-      {detail.conversation.state === 'waiting_for_analyst' ? (
-        <button type="button" disabled={busy} onClick={onClaim}>
-          Assumir atendimento
-        </button>
-      ) : owned ? (
-        <div className="support-detail-actions">
-          <button type="button" disabled={busy} onClick={onReturn}>
-            Devolver ao agente
-          </button>
-          <button type="button" disabled={busy} onClick={onClose}>
-            Encerrar atendimento
-          </button>
-        </div>
-      ) : null}
       <div className="support-messages">
         {detail.messages.length === 0 && <p>Nenhuma mensagem.</p>}
         {detail.messages.map((message) => (

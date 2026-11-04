@@ -15,7 +15,7 @@ const stateLabels = {
   closed: 'Encerrada',
 };
 
-const reasonLabels = {
+export const reasonLabels = {
   employee_request: 'Transferida',
   critical_incident: 'Incidente crítico',
   overdue_ticket: 'Chamado vencido',
