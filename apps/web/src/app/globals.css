@@ -1348,16 +1348,29 @@ button:disabled {
 }
 .support-detail-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+.support-detail-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #dce9f7;
+  color: #0062c4;
+  font-size: 14px;
+  font-weight: 600;
 }
 .support-detail-title {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
   min-width: 0;
+  margin-right: auto;
 }
 .support-detail-actions {
   display: flex;
@@ -1365,7 +1378,21 @@ button:disabled {
   flex-wrap: wrap;
 }
 .support-detail-header [role='status'] {
-  font-size: 0.85rem;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #f6f7f9;
+  color: #5b6472;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.support-detail-header[data-state='waiting_for_analyst'] [role='status'] {
+  color: #946300;
+  background: #f5a50018;
+}
+.support-detail-header[data-state='with_analyst'] [role='status'] {
+  color: #00804a;
+  background: #00bd6c14;
 }
 .support-handoff {
   padding: 0.75rem;

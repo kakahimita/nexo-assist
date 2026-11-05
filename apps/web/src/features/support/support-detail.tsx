@@ -50,7 +50,10 @@ export function SupportDetail({
 
   return (
     <section aria-label="Atendimento" className="support-detail">
-      <header className="support-detail-header">
+      <header className="support-detail-header" data-state={detail.conversation.state}>
+        <span className="support-detail-avatar" aria-hidden="true">
+          {detail.conversation.employee.name.slice(0, 2).toUpperCase()}
+        </span>
         <div className="support-detail-title">
           <strong>{detail.conversation.employee.name}</strong>
           <span role="status">{stateLabel(detail, owned)}</span>

@@ -159,6 +159,12 @@ conversation names and message previews; ticket-number search remains unavailabl
 because the queue contract has no public ticket number. A browser test proves
 name/message filtering and the honest empty result.
 
+The V04/V05 conversation header now groups a 40 px employee avatar, real
+employee name, server-derived ownership state, and existing actions. The
+state badge uses the Pencil warning/success palette. The targeted V05 browser
+case passed against the running project instance, using mocked queue/detail
+responses and no ticket writes.
+
 The first browser run found the ticket context below the composer at 375x812;
 the CSS grid order was corrected and the second run passed all 64 Chromium
 tests. Typecheck, lint, and build passed. A later `npm run check` passed through
