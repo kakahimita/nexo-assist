@@ -4,6 +4,7 @@ import {
   ConsultationDecisionViewSchema,
   ConsultationErrorCodeSchema,
 } from './consultation.js';
+import { ConversationFlowSchema } from './conversation-flow.js';
 
 export const ConversationViewSchema = z.strictObject({
   id: z.string(),
@@ -24,6 +25,7 @@ export const ConversationViewSchema = z.strictObject({
     .nullable(),
   assignedAnalystId: z.string().nullable(),
   closedAt: z.string().datetime().nullable(),
+  flow: ConversationFlowSchema,
 });
 export type ConversationView = z.infer<typeof ConversationViewSchema>;
 export const ConversationStateSchema = z.enum([

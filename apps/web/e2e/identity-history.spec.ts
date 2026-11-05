@@ -12,6 +12,7 @@ test('V03: first visit opens the chat without a permanent new-conversation actio
     handoff: null,
     assignedAnalystId: null,
     closedAt: null,
+    flow: { mode: 'none', stage: 'idle', facts: {} },
   };
   await page.route('**/api/session', (route) =>
     route.fulfill({
@@ -40,7 +41,7 @@ test('B01 B13: login, persist, logout and isolate history', async ({ page }) => 
   await page.getByLabel('Senha', { exact: true }).press('Enter');
   const conversationId = await startFreshConversation(page);
   await page.getByLabel('Mensagem').fill('Minha conexão caiu');
-  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await page.getByRole('button', { name: 'Enviar', exact: true }).click();
   await expect(page.getByText('Minha conexão caiu')).toBeVisible();
   await page.reload();
   const conversations = (await (await page.request.get('/api/conversations')).json()) as Array<{
@@ -109,6 +110,7 @@ test('B13 V03: the latest conversation resumes without exposing a history list',
           handoff: null,
           assignedAnalystId: null,
           closedAt: null,
+          flow: { mode: 'none', stage: 'idle', facts: {} },
         },
         {
           id: 'two',
@@ -118,6 +120,7 @@ test('B13 V03: the latest conversation resumes without exposing a history list',
           handoff: null,
           assignedAnalystId: null,
           closedAt: null,
+          flow: { mode: 'none', stage: 'idle', facts: {} },
         },
       ],
     }),
@@ -169,6 +172,7 @@ test('B13: pending message cannot be submitted twice or edited', async ({ page }
           handoff: null,
           assignedAnalystId: null,
           closedAt: null,
+          flow: { mode: 'none', stage: 'idle', facts: {} },
         },
       ],
     }),
@@ -202,10 +206,10 @@ test('B13: pending message cannot be submitted twice or edited', async ({ page }
   });
   await page.goto('/');
   await page.getByLabel('Mensagem').fill('Olá');
-  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
-  await expect(page.getByRole('button', { name: 'Enviar mensagem' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Enviar', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Enviar', exact: true })).toBeDisabled();
   await expect(page.getByLabel('Mensagem')).toBeDisabled();
   expect(posts).toBe(1);
   release();
-  await expect(page.getByRole('button', { name: 'Enviar mensagem' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Enviar', exact: true })).toBeEnabled();
 });

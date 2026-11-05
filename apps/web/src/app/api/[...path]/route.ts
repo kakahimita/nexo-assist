@@ -10,6 +10,8 @@ async function forward(
   const consultationStream =
     request.method === 'POST' && /^conversations\/[a-z0-9]+\/messages\/stream$/.test(route);
   const handoff = request.method === 'POST' && /^conversations\/[a-z0-9]+\/handoff$/.test(route);
+  const ticketSelection =
+    request.method === 'POST' && /^conversations\/[a-z0-9]+\/ticket-selection$/.test(route);
   const draftRecovery =
     request.method === 'GET' && /^conversations\/[a-z0-9]+\/draft-proposals$/.test(route);
   const supportRead =
@@ -29,6 +31,7 @@ async function forward(
     !ticketWrite &&
     !consultationStream &&
     !handoff &&
+    !ticketSelection &&
     !draftRecovery &&
     !supportRead &&
     !supportWrite &&

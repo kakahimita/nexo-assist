@@ -11,7 +11,7 @@ async function start(page: import('@playwright/test').Page) {
 
 async function send(page: import('@playwright/test').Page, text: string) {
   await page.getByLabel('Mensagem').fill(text);
-  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await page.getByRole('button', { name: 'Enviar', exact: true }).click();
 }
 
 const ticket = {
@@ -198,6 +198,9 @@ test('B03 V03: selects one of several consulted tickets before requesting its de
   await send(page, 'Qual o status dos meus chamados?');
   const chat = page.getByRole('region', { name: 'Conversa' });
   const choices = chat.getByRole('group', { name: 'Chamados encontrados' });
+  await page.route('**/api/conversations/*/ticket-selection', (route) =>
+    route.fulfill({ status: 201, json: {} }),
+  );
   await expect(choices).toBeVisible();
   await expect(choices.getByRole('button', { name: /Notebook lento.*Aberto/ })).toBeVisible();
   await expect(choices.getByRole('button', { name: /Acesso ao e-mail.*Resolvido/ })).toBeVisible();

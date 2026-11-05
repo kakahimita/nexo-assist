@@ -32,7 +32,7 @@ test('B09 B10 B13: employee can request human support and continue sending messa
   await expect(chat.getByRole('button', { name: 'Falar com um analista' })).toHaveCount(0);
 
   await chat.getByLabel('Mensagem').fill('Ainda preciso de ajuda');
-  await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await chat.getByRole('button', { name: 'Enviar', exact: true }).click();
   await expect(chat.getByText('Ainda preciso de ajuda')).toBeVisible();
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
   await expect(chat.getByText('Nexo Assist')).toHaveCount(0);

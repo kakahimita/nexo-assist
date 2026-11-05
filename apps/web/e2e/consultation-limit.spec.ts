@@ -26,7 +26,7 @@ test('B14: message cap preserves history and offers a new conversation', async (
   const chat = page.getByRole('region', { name: 'Conversa' });
   await expect(chat.getByText('28/30 mensagens nesta sessão')).toBeVisible();
   await chat.getByLabel('Mensagem').fill('Meu notebook não conecta na VPN e mostra o erro 809');
-  await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await chat.getByRole('button', { name: 'Enviar', exact: true }).click();
   await expect(chat.getByText('29/30 mensagens nesta sessão')).toBeVisible();
   await chat.getByRole('button', { name: 'Windows 11' }).click();
   await expect(chat.getByText('30/30 mensagens nesta sessão')).toBeVisible();
@@ -54,7 +54,7 @@ test('B14: a stale tab displays the server count after a limit rejection', async
   );
   const chat = page.getByRole('region', { name: 'Conversa' });
   await chat.getByLabel('Mensagem').fill('Teste');
-  await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await chat.getByRole('button', { name: 'Enviar', exact: true }).click();
   await expect(chat.getByText('30/30 mensagens nesta sessão')).toBeVisible();
   await expect(chat.getByLabel('Mensagem')).toBeDisabled();
 });

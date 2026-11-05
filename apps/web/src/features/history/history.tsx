@@ -19,6 +19,9 @@ export function History({
 }): React.JSX.Element {
   const [conversations, setConversations] = useState<ConversationView[]>([]);
   const [selected, setSelected] = useState('');
+  const [currentPaused, setCurrentPaused] = useState<'waiting_for_analyst' | 'with_analyst' | null>(
+    null,
+  );
   const [messages, setMessages] = useState<MessageView[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -61,12 +64,23 @@ export function History({
         if (version !== selectionVersion.current) return;
         setMessages(data.map((item: unknown) => MessageViewSchema.parse(item)));
         setSelected(id);
+        setCurrentPaused(null);
         setError('');
       } catch {
         if (version === selectionVersion.current) setError('Não foi possível carregar a conversa.');
       }
     },
     [call],
+  );
+  const reportPaused = useCallback(
+    (state: 'waiting_for_analyst' | 'with_analyst' | null) => {
+      setCurrentPaused(state);
+      if (!state) return;
+      setConversations((current) =>
+        current.map((item) => (item.id === selected ? { ...item, state } : item)),
+      );
+    },
+    [selected],
   );
   const create = useCallback(async () => {
     if (busyRef.current) return;
@@ -143,6 +157,20 @@ export function History({
       </div>
     );
   }
+  const currentConversation = conversations.find((item) => item.id === selected) ?? null;
+  const pausedConversation =
+    conversations
+      .map((item) =>
+        item.id === selected && currentPaused ? { ...item, state: currentPaused } : item,
+      )
+      .filter((item) => item.state === 'waiting_for_analyst' || item.state === 'with_analyst')
+      .at(-1) ?? null;
+  const selectedPaused =
+    currentPaused !== null ||
+    currentConversation?.state === 'waiting_for_analyst' ||
+    currentConversation?.state === 'with_analyst';
+  const otherPaused =
+    pausedConversation && pausedConversation.id !== selected ? pausedConversation : null;
   return (
     <div className="employee-layout">
       <aside className="employee-sidebar">
@@ -243,6 +271,36 @@ export function History({
           )}
           <div className="employee-chat-view" hidden={page !== 'support'}>
             {creating && <p role="status">Iniciando conversa...</p>}
+            {selected && selectedPaused && currentConversation && (
+              <div className="employee-paused-bar" role="status">
+                <span>
+                  {(currentPaused ?? currentConversation.state) === 'waiting_for_analyst'
+                    ? 'Seu atendimento está aguardando um analista.'
+                    : 'Seu atendimento está com um analista.'}
+                </span>
+                <button type="button" disabled={busy || creating} onClick={() => void create()}>
+                  Iniciar nova conversa
+                </button>
+              </div>
+            )}
+            {selected && !selectedPaused && otherPaused && (
+              <div className="employee-paused-bar" role="status">
+                <span>
+                  Você tem um atendimento{' '}
+                  {otherPaused.state === 'waiting_for_analyst'
+                    ? 'aguardando um analista'
+                    : 'com um analista'}
+                  .
+                </span>
+                <button
+                  type="button"
+                  disabled={busy || creating}
+                  onClick={() => void choose(otherPaused.id)}
+                >
+                  Voltar ao atendimento
+                </button>
+              </div>
+            )}
             {!creating && !selected && error && (
               <button type="button" onClick={() => void create()}>
                 Tentar novamente
@@ -257,6 +315,7 @@ export function History({
                 setMessages={setMessages}
                 onUnauthorized={onLogout}
                 onStartNew={() => void create()}
+                onPausedState={reportPaused}
                 onBusy={(value) => {
                   busyRef.current = value;
                   setBusy(value);

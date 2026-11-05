@@ -9,7 +9,7 @@ test('B04: employee reviews and confirms a conversation draft', async ({ page })
   await startFreshConversation(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await chat.getByLabel('Mensagem').fill('Abrir chamado: Meu notebook não liga no setor 234');
-  await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await chat.getByRole('button', { name: 'Enviar', exact: true }).click();
   await chat.getByRole('button', { name: 'Somente eu' }).click();
   await chat.getByRole('button', { name: 'Consigo trabalhar com alternativa' }).click();
   await chat.getByRole('button', { name: 'Sem compromisso em risco hoje' }).click();
@@ -42,7 +42,7 @@ async function createDraft(page: import('@playwright/test').Page, title: string)
   await startFreshConversation(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await chat.getByLabel('Mensagem').fill(`Abrir chamado: ${title}`);
-  await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await chat.getByRole('button', { name: 'Enviar', exact: true }).click();
   await chat.getByRole('button', { name: 'Somente eu' }).click();
   await chat.getByRole('button', { name: 'Consigo trabalhar com alternativa' }).click();
   const response = page.waitForResponse(
@@ -117,7 +117,7 @@ test('B14: draft confirmation remains available after the thirtieth message', as
   const chat = page.getByRole('region', { name: 'Conversa' });
   await expect(chat.getByText('26/30 mensagens nesta sessão')).toBeVisible();
   await chat.getByLabel('Mensagem').fill('Abrir chamado: Minha impressora travou na sala 419');
-  await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await chat.getByRole('button', { name: 'Enviar', exact: true }).click();
   await chat.getByRole('button', { name: 'Somente eu' }).click();
   await chat.getByRole('button', { name: 'Consigo trabalhar com alternativa' }).click();
   await chat.getByRole('button', { name: 'Sem compromisso em risco hoje' }).click();

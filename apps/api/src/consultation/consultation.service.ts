@@ -7,6 +7,8 @@ import type {
   UserView,
 } from '@nexo/contracts';
 import { ConversationsService } from '../conversations/conversations.service.js';
+import { restoreConversationFlow } from '../conversations/conversation-flow.js';
+import { resumeSupportFlow } from '../conversations/conversation-flow.js';
 import { ConsultationTurn } from '../agent/consultation/turn.js';
 import type { ConsultationEngine, ConsultationEngineEvent } from '../agent/consultation/types.js';
 import { ConsultTicketsResultSchema } from '../agent/tools/consultation-tool-schemas.js';
@@ -60,6 +62,12 @@ export class ConsultationService {
     const turn = new ConsultationTurn();
     try {
       const history = await this.conversations.messages(user, conversationId);
+      const storedFlow = await this.conversations.flow(user, conversationId);
+      const flow = restoreConversationFlow(
+        storedFlow,
+        history.filter((item) => item.role === 'employee').map((item) => item.content),
+      );
+      let nextFlow = flow;
       let finished = false;
       for await (const event of this.engine.run({
         user,
@@ -70,6 +78,7 @@ export class ConsultationService {
         now: new Date(),
         conversationId,
         runId,
+        flow,
       })) {
         if (signal.aborted) throw new Error('interrupted');
         if (event.type === 'handoff') {
@@ -83,6 +92,10 @@ export class ConsultationService {
           return;
         }
         const before = turn.partial().actions.length;
+        if (event.type === 'flow') {
+          nextFlow = event.flow;
+          continue;
+        }
         turn.apply(event);
         const overdue = overdueConsultedTicket(event);
         if (overdue) {
@@ -118,9 +131,16 @@ export class ConsultationService {
       if (signal.aborted) throw new Error('interrupted');
       if (!finished) throw new Error('invalid_output');
       const snapshot = turn.snapshot();
-      if (!snapshot.text.trim()) throw new Error('invalid_output');
+      const visibleText = snapshot.decision.reply?.trim() || snapshot.text.trim();
+      if (!visibleText) throw new Error('invalid_output');
       const decision: ConsultationDecisionView = {
-        ...snapshot.decision,
+        intent: snapshot.decision.intent,
+        action: snapshot.decision.action,
+        appliedRule: snapshot.decision.appliedRule,
+        confidence: snapshot.decision.confidence,
+        justification: snapshot.decision.justification,
+        missingFacts: snapshot.decision.missingFacts,
+        quickReplies: snapshot.decision.quickReplies,
         actions: snapshot.actions,
         evidence: snapshot.evidence,
         tickets: snapshot.tickets,
@@ -129,16 +149,20 @@ export class ConsultationService {
         source: this.engine.source,
         draftId: snapshot.draftId,
       };
+      if (flow.mode === 'ticket_consultation' && flow.facts.selectedTicketId) {
+        nextFlow = resumeSupportFlow(flow);
+      }
       const final = await this.conversations.appendAgentTurnIfCurrent(
         user,
         conversationId,
         stateVersion,
         {
-          content: snapshot.text,
+          content: visibleText,
           status: 'completed',
           decision,
           promptVersion: this.engine.promptVersion,
           runId,
+          flow: nextFlow,
         },
       );
       if (final === null) {

@@ -55,6 +55,7 @@ function fakeConversations(current = true) {
     handoffs,
     conversations: {
       messages: async () => [],
+      flow: async () => ({ mode: 'none', stage: 'idle', facts: {} }),
       appendAgentTurnIfCurrent: async (
         _user: unknown,
         _conversationId: string,
@@ -136,5 +137,14 @@ describe('B09/B10: overdue consulted tickets are transferred by the backend', ()
     const result = await run([consult([ticket]), answer, { type: 'finish' }], false);
     expect(result.handoffs).toEqual([]);
     expect(result.types).toEqual(['user-message', 'handoff-waiting']);
+  });
+  it('uses the structured reply instead of any raw model text', async () => {
+    const result = await run([
+      { type: 'decision', decision: { ...answer.decision, reply: 'Olá! Como posso ajudar?' } },
+      { type: 'finish' },
+    ]);
+    expect(result.appended[0]!.content).toBe('Olá! Como posso ajudar?');
+    expect(result.appended[0]!.content).not.toContain('intent');
+    expect(result.types).toEqual(['user-message', 'done']);
   });
 });

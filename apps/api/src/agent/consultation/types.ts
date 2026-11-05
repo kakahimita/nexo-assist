@@ -1,4 +1,9 @@
-import type { ConsultationEngineDecision, HandoffReason, UserView } from '@nexo/contracts';
+import type {
+  ConsultationEngineDecision,
+  ConversationFlow,
+  HandoffReason,
+  UserView,
+} from '@nexo/contracts';
 
 export type ConsultationToolName = import('@nexo/contracts').ConsultationToolName;
 
@@ -9,6 +14,7 @@ export type ConsultationRequest = {
   now: Date;
   conversationId?: string;
   runId?: string;
+  flow?: ConversationFlow;
 };
 
 export type ConsultationEngineEvent =
@@ -22,6 +28,7 @@ export type ConsultationEngineEvent =
     }
   | { type: 'tool-error'; toolCallId: string; tool: ConsultationToolName; code: string }
   | { type: 'decision'; decision: ConsultationEngineDecision }
+  | { type: 'flow'; flow: ConversationFlow }
   | { type: 'handoff'; reason: HandoffReason }
   | { type: 'finish'; usage?: unknown };
 

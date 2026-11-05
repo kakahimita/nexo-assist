@@ -35,7 +35,7 @@ describe('B02/B03/B16: deterministic consultation', () => {
       const turn = new ConsultationTurn();
       for await (const event of engine.run({
         user,
-        messages: [{ role: 'employee', content: 'Acesso à VPN' }],
+        messages: [{ role: 'employee', content: 'Qual o status do meu chamado Acesso à VPN?' }],
         signal: new AbortController().signal,
         now: new Date(),
       }))
@@ -99,6 +99,11 @@ describe('B02/B03/B16: deterministic consultation', () => {
       expect(win10.evidence).toContainEqual(
         expect.objectContaining({ id: 'kb-vpn-809-windows-10' }),
       );
+      const vpnIssue = await run('Olá, não consigo acessar a VPN.');
+      expect(vpnIssue.decision.intent).toBe('Falha de VPN');
+      expect(vpnIssue.decision.action).toBe('clarify');
+      expect(vpnIssue.text).toContain('Qual versão do Windows');
+      expect(vpnIssue.tickets).toEqual([]);
       const list = await run('Qual o status do meu chamado?');
       expect(list.decision.action).toBe('clarify');
       expect(list.tickets).toHaveLength(2);

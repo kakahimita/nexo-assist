@@ -11,7 +11,7 @@ async function start(page: import('@playwright/test').Page) {
 
 async function send(page: import('@playwright/test').Page, text: string) {
   await page.getByLabel('Mensagem').fill(text);
-  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await page.getByRole('button', { name: 'Enviar', exact: true }).click();
 }
 
 test('B09 B10 B13: an overdue ticket transfers the conversation and keeps it after reload', async ({

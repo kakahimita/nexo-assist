@@ -51,6 +51,7 @@ model Conversation {
   contextTicketId String?
   contextTicket Ticket? @relation("ConversationContextTicket", fields: [contextTicketId], references: [id], onDelete: SetNull)
   closedAt DateTime?
+  flowJson String @default("{\"mode\":\"none\",\"stage\":\"idle\",\"facts\":{}}")
   messages Message[]
   draftProposalRuns DraftProposalRun[]
 }

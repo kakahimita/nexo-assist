@@ -27,6 +27,7 @@ export function Consultation({
   onBusy,
   onUnauthorized,
   onStartNew,
+  onPausedState,
 }: {
   conversationId: string;
   conversation: ConversationView;
@@ -35,6 +36,7 @@ export function Consultation({
   onBusy: (busy: boolean) => void;
   onUnauthorized: () => void;
   onStartNew: () => void;
+  onPausedState?: (state: 'waiting_for_analyst' | 'with_analyst' | null) => void;
 }): React.JSX.Element {
   const [content, setContent] = useState('');
   const [active, setActive] = useState(false);
@@ -48,6 +50,14 @@ export function Consultation({
   const closed = conversation.state === 'closed';
   const now = new Date();
   const [handoff, setHandoff] = useState(conversation.handoff);
+  const pausedState = humanEngaged
+    ? conversation.state === 'with_analyst'
+      ? ('with_analyst' as const)
+      : ('waiting_for_analyst' as const)
+    : null;
+  useEffect(() => {
+    onPausedState?.(pausedState);
+  }, [onPausedState, pausedState]);
   useEffect(() => {
     let current = true;
     void fetch(`/api/conversations/${encodeURIComponent(conversationId)}/draft-proposals`)
@@ -159,6 +169,16 @@ export function Consultation({
   function submit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     void send(content);
+  }
+  async function selectTicket(ticket: { id: string; title: string }): Promise<void> {
+    const response = await fetch(`/api/conversations/${conversationId}/ticket-selection`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ticketId: ticket.id }),
+    });
+    if (response.status === 401) return onUnauthorized();
+    if (!response.ok) return setError('Não foi possível selecionar o chamado.');
+    await send(ticket.title);
   }
   function chips(items: ConsultationAction[]) {
     return (
@@ -287,7 +307,7 @@ export function Consultation({
                     <TicketSelection
                       tickets={message.decision.tickets}
                       disabled={active || capped}
-                      onSelect={(ticket) => void send(ticket.title)}
+                      onSelect={(ticket) => void selectTicket(ticket)}
                     />
                   )}
                 <Decision decision={message.decision} />
@@ -341,8 +361,18 @@ export function Consultation({
               maxLength={4000}
               placeholder="Escreva para o Nexo..."
             />
-            <button disabled={active || capped} type="submit">
-              Enviar mensagem
+            <button className="composer-send" disabled={active || capped} type="submit">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 19V5" />
+                <path d="m6 11 6-6 6 6" />
+              </svg>
+              Enviar
             </button>
           </div>
         </form>

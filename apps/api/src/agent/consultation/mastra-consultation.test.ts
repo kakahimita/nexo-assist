@@ -10,11 +10,8 @@ const decision = {
   quickReplies: [],
 };
 describe('Mastra stream mapping', () => {
-  it('maps text, final tool results and structured output, ignoring preliminary data', () => {
-    expect(mapMastraChunk({ type: 'text-delta', payload: { id: 'a', text: 'Olá' } })).toEqual({
-      type: 'text-delta',
-      text: 'Olá',
-    });
+  it('maps final tool results and structured output, ignoring preliminary data and raw text', () => {
+    expect(mapMastraChunk({ type: 'text-delta', payload: { id: 'a', text: 'Olá' } })).toBeNull();
     expect(
       mapMastraChunk({
         type: 'tool-result',

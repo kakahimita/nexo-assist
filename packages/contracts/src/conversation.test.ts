@@ -56,6 +56,7 @@ describe('B13 conversation contracts', () => {
         },
         assignedAnalystId: null,
         closedAt: null,
+        flow: { mode: 'none', stage: 'idle', facts: {} },
       }).success,
     ).toBe(true);
     expect(HandoffViewSchema.safeParse({ reason: 'unknown', summary: 'x' }).success).toBe(false);
@@ -80,6 +81,7 @@ describe('B13 conversation contracts', () => {
         },
         assignedAnalystId: 'analyst-1',
         closedAt: null,
+        flow: { mode: 'none', stage: 'idle', facts: {} },
       }).success,
     ).toBe(true);
     expect(
@@ -91,6 +93,7 @@ describe('B13 conversation contracts', () => {
         handoff: null,
         assignedAnalystId: 'analyst-1',
         closedAt: '2026-11-03T00:05:00.000Z',
+        flow: { mode: 'none', stage: 'idle', facts: {} },
       }).success,
     ).toBe(true);
     expect(
@@ -102,6 +105,7 @@ describe('B13 conversation contracts', () => {
         handoff: null,
         assignedAnalystId: null,
         closedAt: null,
+        flow: { mode: 'none', stage: 'idle', facts: {} },
       }).success,
     ).toBe(false);
   });

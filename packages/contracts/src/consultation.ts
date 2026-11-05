@@ -46,6 +46,7 @@ export const ConsultationEngineDecisionSchema = z.strictObject({
   justification: z.string(),
   missingFacts: z.array(z.string()),
   quickReplies: z.array(z.string()).max(4),
+  reply: z.string().trim().min(1).max(4000).optional(),
 });
 export const ConsultationDecisionViewSchema = z
   .strictObject({

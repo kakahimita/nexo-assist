@@ -9,10 +9,12 @@ import {
   CONVERSATION_MESSAGE_LIMIT,
   ConsultationDecisionViewSchema,
   ConsultationTicketViewSchema,
+  ConversationFlowSchema,
   ConversationViewSchema,
   HandoffReasonSchema,
   MessageViewSchema,
 } from '@nexo/contracts';
+import { type ConversationFlow } from '@nexo/contracts';
 import { z } from 'zod';
 import { transitionTicket } from '../tickets/status-transition.js';
 import type {
@@ -26,6 +28,7 @@ import { DatabaseService } from '../database/database.service.js';
 import { SessionLimitReachedError } from './session-limit.js';
 import { formatHandoffSummary } from './handoff-summary.js';
 import { resolveContextTicketId } from './context-ticket.js';
+import { resumeSupportFlow } from './conversation-flow.js';
 import { toMessageView } from './message-view.js';
 
 @Injectable()
@@ -58,6 +61,7 @@ export class ConversationsService {
     handoffRequestedAt: Date | null;
     assignedAnalystId: string | null;
     closedAt: Date | null;
+    flowJson: string;
   }): ConversationView {
     return ConversationViewSchema.parse({
       id: row.id,
@@ -74,7 +78,17 @@ export class ConversationsService {
             },
       assignedAnalystId: row.assignedAnalystId,
       closedAt: row.closedAt?.toISOString() ?? null,
+      flow: this.parseFlow(row.flowJson),
     });
+  }
+  private parseFlow(raw: string) {
+    try {
+      const parsed = ConversationFlowSchema.safeParse(JSON.parse(raw) as unknown);
+      if (parsed.success) return parsed.data;
+    } catch {
+      // Existing conversations created before flow persistence resume from idle.
+    }
+    return ConversationFlowSchema.parse({ mode: 'none', stage: 'idle', facts: {} });
   }
   async requestHandoff(
     user: UserView,
@@ -127,6 +141,7 @@ export class ConversationsService {
           state: 'waiting_for_analyst',
           stateVersion: { increment: 1 },
           contextTicketId: ticketId,
+          flowJson: JSON.stringify(resumeSupportFlow(this.parseFlow(conversation.flowJson))),
           handoffReason: reason,
           handoffSummary: formatHandoffSummary({
             reason,
@@ -171,6 +186,45 @@ export class ConversationsService {
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
     return rows.map(toMessageView);
+  }
+  async flow(user: UserView, conversationId: string): Promise<ConversationFlow> {
+    await this.ensureOwned(user, conversationId);
+    const conversation = await this.database.client.conversation.findUnique({
+      where: { id: conversationId },
+      select: { flowJson: true },
+    });
+    if (!conversation) throw new NotFoundException();
+    return this.parseFlow(conversation.flowJson);
+  }
+  async selectTicketForConsultation(
+    user: UserView,
+    conversationId: string,
+    ticketId: string,
+  ): Promise<void> {
+    this.employee(user);
+    await this.database.client.$transaction(async (tx) => {
+      const conversation = await tx.conversation.findFirst({
+        where: { id: conversationId, ownerId: user.id, state: 'agent' },
+        select: { flowJson: true },
+      });
+      if (!conversation) throw new NotFoundException();
+      const flow = this.parseFlow(conversation.flowJson);
+      if (flow.mode !== 'ticket_consultation') throw new ConflictException();
+      const ticket = await tx.ticket.findFirst({
+        where: { id: ticketId, ownerId: user.id },
+        select: { id: true, title: true },
+      });
+      if (!ticket) throw new NotFoundException();
+      await tx.conversation.update({
+        where: { id: conversationId },
+        data: {
+          flowJson: JSON.stringify({
+            ...flow,
+            facts: { selectedTicketId: ticket.id, selectedTicketTitle: ticket.title },
+          }),
+        },
+      });
+    });
   }
   async pendingDrafts(user: UserView, conversationId: string): Promise<Array<{ draftId: string }>> {
     await this.ensureOwned(user, conversationId);
@@ -229,6 +283,7 @@ export class ConversationsService {
       decision: ConsultationDecisionView;
       promptVersion: string;
       runId?: string;
+      flow?: ConversationFlow;
     },
   ): Promise<MessageView> {
     await this.ensureOwned(user, conversationId);
@@ -268,6 +323,7 @@ export class ConversationsService {
             draftId: decision.draftId,
           },
         },
+        ...(input.flow ? { flowJson: JSON.stringify(input.flow) } : {}),
       },
     });
     return MessageViewSchema.parse({
@@ -290,6 +346,7 @@ export class ConversationsService {
       decision: ConsultationDecisionView;
       promptVersion: string;
       runId?: string;
+      flow?: ConversationFlow;
     },
   ): Promise<MessageView | null> {
     await this.ensureOwned(user, conversationId);
@@ -297,7 +354,10 @@ export class ConversationsService {
     return this.database.client.$transaction(async (tx) => {
       const guarded = await tx.conversation.updateMany({
         where: { id: conversationId, ownerId: user.id, state: 'agent', stateVersion },
-        data: { stateVersion: { increment: 0 } },
+        data: {
+          stateVersion: { increment: 0 },
+          ...(input.flow ? { flowJson: JSON.stringify(input.flow) } : {}),
+        },
       });
       if (guarded.count !== 1) return null;
       const row = await tx.message.create({

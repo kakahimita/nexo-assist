@@ -10,6 +10,19 @@ import {
 } from './consultation-tool-schemas.js';
 import type { ConsultationTools } from './consultation-tools.js';
 
+export function modelSafe(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(modelSafe);
+  if (typeof value === 'object' && value !== null) {
+    const result: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value)) {
+      if (item === null || item === undefined) continue;
+      result[key] = modelSafe(item);
+    }
+    return result;
+  }
+  return value;
+}
+
 export function createConsultationTools(tools: ConsultationTools) {
   return {
     proposeDraft: createTool({
@@ -17,6 +30,7 @@ export function createConsultationTools(tools: ConsultationTools) {
       description: 'Propose a draft for employee review. Never writes a ticket.',
       inputSchema: ProposalInputSchema,
       outputSchema: ProposeTicketDraftResultSchema,
+      toModelOutput: (result) => ({ type: 'json', value: modelSafe(result) as never }),
       execute: async (input, context) => {
         const user = UserViewSchema.parse(context?.requestContext?.get('user'));
         const now = context?.requestContext?.get('now');
@@ -37,6 +51,7 @@ export function createConsultationTools(tools: ConsultationTools) {
       description: 'Consult only the authenticated employee tickets.',
       inputSchema: ConsultTicketsInputSchema,
       outputSchema: ConsultTicketsResultSchema,
+      toModelOutput: (result) => ({ type: 'json', value: modelSafe(result) as never }),
       execute: async (input, context) => {
         const parsed = ConsultTicketsInputSchema.parse(input);
         const user = UserViewSchema.parse(context?.requestContext?.get('user'));

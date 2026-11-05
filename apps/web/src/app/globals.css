@@ -483,7 +483,10 @@ textarea {
 .employee-layout {
   display: grid;
   grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
+  contain: paint;
+  overflow: hidden;
   background: #fff;
   color: #1b2431;
   font-family: 'Schibsted Grotesk', sans-serif;
@@ -561,6 +564,7 @@ textarea {
   flex-direction: column;
   width: 100%;
   max-width: none;
+  min-height: 0;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -597,6 +601,33 @@ textarea {
   flex-direction: column;
   min-height: 0;
 }
+.employee-paused-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 12px clamp(24px, calc((100% - 808px) / 2), 200px) 0;
+  padding: 10px 14px;
+  border: 1px solid #e3e6ea;
+  border-radius: 12px;
+  background: #f7f9fc;
+  color: #3d4654;
+  font-size: 0.875rem;
+}
+.employee-paused-bar button {
+  flex: none;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #c9d2de;
+  color: #0058ad;
+  font-weight: 600;
+}
+.employee-paused-bar button:hover,
+.employee-paused-bar button:focus-visible {
+  background: #eef4fb;
+}
 .employee-ticket-view .tickets {
   margin: 0;
   padding: 0;
@@ -620,6 +651,8 @@ textarea {
     grid-template-columns: minmax(0, 1fr);
     height: auto;
     min-height: 100vh;
+    contain: none;
+    overflow: visible;
   }
   .employee-sidebar {
     border-right: 0;
@@ -1318,12 +1351,23 @@ textarea {
   border: 0;
   outline: 0;
   resize: none;
+  overflow-y: hidden;
 }
-.composer-row button {
+.composer-row .composer-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   flex: none;
   align-self: center;
   min-height: 36px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
   background: #0062c4;
+}
+.composer-send svg {
+  width: 18px;
+  height: 18px;
 }
 @media (max-width: 700px) {
   .consultation-messages {
@@ -1331,7 +1375,7 @@ textarea {
   }
 }
 @media (max-width: 480px) {
-  .composer-row button {
+  .composer-row .composer-send {
     max-width: 105px;
     padding: 0.4rem 0.6rem;
     font-size: 0.8rem;
