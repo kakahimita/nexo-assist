@@ -33,12 +33,11 @@ test('B03 B16: selects own tickets and redirects RH', async ({ page }) => {
   await start(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await send(page, 'Qual o status do meu chamado?');
-  await expect(chat.getByRole('button', { name: /Notebook lento/ }).last()).toBeVisible();
-  await expect(chat.getByRole('button', { name: /Senha bloqueada/ }).last()).toBeVisible();
-  await chat
-    .getByRole('button', { name: /Notebook lento/ })
-    .last()
-    .click();
+  const choices = chat.getByRole('group', { name: 'Chamados encontrados' }).last();
+  await expect(choices.getByRole('radio', { name: /Notebook lento/ })).toBeVisible();
+  await expect(choices.getByRole('radio', { name: /Senha bloqueada/ })).toBeVisible();
+  await choices.getByRole('radio', { name: /Notebook lento/ }).check();
+  await chat.getByRole('button', { name: 'Ver detalhes' }).click();
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
   const creation = page.waitForResponse(
     (response) =>

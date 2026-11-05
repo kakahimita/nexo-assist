@@ -65,14 +65,16 @@ function agentMessage(content: string, value: Record<string, unknown>) {
 async function mockStream(
   page: import('@playwright/test').Page,
   events: Array<Record<string, unknown>>,
+  requests?: string[],
 ) {
-  await page.route('**/api/conversations/*/messages/stream', (route) =>
-    route.fulfill({
+  await page.route('**/api/conversations/*/messages/stream', (route) => {
+    requests?.push(route.request().postData() ?? '');
+    return route.fulfill({
       status: 201,
       contentType: 'text/event-stream',
       body: events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(''),
-    }),
-  );
+    });
+  });
 }
 
 test('B03: shows the detail card for one consulted ticket inside the chat', async ({ page }) => {
@@ -106,7 +108,59 @@ test('B03: shows the detail card for one consulted ticket inside the chat', asyn
   await expect(card.getByText('Prazo vencido')).toHaveCount(0);
 });
 
-test('B09 B10: an overdue handoff shows the card, the waiting state, and no ticket choices', async ({
+test('B03 V03: selects one of several consulted tickets before requesting its details', async ({
+  page,
+}) => {
+  await start(page);
+  const secondTicket = {
+    ...ticket,
+    id: 'fixture-ana-resolved',
+    title: 'Acesso ao e-mail',
+    status: 'resolved',
+    priority: 'low',
+  };
+  const requests: string[] = [];
+  await mockStream(
+    page,
+    [
+      {
+        type: 'user-message',
+        message: {
+          id: 'user-multiple',
+          content: 'Qual o status dos meus chamados?',
+          createdAt: '2026-11-04T12:00:00.000Z',
+          role: 'employee',
+          status: 'completed',
+          decision: null,
+          authorName: null,
+        },
+      },
+      {
+        type: 'done',
+        message: agentMessage(
+          'Encontrei dois chamados.',
+          decision([ticket, secondTicket], 'answer'),
+        ),
+      },
+    ],
+    requests,
+  );
+  await send(page, 'Qual o status dos meus chamados?');
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  const choices = chat.getByRole('group', { name: 'Chamados encontrados' });
+  await expect(choices).toBeVisible();
+  await expect(choices.getByRole('radio', { name: /Notebook lento.*Aberto/ })).toBeVisible();
+  await expect(choices.getByRole('radio', { name: /Acesso ao e-mail.*Resolvido/ })).toBeVisible();
+  const details = chat.getByRole('button', { name: 'Ver detalhes' });
+  await expect(details).toBeDisabled();
+  await choices.getByRole('radio', { name: /Acesso ao e-mail.*Resolvido/ }).check();
+  await expect(details).toBeEnabled();
+  await details.click();
+  await expect.poll(() => requests.at(-1)).toContain('Acesso ao e-mail');
+  expect(requests.at(-1)).not.toContain('Notebook lento');
+});
+
+test('B09 B10: an overdue handoff shows the waiting state without ticket choices', async ({
   page,
 }) => {
   await start(page);
@@ -125,7 +179,13 @@ test('B09 B10: an overdue handoff shows the card, the waiting state, and no tick
       type: 'done',
       message: agentMessage(
         'Notebook lento está com o prazo vencido. Transferi a conversa para um analista.',
-        decision([{ ...ticket, overdue: true }], 'handoff'),
+        decision(
+          [
+            { ...ticket, overdue: true },
+            { ...ticket, id: 'other-ticket' },
+          ],
+          'handoff',
+        ),
       ),
     },
     { type: 'handoff-waiting' },
@@ -133,9 +193,8 @@ test('B09 B10: an overdue handoff shows the card, the waiting state, and no tick
   await send(page, 'Qual o status do Notebook lento?');
   const chat = page.getByRole('region', { name: 'Conversa' });
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
-  await expect(
-    chat.getByRole('article', { name: 'Chamado Notebook lento' }).getByText('Prazo vencido'),
-  ).toBeVisible();
+  await expect(chat.getByRole('article', { name: 'Chamado Notebook lento' })).toHaveCount(0);
+  await expect(chat.getByRole('group', { name: 'Chamados encontrados' })).toHaveCount(0);
   await expect(chat.getByRole('button', { name: /Notebook lento/ })).toHaveCount(0);
 });
 

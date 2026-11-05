@@ -11,6 +11,7 @@ import { readConsultationStream } from './stream';
 import { Decision } from './decision';
 import { DraftCard } from './draft-card';
 import { TicketCard } from './ticket-card';
+import { TicketSelection } from './ticket-selection';
 import { employeeStage } from './stage';
 const errors: Record<string, string> = {
   quota: 'O limite do modelo foi atingido. Tente novamente mais tarde.',
@@ -203,10 +204,21 @@ export function Consultation({
       )}
       <div className="consultation-messages">
         {messages.map((message) => (
-          <article key={message.id} className={`chat-message ${message.role}`}>
+          <article
+            key={message.id}
+            className={`chat-message ${message.role}`}
+            aria-label={
+              message.role === 'employee'
+                ? 'Você'
+                : message.role === 'agent'
+                  ? 'Nexo Assist'
+                  : `Suporte: ${message.authorName ?? 'Suporte'}`
+            }
+          >
+            {message.role === 'employee' && <strong className="chat-message-speaker">Você</strong>}
             {message.role === 'agent' && (
               <>
-                <strong>Nexo Assist</strong>
+                <strong className="chat-message-speaker">Nexo Assist</strong>
                 {message.status === 'completed' &&
                   message.decision &&
                   chips(message.decision.actions)}
@@ -214,7 +226,7 @@ export function Consultation({
             )}
             {message.role === 'analyst' && (
               <>
-                <strong>{message.authorName}</strong>
+                <strong className="chat-message-speaker">{message.authorName ?? 'Suporte'}</strong>
                 <span className="support-tag">Suporte</span>
               </>
             )}
@@ -245,19 +257,13 @@ export function Consultation({
                         </button>
                       ))}
                     </div>
-                    <div className="ticket-options">
-                      {message.decision.tickets.map((ticket) => (
-                        <button
-                          type="button"
-                          disabled={active || capped}
-                          key={ticket.id}
-                          onClick={() => void send(ticket.title)}
-                        >
-                          {ticket.title} · {ticket.status === 'open' ? 'Aberto' : 'Resolvido'}
-                          {ticket.overdue ? ' · prazo vencido' : ''}
-                        </button>
-                      ))}
-                    </div>
+                    {message.decision.tickets.length > 1 && (
+                      <TicketSelection
+                        tickets={message.decision.tickets}
+                        disabled={active || capped}
+                        onSelect={(ticket) => void send(ticket.title)}
+                      />
+                    )}
                   </>
                 )}
               </>
@@ -272,8 +278,8 @@ export function Consultation({
           </article>
         ))}
         {active && (
-          <article className="chat-message agent" aria-live="polite">
-            <strong>Nexo Assist</strong>
+          <article className="chat-message agent" aria-label="Nexo Assist" aria-live="polite">
+            <strong className="chat-message-speaker">Nexo Assist</strong>
             {chips(actions)}
             <p>{partial || 'Preparando resposta...'}</p>
           </article>

@@ -26,6 +26,13 @@ test('V02 V03: composer remains usable beside its send action on desktop and mob
   await message.fill('Olá');
   await send.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByText('Olá', { exact: true })).toBeVisible();
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  await expect(
+    chat.locator('.chat-message.employee').last().getByText('Você', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    chat.locator('.chat-message.agent').last().getByText('Nexo Assist', { exact: true }),
+  ).toBeVisible();
+  await expect(chat.getByText('Olá', { exact: true })).toBeVisible();
   await expect(page.getByText('Mensagens: 1 de 30')).toBeVisible();
 });
