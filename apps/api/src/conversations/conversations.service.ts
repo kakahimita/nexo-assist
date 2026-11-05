@@ -8,10 +8,13 @@ import {
 import {
   CONVERSATION_MESSAGE_LIMIT,
   ConsultationDecisionViewSchema,
+  ConsultationTicketViewSchema,
   ConversationViewSchema,
   HandoffReasonSchema,
   MessageViewSchema,
 } from '@nexo/contracts';
+import { z } from 'zod';
+import { transitionTicket } from '../tickets/status-transition.js';
 import type {
   ConversationView,
   HandoffReason,
@@ -76,6 +79,7 @@ export class ConversationsService {
     user: UserView,
     conversationId: string,
     reason: HandoffReason,
+    contextTicketId: string | null = null,
   ): Promise<ConversationView> {
     this.employee(user);
     return this.database.client.$transaction(async (tx) => {
@@ -88,9 +92,21 @@ export class ConversationsService {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: { content: true },
       });
+      const active = ['open', 'waiting_for_analyst', 'in_progress'];
       const openTicketCount = await tx.ticket.count({
-        where: { ownerId: user.id, status: 'open' },
+        where: { ownerId: user.id, status: { in: active } },
       });
+      let ticketId = contextTicketId ?? conversation.contextTicketId;
+      if (!ticketId) {
+        const decided = await tx.message.findFirst({
+          where: { conversationId, role: 'agent', decision: { isNot: null } },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          select: { decision: { select: { ticketsJson: true } } },
+        });
+        const tickets = this.decisionTickets(decided?.decision?.ticketsJson);
+        const activeTickets = tickets.filter((ticket) => active.includes(ticket.status));
+        if (activeTickets.length === 1) ticketId = activeTickets[0]!.id;
+      }
       const requestedAt = new Date();
       const updated = await tx.conversation.updateMany({
         where: {
@@ -102,6 +118,7 @@ export class ConversationsService {
         data: {
           state: 'waiting_for_analyst',
           stateVersion: { increment: 1 },
+          contextTicketId: ticketId,
           handoffReason: reason,
           handoffSummary: formatHandoffSummary({
             reason,
@@ -112,9 +129,19 @@ export class ConversationsService {
         },
       });
       if (updated.count !== 1) throw new ConflictException();
+      if (ticketId) await transitionTicket(tx, ticketId, 'waiting_for_analyst', requestedAt);
       const persisted = await tx.conversation.findUniqueOrThrow({ where: { id: conversationId } });
       return this.conversationView(persisted);
     });
+  }
+  private decisionTickets(raw: string | null | undefined): z.infer<typeof ConsultationTicketViewSchema>[] {
+    if (!raw) return [];
+    try {
+      const parsed = z.array(ConsultationTicketViewSchema).safeParse(JSON.parse(raw) as unknown);
+      return parsed.success ? parsed.data : [];
+    } catch {
+      return [];
+    }
   }
   async ensureOwned(user: UserView, conversationId: string): Promise<void> {
     this.employee(user);

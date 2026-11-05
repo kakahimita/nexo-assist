@@ -34,6 +34,14 @@ function errorCode(error: unknown, signal: AbortSignal): ErrorCode {
     ? message
     : 'model_unavailable';
 }
+function singleActiveTicket(turn: ConsultationTurn): string | null {
+  const active = turn
+    .partial()
+    .tickets.filter((ticket) =>
+      ['open', 'waiting_for_analyst', 'in_progress'].includes(ticket.status),
+    );
+  return active.length === 1 ? active[0]!.id : null;
+}
 @Injectable()
 export class ConsultationService {
   constructor(
@@ -65,7 +73,12 @@ export class ConsultationService {
       })) {
         if (signal.aborted) throw new Error('interrupted');
         if (event.type === 'handoff') {
-          await this.conversations.requestHandoff(user, conversationId, event.reason);
+          await this.conversations.requestHandoff(
+            user,
+            conversationId,
+            event.reason,
+            singleActiveTicket(turn),
+          );
           yield { type: 'handoff-waiting' };
           return;
         }
@@ -89,7 +102,12 @@ export class ConsultationService {
           event.decision.action === 'handoff' &&
           event.decision.missingFacts.length === 0
         ) {
-          await this.conversations.requestHandoff(user, conversationId, 'unresolved_uncertainty');
+          await this.conversations.requestHandoff(
+            user,
+            conversationId,
+            'unresolved_uncertainty',
+            singleActiveTicket(turn),
+          );
           yield { type: 'handoff-waiting' };
           return;
         }
@@ -206,7 +224,7 @@ export class ConsultationService {
       return;
     }
     yield { type: 'done', message };
-    await this.conversations.requestHandoff(user, conversationId, 'overdue_ticket');
+    await this.conversations.requestHandoff(user, conversationId, 'overdue_ticket', ticket.id);
     yield { type: 'handoff-waiting' };
   }
 }

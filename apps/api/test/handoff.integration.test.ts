@@ -2,6 +2,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
 import { createTestDatabase } from './support/test-database.js';
+import { createDatabaseClient } from '../src/database/client.js';
 import type { ConsultationEngine } from '../src/agent/consultation/types.js';
 
 describe('B09 B10 B13 B16: durable employee handoff', () => {
@@ -221,6 +222,68 @@ describe('B09 B10 B13 B16: durable employee handoff', () => {
         stateVersion: 1,
       });
     } finally {
+      await app.close();
+      await db.cleanup();
+    }
+  });
+
+  it('links the consulted overdue ticket and keeps it in progress after returning', async () => {
+    const db = await createTestDatabase();
+    const app = await createApp({
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+      consultationEngine: 'fixture',
+    });
+    const client = createDatabaseClient(db.url);
+    try {
+      const server = app.getHttpServer();
+      const login = async (email: string) =>
+        String(
+          (await request(server).post('/api/session').send({ email, password: 'x' }).expect(201))
+            .headers['set-cookie']?.[0],
+        );
+      const ana = await login('ana.souza@nexo.com.br');
+      const analyst = await login('analista@nexo.com.br');
+      const conversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', ana)
+        .send({})
+        .expect(201);
+      const stream = await request(server)
+        .post(`/api/conversations/${conversation.body.id}/messages/stream`)
+        .set('Cookie', ana)
+        .send({ content: 'Notebook lento' })
+        .expect(201);
+      expect(stream.text).toContain('"type":"handoff-waiting"');
+      expect(
+        (await client.ticket.findUniqueOrThrow({ where: { id: 'fixture-ana-open' } })).status,
+      ).toBe('waiting_for_analyst');
+
+      const detail = await request(server)
+        .get(`/api/support/conversations/${conversation.body.id}`)
+        .set('Cookie', analyst)
+        .expect(200);
+      expect(detail.body.conversation.contextTicketId).toBe('fixture-ana-open');
+
+      await request(server)
+        .post(`/api/support/conversations/${conversation.body.id}/claim`)
+        .set('Cookie', analyst)
+        .expect(201);
+      expect(
+        (await client.ticket.findUniqueOrThrow({ where: { id: 'fixture-ana-open' } })).status,
+      ).toBe('in_progress');
+
+      await request(server)
+        .post(`/api/support/conversations/${conversation.body.id}/return`)
+        .set('Cookie', analyst)
+        .expect(201);
+      expect(
+        (await client.ticket.findUniqueOrThrow({ where: { id: 'fixture-ana-open' } })).status,
+      ).toBe('in_progress');
+    } finally {
+      await client.$disconnect();
       await app.close();
       await db.cleanup();
     }
