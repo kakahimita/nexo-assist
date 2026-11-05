@@ -8,6 +8,11 @@ readable HTML/CSS renderings, not native editor exports. PRD Annex C requires
 the chat, ticket consultation, analyst console, and login states; the profile
 is the agreed additional read-only frame.
 
+Direct inspection of `originals/nexo.pen` confirms the V02/V03 sidebar is
+232 px, the top bar is 64 px, and the chat content uses 200 px side padding
+within the 1208 px main area at 1440 px. That yields an 808 px conversation
+column. The desktop employee content CSS now follows those measurements.
+
 V01 login was also compared with `screens/01-login.png`: its split layout,
 form hierarchy, and illustration already follow the source closely enough for
 this pass. Its illustrative copy and disabled recovery/persistent-login controls
@@ -48,3 +53,24 @@ profile control. The first browser run found a test that needed to reselect
 `Meus chamados` after reload; that test was corrected and the fresh isolated
 run passed. Live-model smoke testing was not run because this delivery does not
 change model integration. CI status is tracked by the draft PR.
+
+## Direct Pencil gap audit
+
+The source `.pen` was inspected directly after the initial guide-based review.
+This exposed layout details that the earlier PR review had missed:
+
+| Frame | Direct source detail | Remaining application difference |
+| --- | --- | --- |
+| V01 | 800 px showcase and 380 px sign-in form | Split and form width are present; illustrative copy differs intentionally. |
+| V02/V03 | 232 px sidebar, 64 px top bar, 200 px chat side padding, 48 px composer | The extra history toolbar and message heading consume vertical space; the composer still follows document flow rather than occupying the frame footer. |
+| V04/V05 | 64 px rail, 380 px queue, 340 px ticket history, 64 px conversation header | Queue density, conversation header, handoff event presentation, and ticket-history grouping remain different. |
+| V06 | Read-only profile with two cards | Password age and reset delivery are unavailable; the app shows an explicit disabled action. |
+
+Extra application views and states should use the Pencil color, typography,
+spacing, and control patterns without inventing service data. Full V01-V06
+fidelity remains open under issue #9.
+
+For the subsequent direct-source CSS and queue-search changes, typecheck,
+lint, 144 unit tests, 53 integration tests, and the targeted Chromium queue
+search and queue-layout tests passed. The complete build/e2e gate has not yet
+been rerun while the owner is viewing the live worktree on ports 3000/3001.

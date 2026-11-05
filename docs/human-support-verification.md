@@ -127,7 +127,7 @@ so exact V05 fidelity is not claimed.
 ## Boundaries
 
 The console is functional, not pixel-faithful to frames V04/V05; visual fidelity
-remains issue #9. Search, filter counts, unread/presence indicators, prototype
+remains issue #9. Filter counts, unread/presence indicators, prototype
 availability, ticket references, and the wider ticket-panel composition remain
 outside #40 and are only partially addressed by #42. Live-model reliability for
 the agent's handoff decision remains issue #10. Ticket state is read-only context
@@ -147,9 +147,17 @@ The original V04/V05 Pencil frames and the hash-verified owner renderings were
 used for comparison. A local application capture is at
 `outputs/analyst-console-v05-1567x900.png`. The three-region composition is
 closer to V05. Typography, card density, message styling, and absent prototype
-data (presence, counts, search, public ticket numbers) remain different. The
+data (presence, counts, public ticket numbers) remain different. The
 owner PNGs are secondary HTML/CSS renderings, so this is not a native pixel
 comparison.
+
+Direct inspection of `originals/nexo.pen` confirms a 64 px rail, 380 px queue,
+340 px ticket panel, 64 px conversation header, and `#EEF1F5` conversation
+background in V04/V05. The shell CSS now uses those values. A 36 px search
+field follows the Pencil queue header and filters only loaded authorized
+conversation names and message previews; ticket-number search remains unavailable
+because the queue contract has no public ticket number. A browser test proves
+name/message filtering and the honest empty result.
 
 The first browser run found the ticket context below the composer at 375x812;
 the CSS grid order was corrected and the second run passed all 64 Chromium
