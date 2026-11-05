@@ -97,17 +97,27 @@ export function History({
   }
   if (user.role === 'analyst') {
     return (
-      <main className="history">
-        <header>
-          <h1>Nexo Assist</h1>
-          <p>Olá, {user.name}</p>
-          <button disabled={busy} onClick={() => void logout()}>
-            Sair
-          </button>
-        </header>
-        {error && <p role="alert">{error}</p>}
-        <Support user={user} onLogout={onLogout} />
-      </main>
+      <div className="analyst-layout">
+        <aside className="analyst-rail" aria-label="Navegação do suporte">
+          <span className="analyst-mark" aria-label="Nexo Assist">
+            N
+          </span>
+          <span className="analyst-rail-label">Conversas</span>
+          <div className="analyst-account">
+            <span className="analyst-avatar" aria-hidden="true">
+              {user.name.slice(0, 2).toUpperCase()}
+            </span>
+            <span className="analyst-account-name">{user.name}</span>
+            <button type="button" disabled={busy} onClick={() => void logout()}>
+              Sair
+            </button>
+          </div>
+        </aside>
+        <main className="analyst-main">
+          {error && <p role="alert">{error}</p>}
+          <Support user={user} onLogout={onLogout} />
+        </main>
+      </div>
     );
   }
   return (

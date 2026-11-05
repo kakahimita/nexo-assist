@@ -133,3 +133,28 @@ outside #40 and are only partially addressed by #42. Live-model reliability for
 the agent's handoff decision remains issue #10. Ticket state is read-only context
 in this increment (the console does not modify ticket status).
 `npm run smoke:model` was not run (no local provider key).
+
+## Analyst layout follow-up (#46)
+
+The analyst shell now uses a compact navigation rail. At desktop widths, the
+queue, conversation, and authorized ticket context are separate full-height
+regions, and the reply composer occupies the conversation footer. Below 1200 px,
+the ticket context stacks before the composer; below 800 px, the queue also
+stacks above the detail. The support actions and server-provided content are
+unchanged.
+
+The original V04/V05 Pencil frames and the hash-verified owner renderings were
+used for comparison. A local application capture is at
+`outputs/analyst-console-v05-1567x900.png`. The three-region composition is
+closer to V05. Typography, card density, message styling, and absent prototype
+data (presence, counts, search, public ticket numbers) remain different. The
+owner PNGs are secondary HTML/CSS renderings, so this is not a native pixel
+comparison.
+
+The first browser run found the ticket context below the composer at 375x812;
+the CSS grid order was corrected and the second run passed all 64 Chromium
+tests. Typecheck, lint, and build passed. A later `npm run check` passed through
+unit, integration, and build but stopped at e2e because the owner's project
+instance occupied port 3001. The full `npm run check` rerun with isolated ports
+3100/3101 passed: typecheck, lint, formatting, 144 unit tests, integration,
+build, and 64 Chromium tests. The local model smoke gate was not run.

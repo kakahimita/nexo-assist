@@ -569,6 +569,7 @@ test('B11 B15: committed return and close succeed even when the queue refresh fa
 test('B11 V05: presents role-distinct messages, handoff context, and authorized tickets', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1567, height: 900 });
   const { items } = await prepareQueue(page, (analystId) => [
     conversation('owned', 'with_analyst', analystId, {
       reason: 'critical_incident',
@@ -609,6 +610,7 @@ test('B11 V05: presents role-distinct messages, handoff context, and authorized 
 
   const region = page.getByRole('region', { name: 'Atendimento' });
   await page.locator('[data-conversation-id="owned"]').click();
+  await page.screenshot({ path: 'outputs/analyst-console-v05-1567x900.png', fullPage: true });
 
   await expect(region.getByRole('heading', { name: 'Resumo da transferência' })).toBeVisible();
   await expect(region).toContainText('Motivo: Incidente crítico');
