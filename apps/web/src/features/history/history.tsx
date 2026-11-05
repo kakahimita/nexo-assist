@@ -68,21 +68,7 @@ export function History({
     },
     [call],
   );
-  useEffect(() => {
-    if (user.role !== 'employee') return;
-    let current = true;
-    const version = selectionVersion.current;
-    void Promise.resolve()
-      .then(load)
-      .then((items) => {
-        if (current && version === selectionVersion.current && items?.length)
-          void choose(items[items.length - 1]!.id);
-      });
-    return () => {
-      current = false;
-    };
-  }, [choose, load, user.role]);
-  async function create() {
+  const create = useCallback(async () => {
     if (busyRef.current) return;
     busyRef.current = true;
     loadVersion.current++;
@@ -108,7 +94,22 @@ export function History({
       setBusy(false);
       setCreating(false);
     }
-  }
+  }, [call, choose]);
+  useEffect(() => {
+    if (user.role !== 'employee') return;
+    let current = true;
+    const version = selectionVersion.current;
+    void Promise.resolve()
+      .then(load)
+      .then((items) => {
+        if (!current || version !== selectionVersion.current || items === null) return;
+        if (items.length) void choose(items[items.length - 1]!.id);
+        else void create();
+      });
+    return () => {
+      current = false;
+    };
+  }, [choose, create, load, user.role]);
   async function logout() {
     try {
       await call('/api/session', { method: 'DELETE' });
@@ -241,12 +242,12 @@ export function History({
             </section>
           )}
           <div className="employee-chat-view" hidden={page !== 'support'}>
-            <div className="employee-conversation-actions">
-              <button disabled={busy} onClick={() => void create()}>
-                Nova conversa
-              </button>
-            </div>
             {creating && <p role="status">Iniciando conversa...</p>}
+            {!creating && !selected && error && (
+              <button type="button" onClick={() => void create()}>
+                Tentar novamente
+              </button>
+            )}
             {selected && !creating && (
               <Consultation
                 key={selected}

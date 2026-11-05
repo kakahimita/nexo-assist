@@ -1,11 +1,12 @@
-﻿import { expect, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 test('B04: employee reviews and confirms a conversation draft', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await chat.getByLabel('Mensagem').fill('Abrir chamado: Meu notebook não liga no setor 234');
   await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
@@ -38,7 +39,7 @@ async function createDraft(page: import('@playwright/test').Page, title: string)
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await chat.getByLabel('Mensagem').fill(`Abrir chamado: ${title}`);
   await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
@@ -95,12 +96,7 @@ test('B14: draft confirmation remains available after the thirtieth message', as
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  const creation = page.waitForResponse(
-    (response) =>
-      response.url().endsWith('/api/conversations') && response.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
-  const id = String((await (await creation).json()).id);
+  const id = await startFreshConversation(page);
   const origin = new URL(page.url()).origin;
   for (let i = 0; i < 26; i++)
     expect(
@@ -119,16 +115,16 @@ test('B14: draft confirmation remains available after the thirtieth message', as
   expect(index).toBeGreaterThanOrEqual(0);
   expect(list.at(-1)?.id).toBe(id);
   const chat = page.getByRole('region', { name: 'Conversa' });
-  await expect(chat.getByText('Mensagens: 26 de 30')).toBeVisible();
+  await expect(chat.getByText('26/30 mensagens nesta sessão')).toBeVisible();
   await chat.getByLabel('Mensagem').fill('Abrir chamado: Minha impressora travou na sala 419');
   await chat.getByRole('button', { name: 'Enviar mensagem' }).click();
   await chat.getByRole('button', { name: 'Somente eu' }).click();
   await chat.getByRole('button', { name: 'Consigo trabalhar com alternativa' }).click();
   await chat.getByRole('button', { name: 'Sem compromisso em risco hoje' }).click();
-  await expect(chat.getByText('Mensagens: 30 de 30')).toBeVisible();
+  await expect(chat.getByText('30/30 mensagens nesta sessão')).toBeVisible();
   await expect(chat.getByLabel('Mensagem')).toBeDisabled();
   const draft = chat.getByRole('article', { name: 'Rascunho do chamado' });
   await draft.getByRole('button', { name: 'Confirmar rascunho' }).click();
   await expect(draft.getByText('Chamado confirmado.')).toBeVisible();
-  await expect(chat.getByText('Mensagens: 30 de 30')).toBeVisible();
+  await expect(chat.getByText('30/30 mensagens nesta sessão')).toBeVisible();
 });

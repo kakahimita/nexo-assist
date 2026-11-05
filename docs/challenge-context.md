@@ -126,3 +126,9 @@ The owned-conversation refinement for [#42](https://github.com/kakahimita/nexo-a
 The analyst-console layout follow-up for [#46](https://github.com/kakahimita/nexo-assist/issues/46) (part of #9) aligns the desktop queue, conversation, and ticket context with the three-region V04/V05 composition. It keeps the existing support behavior and responsive stack; visual fidelity remains partial because some prototype data and actions are not implemented.
 
 The employee-shell follow-up for [#48](https://github.com/kakahimita/nexo-assist/issues/48) (part of #9) keeps ticket consultation inside the employee chat, following the original V02/V03 frames. The employee navigation contains Atendimento and Meu perfil; the latest persisted conversation resumes automatically without a visible history list. A new conversation can still be started for the session limit. V06 shows a read-only password area with an explicitly unavailable reset action, without claiming a reset service.
+
+The in-progress V03 correction on the same branch opens the first chat automatically,
+removes permanent conversation and analyst actions, places ticket selection and
+contextual human contact in the agent flow, and anchors the composer at the
+desktop frame footer. The PRD's automatic overdue transfer still takes precedence
+over the prototype's optional offer. See [employee visual verification](employee-visual-verification.md).

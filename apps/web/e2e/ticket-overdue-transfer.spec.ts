@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 async function start(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
 }
 
 async function send(page: import('@playwright/test').Page, text: string) {
@@ -21,8 +22,7 @@ test('B09 B10 B13: an overdue ticket transfers the conversation and keeps it aft
   const chat = page.getByRole('region', { name: 'Conversa' });
   await send(page, 'Qual o status do meu chamado?');
   const choices = chat.getByRole('group', { name: 'Chamados encontrados' });
-  await choices.getByRole('radio', { name: /Notebook lento.*prazo vencido/ }).check();
-  await chat.getByRole('button', { name: 'Ver detalhes' }).click();
+  await choices.getByRole('button', { name: /Notebook lento.*prazo vencido/ }).click();
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
   const card = chat.getByRole('article', { name: 'Chamado Notebook lento' }).last();
   await expect(card.getByText('Prazo vencido')).toBeVisible();

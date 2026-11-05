@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 async function start(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
 }
 async function send(page: import('@playwright/test').Page, text: string) {
   await page.getByLabel('Mensagem').fill(text);
@@ -34,18 +35,11 @@ test('B03 B16: selects own tickets and redirects RH', async ({ page }) => {
   const chat = page.getByRole('region', { name: 'Conversa' });
   await send(page, 'Qual o status do meu chamado?');
   const choices = chat.getByRole('group', { name: 'Chamados encontrados' }).last();
-  await expect(choices.getByRole('radio', { name: /Notebook lento/ })).toBeVisible();
-  await expect(choices.getByRole('radio', { name: /Senha bloqueada/ })).toBeVisible();
-  await choices.getByRole('radio', { name: /Notebook lento/ }).check();
-  await chat.getByRole('button', { name: 'Ver detalhes' }).click();
+  await expect(choices.getByRole('button', { name: /Notebook lento/ })).toBeVisible();
+  await expect(choices.getByRole('button', { name: /Senha bloqueada/ })).toBeVisible();
+  await choices.getByRole('button', { name: /Notebook lento/ }).click();
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
-  const creation = page.waitForResponse(
-    (response) =>
-      response.url().endsWith('/api/conversations') && response.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
-  await creation;
-  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeEnabled();
+  await startFreshConversation(page);
   await send(page, 'INC-99999');
   await expect(chat.getByText(/Qual chamado você deseja consultar/).last()).toBeVisible();
   await send(page, 'Como solicitar férias no RH?');

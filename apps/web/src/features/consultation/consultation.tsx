@@ -173,20 +173,20 @@ export function Consultation({
   }
   return (
     <section className="consultation" aria-label="Conversa">
-      <h2>Mensagens</h2>
+      <h2 className="visually-hidden">Mensagens</h2>
       {humanEngaged && (
         <p role="status">
           Aguardando atendimento humano. {handoff?.summary ?? 'Sua solicitação foi encaminhada.'}
         </p>
       )}
-      {!humanEngaged && !closed && (
+      {!humanEngaged && !closed && (error || capped || messages.at(-1)?.status === 'failed') && (
         <button
           className="human-support-button"
           type="button"
-          disabled={active || capped}
+          disabled={active}
           onClick={() => void requestHandoff()}
         >
-          Falar com analista
+          Falar com um analista
         </button>
       )}
       {closed && (
@@ -215,12 +215,12 @@ export function Consultation({
           >
             {message.role === 'employee' && <strong className="chat-message-speaker">Você</strong>}
             {message.role === 'agent' && (
-              <>
+              <div className="chat-message-status-line">
                 <strong className="chat-message-speaker">Nexo Assist</strong>
                 {message.status === 'completed' &&
                   message.decision &&
                   chips(message.decision.actions)}
-              </>
+              </div>
             )}
             {message.role === 'analyst' && (
               <>
@@ -228,7 +228,50 @@ export function Consultation({
                 <span className="support-tag">Suporte</span>
               </>
             )}
-            <p>{message.content}</p>
+            {message.role === 'agent' &&
+              message.status === 'completed' &&
+              message.decision?.tickets.length === 1 && (
+                <TicketCard ticket={message.decision.tickets[0]!} now={now} />
+              )}
+            <div className="chat-message-bubble">
+              <p>{message.content}</p>
+              {message.status === 'completed' &&
+                message.decision &&
+                message.decision.action !== 'handoff' &&
+                !humanEngaged &&
+                (message.decision.quickReplies.length > 0 ||
+                  (message.decision.tickets.length === 1 && !closed)) && (
+                  <div className="quick-replies">
+                    {message.decision.quickReplies.map((reply) => (
+                      <button
+                        type="button"
+                        disabled={active || capped}
+                        key={reply}
+                        onClick={() =>
+                          void (/falar com (um )?analista/i.test(reply)
+                            ? requestHandoff()
+                            : send(reply))
+                        }
+                      >
+                        {reply}
+                      </button>
+                    ))}
+                    {message.decision.tickets.length === 1 &&
+                      !closed &&
+                      !message.decision.quickReplies.some((reply) =>
+                        /falar com (um )?analista/i.test(reply),
+                      ) && (
+                        <button
+                          type="button"
+                          disabled={active}
+                          onClick={() => void requestHandoff()}
+                        >
+                          Falar com um analista
+                        </button>
+                      )}
+                  </div>
+                )}
+            </div>
             {message.status === 'failed' && (
               <p role="alert">
                 {errors[message.decision?.errorCode ?? ''] ??
@@ -237,33 +280,17 @@ export function Consultation({
             )}
             {message.decision && (
               <>
+                {message.status === 'completed' &&
+                  message.decision.action !== 'handoff' &&
+                  !humanEngaged &&
+                  message.decision.tickets.length > 1 && (
+                    <TicketSelection
+                      tickets={message.decision.tickets}
+                      disabled={active || capped}
+                      onSelect={(ticket) => void send(ticket.title)}
+                    />
+                  )}
                 <Decision decision={message.decision} />
-                {message.status === 'completed' && message.decision.tickets.length === 1 && (
-                  <TicketCard ticket={message.decision.tickets[0]!} now={now} />
-                )}
-                {message.status === 'completed' && message.decision.action !== 'handoff' && (
-                  <>
-                    <div className="quick-replies">
-                      {message.decision.quickReplies.map((reply) => (
-                        <button
-                          type="button"
-                          disabled={active || capped}
-                          key={reply}
-                          onClick={() => void send(reply)}
-                        >
-                          {reply}
-                        </button>
-                      ))}
-                    </div>
-                    {message.decision.tickets.length > 1 && (
-                      <TicketSelection
-                        tickets={message.decision.tickets}
-                        disabled={active || capped}
-                        onSelect={(ticket) => void send(ticket.title)}
-                      />
-                    )}
-                  </>
-                )}
               </>
             )}
             {message.decision?.draftId && (
@@ -273,22 +300,22 @@ export function Consultation({
         ))}
         {active && (
           <article className="chat-message agent" aria-label="Nexo Assist" aria-live="polite">
-            <strong className="chat-message-speaker">Nexo Assist</strong>
-            {chips(actions)}
-            <p>{partial || 'Preparando resposta...'}</p>
+            <div className="chat-message-status-line">
+              <strong className="chat-message-speaker">Nexo Assist</strong>
+              {chips(actions)}
+            </div>
+            <div className="chat-message-bubble">
+              <p>{partial || 'Preparando resposta...'}</p>
+            </div>
           </article>
         )}
+        {pendingDrafts
+          .filter((id) => !messages.some((message) => message.decision?.draftId === id))
+          .map((id) => (
+            <DraftCard key={id} draftId={id} onUnauthorized={onUnauthorized} />
+          ))}
       </div>
-      {pendingDrafts
-        .filter((id) => !messages.some((message) => message.decision?.draftId === id))
-        .map((id) => (
-          <DraftCard key={id} draftId={id} onUnauthorized={onUnauthorized} />
-        ))}
       {error && <p role="alert">{error}</p>}
-      <p className="message-counter">
-        Mensagens: {used} de {CONVERSATION_MESSAGE_LIMIT}
-      </p>
-      <p className="message-counter">Restantes: {Math.max(0, CONVERSATION_MESSAGE_LIMIT - used)}</p>
       {capped && (
         <>
           <p role="status">
@@ -320,6 +347,9 @@ export function Consultation({
           </div>
         </form>
       )}
+      <p className="message-counter">
+        {used}/{CONVERSATION_MESSAGE_LIMIT} mensagens nesta sessão
+      </p>
     </section>
   );
 }

@@ -95,3 +95,31 @@ reopening, and idempotent writes remain covered in API integration tests.
 The fresh `npm run check` passed with isolated ports 3100/3101 and a temporary
 database: 144 unit tests, 53 integration tests, and 62 Chromium browser tests.
 This correction does not establish full V02/V03 pixel fidelity.
+
+## V03 consultation follow-up in PR #47
+
+The current follow-up removes the permanent `Nova conversa` and human-contact
+buttons from the first chat view. A first conversation opens automatically; a
+new session remains available at the 30-message limit and after closure. Ticket
+choices are clickable rows with the existing open, resolved, and overdue states.
+The selected row is highlighted, and choosing it sends one title to the agent.
+After a completed single-ticket response, `Falar com um analista` appears in
+the agent's bubble. Agent-provided quick replies remain in the same location;
+human contact also remains available when a turn fails or the session is capped.
+The backend still performs automatic overdue transfer under the PRD.
+
+At 1440 x 900, the message area now scrolls independently and the 48 px
+composer stays at the foot of the chat. The visible `Mensagens` heading is
+removed. These changes follow Pencil frame `vbsNW`; the richer sample status
+labels and public ticket numbers remain absent from the current contract.
+The original frame and guide remain the visual comparison sources. Full V03
+fidelity and native Pencil pixel equivalence are not claimed.
+
+The fresh `npm run check` completed on isolated ports 3100/3101 with temporary
+databases: typecheck, lint, format, 144 unit tests, integration tests, build,
+and 64 Chromium tests passed. The 1440 x 900 overdue-transfer capture was
+inspected alongside the verified V03 guide. The real fixture transfers an
+overdue ticket automatically, so its waiting banner and response do not mirror
+the prototype's optional transfer example. The guide also includes public
+ticket numbers, descriptions, and three finer status labels absent from the
+current ticket contract; they were not fabricated for the capture.

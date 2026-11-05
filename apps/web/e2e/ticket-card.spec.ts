@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 async function start(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
 }
 
 async function send(page: import('@playwright/test').Page, text: string) {
@@ -25,14 +26,18 @@ const ticket = {
   overdue: false,
 };
 
-const decision = (tickets: unknown[], action: 'answer' | 'handoff'): Record<string, unknown> => ({
+const decision = (
+  tickets: unknown[],
+  action: 'answer' | 'handoff',
+  quickReplies: string[] = [],
+): Record<string, unknown> => ({
   intent: 'Consulta de chamado',
   action,
   appliedRule: 'Somente chamados do funcionário',
   confidence: 1,
   justification: 'Chamado identificado.',
   missingFacts: [],
-  quickReplies: [],
+  quickReplies,
   actions: [
     {
       id: 'consult-1',
@@ -106,6 +111,40 @@ test('B03: shows the detail card for one consulted ticket inside the chat', asyn
   await expect(card).toContainText('Prazo: 07/11/2026');
   await expect(card).toContainText('Última atualização: há');
   await expect(card.getByText('Prazo vencido')).toHaveCount(0);
+  await expect(chat.getByRole('button', { name: 'Falar com um analista' })).toBeVisible();
+});
+
+test('V03: analyst contact appears in an agent response after interaction', async ({ page }) => {
+  await start(page);
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  await expect(chat.getByRole('button', { name: /Falar com .*analista/i })).toHaveCount(0);
+  await mockStream(page, [
+    {
+      type: 'user-message',
+      message: {
+        id: 'question',
+        content: 'Qual o status do meu chamado?',
+        createdAt: '2026-11-04T12:00:00.000Z',
+        role: 'employee',
+        status: 'completed',
+        decision: null,
+        authorName: null,
+      },
+    },
+    {
+      type: 'done',
+      message: agentMessage(
+        'Posso chamar um analista para ajudar.',
+        decision([], 'answer', ['Falar com um analista', 'Não, obrigado']),
+      ),
+    },
+  ]);
+  await send(page, 'Qual o status do meu chamado?');
+  const option = chat.getByRole('button', { name: 'Falar com um analista' });
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
+  await expect(option).toHaveCount(0);
 });
 
 test('B03 V03: selects one of several consulted tickets before requesting its details', async ({
@@ -149,13 +188,13 @@ test('B03 V03: selects one of several consulted tickets before requesting its de
   const chat = page.getByRole('region', { name: 'Conversa' });
   const choices = chat.getByRole('group', { name: 'Chamados encontrados' });
   await expect(choices).toBeVisible();
-  await expect(choices.getByRole('radio', { name: /Notebook lento.*Aberto/ })).toBeVisible();
-  await expect(choices.getByRole('radio', { name: /Acesso ao e-mail.*Resolvido/ })).toBeVisible();
-  const details = chat.getByRole('button', { name: 'Ver detalhes' });
-  await expect(details).toBeDisabled();
-  await choices.getByRole('radio', { name: /Acesso ao e-mail.*Resolvido/ }).check();
-  await expect(details).toBeEnabled();
-  await details.click();
+  await expect(choices.getByRole('button', { name: /Notebook lento.*Aberto/ })).toBeVisible();
+  await expect(choices.getByRole('button', { name: /Acesso ao e-mail.*Resolvido/ })).toBeVisible();
+  await expect(chat.getByRole('button', { name: 'Ver detalhes' })).toHaveCount(0);
+  await choices.getByRole('button', { name: /Acesso ao e-mail.*Resolvido/ }).click();
+  await expect(
+    choices.getByRole('button', { name: /Acesso ao e-mail.*Resolvido/ }).first(),
+  ).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => requests.at(-1)).toContain('Acesso ao e-mail');
   expect(requests.at(-1)).not.toContain('Notebook lento');
 });

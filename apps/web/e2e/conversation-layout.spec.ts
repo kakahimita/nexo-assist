@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 test('V02 V03: composer remains usable beside its send action on desktop and mobile', async ({
   page,
@@ -8,7 +9,13 @@ test('V02 V03: composer remains usable beside its send action on desktop and mob
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('qualquer');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
+  const heading = await page.getByRole('heading', { name: 'Mensagens' }).boundingBox();
+  expect(heading?.width).toBeLessThanOrEqual(1);
+  const composer = await page.locator('.consultation-composer').boundingBox();
+  expect(composer).not.toBeNull();
+  expect(composer!.y).toBeGreaterThan(750);
+  expect(composer!.y + composer!.height).toBeLessThanOrEqual(900);
   const message = page.getByLabel('Mensagem');
   const send = page.getByRole('button', { name: 'Enviar mensagem' });
   for (const width of [1440, 375]) {
@@ -27,12 +34,10 @@ test('V02 V03: composer remains usable beside its send action on desktop and mob
   await send.focus();
   await page.keyboard.press('Enter');
   const chat = page.getByRole('region', { name: 'Conversa' });
-  await expect(
-    chat.locator('.chat-message.employee').last().getByText('Você', { exact: true }),
-  ).toBeVisible();
+  await expect(chat.locator('.chat-message.employee').last()).toHaveAttribute('aria-label', 'Você');
   await expect(
     chat.locator('.chat-message.agent').last().getByText('Nexo Assist', { exact: true }),
   ).toBeVisible();
   await expect(chat.getByText('Olá', { exact: true })).toBeVisible();
-  await expect(page.getByText('Mensagens: 1 de 30')).toBeVisible();
+  await expect(page.getByText('1/30 mensagens nesta sessão')).toBeVisible();
 });

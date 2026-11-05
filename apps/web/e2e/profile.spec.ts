@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 test('V06: profile displays the signed-in employee and preserves the conversation', async ({
   page,
@@ -7,7 +8,7 @@ test('V06: profile displays the signed-in employee and preserves the conversatio
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('qualquer');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
   await page.getByLabel('Mensagem').fill('Texto ainda não enviado');
   await page.getByRole('button', { name: 'Meu perfil' }).click();
   await expect(page.getByRole('heading', { name: 'Meu perfil' })).toBeVisible();

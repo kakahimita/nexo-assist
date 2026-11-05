@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 test('V02 V06: employee navigation works with keyboard at desktop and narrow widths', async ({
   page,
@@ -8,7 +9,7 @@ test('V02 V06: employee navigation works with keyboard at desktop and narrow wid
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('qualquer');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
   await page.getByLabel('Mensagem').fill('Texto não enviado');
   const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
   const navBox = await navigation.boundingBox();

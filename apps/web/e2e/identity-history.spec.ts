@@ -1,16 +1,44 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
+
+test('V03: first visit opens the chat without a permanent new-conversation action', async ({
+  page,
+}) => {
+  const conversation = {
+    id: 'first',
+    createdAt: '2026-11-05T12:00:00.000Z',
+    state: 'agent',
+    stateVersion: 0,
+    handoff: null,
+    assignedAnalystId: null,
+    closedAt: null,
+  };
+  await page.route('**/api/session', (route) =>
+    route.fulfill({
+      json: { id: 'user', name: 'Ana', email: 'ana.souza@nexo.com.br', role: 'employee' },
+    }),
+  );
+  await page.route('**/api/conversations', (route) =>
+    route.fulfill({
+      status: route.request().method() === 'POST' ? 201 : 200,
+      json: route.request().method() === 'POST' ? conversation : [],
+    }),
+  );
+  await page.route('**/api/conversations/first/messages', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/conversations/first/draft-proposals', (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await page.goto('/');
+  await expect(page.getByRole('region', { name: 'Conversa' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nova conversa' })).toHaveCount(0);
+});
 
 test('B01 B13: login, persist, logout and isolate history', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('qualquer');
   await page.getByLabel('Senha', { exact: true }).press('Enter');
-  const creation = page.waitForResponse(
-    (response) =>
-      response.url().endsWith('/api/conversations') && response.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
-  const conversationId = (await (await creation).json()).id as string;
+  const conversationId = await startFreshConversation(page);
   await page.getByLabel('Mensagem').fill('Minha conexão caiu');
   await page.getByRole('button', { name: 'Enviar mensagem' }).click();
   await expect(page.getByText('Minha conexão caiu')).toBeVisible();
