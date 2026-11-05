@@ -14,7 +14,12 @@ test('V06: profile displays the signed-in employee and preserves the conversatio
   const profile = page.getByRole('region', { name: 'Meu perfil' });
   await expect(profile.getByText('ana.souza@nexo.com.br')).toBeVisible();
   await expect(profile.getByText('Ana Souza', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /redefinir senha/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /redefinir senha/i })).toBeDisabled();
+  await expect(
+    profile.getByText('A redefinição de senha não está disponível nesta demonstração.'),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.screenshot({ path: 'outputs/profile-v06-1440x900.png', fullPage: true });
   await page.getByRole('button', { name: 'Atendimento' }).click();
   await expect(page.getByLabel('Mensagem')).toHaveValue('Texto ainda não enviado');
 });

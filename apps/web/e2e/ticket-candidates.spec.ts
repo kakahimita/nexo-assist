@@ -7,6 +7,10 @@ test('B05: employee reviews a possible duplicate before creating a different tic
   await page.getByLabel('E-mail corporativo').fill('bruno.lima@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('button', { name: 'Meus chamados' })
+    .click();
   const tickets = page.getByRole('region', { name: 'Chamados' });
   await tickets.getByRole('button', { name: 'Novo chamado' }).click();
   await tickets.getByLabel('Título').fill('Acesso remoto à VPN');

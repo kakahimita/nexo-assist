@@ -7,6 +7,10 @@ test('B03 B04 B05 B13 B15: review, edit, retry and restore an employee ticket', 
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('button', { name: 'Meus chamados' })
+    .click();
   const tickets = page.getByRole('region', { name: 'Chamados' });
   await tickets.getByRole('button', { name: 'Notebook lento' }).click();
   await expect(tickets.getByText(/Prazo/)).toBeVisible();
@@ -46,6 +50,10 @@ test('B03 B04 B05 B13 B15: review, edit, retry and restore an employee ticket', 
   );
   await page.unroute('**/api/tickets');
   await page.reload();
+  await page
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('button', { name: 'Meus chamados' })
+    .click();
   await expect(tickets.getByRole('button', { name: 'Falha no monitor externo' })).toHaveCount(1);
   await tickets.getByRole('button', { name: 'Falha no monitor externo' }).click();
   await expect(tickets.getByText('O monitor não liga').first()).toBeVisible();
@@ -64,6 +72,10 @@ test('B03 B04 B05 B13 B15: review, edit, retry and restore an employee ticket', 
   await page.getByLabel('E-mail corporativo').fill('bruno.lima@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('button', { name: 'Meus chamados' })
+    .click();
   await expect(tickets.getByRole('button', { name: 'Falha no monitor externo' })).toHaveCount(0);
 });
 
@@ -72,6 +84,10 @@ test('B04 B06: confirm a supplement and reopen a recently resolved ticket', asyn
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('button', { name: 'Meus chamados' })
+    .click();
   const tickets = page.getByRole('region', { name: 'Chamados' });
   await tickets.getByRole('button', { name: 'Notebook lento' }).click();
   await tickets.getByRole('button', { name: 'Adicionar informação' }).click();
@@ -93,6 +109,10 @@ test('B04: a stale confirmation reloads the current draft for review', async ({ 
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('button', { name: 'Meus chamados' })
+    .click();
   const tickets = page.getByRole('region', { name: 'Chamados' });
   await tickets.getByRole('button', { name: 'Novo chamado' }).click();
   await tickets.getByLabel('Título').fill('Rascunho antigo');

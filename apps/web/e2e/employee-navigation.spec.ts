@@ -24,6 +24,12 @@ test('V02 V06: employee navigation works with keyboard at desktop and narrow wid
   await navigation.getByRole('button', { name: 'Atendimento' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('Mensagem')).toHaveValue('Texto não enviado');
+  const tickets = navigation.getByRole('button', { name: 'Meus chamados' });
+  await tickets.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('region', { name: 'Chamados' })).toBeVisible();
+  await navigation.getByRole('button', { name: 'Atendimento' }).click();
+  await expect(page.getByLabel('Mensagem')).toHaveValue('Texto não enviado');
   await page.setViewportSize({ width: 375, height: 812 });
   await expect(profile).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(

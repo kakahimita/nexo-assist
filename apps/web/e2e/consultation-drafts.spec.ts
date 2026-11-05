@@ -25,6 +25,10 @@ test('B04: employee reviews and confirms a conversation draft', async ({ page })
   await page.screenshot({ path: 'outputs/conversational-draft-desktop.png', fullPage: true });
   await draft.getByRole('button', { name: 'Confirmar rascunho' }).click();
   await expect(draft.getByText('Chamado confirmado.')).toBeVisible();
+  await page
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('button', { name: 'Meus chamados' })
+    .click();
   await expect(
     page
       .getByRole('region', { name: 'Chamados' })
@@ -64,6 +68,10 @@ test('B04: editing then cancelling a draft does not create a ticket', async ({ p
   await expect(draft.getByText('Projetor do prédio 766 com falha')).toBeVisible();
   await draft.getByRole('button', { name: 'Cancelar rascunho' }).click();
   await expect(draft.getByText('Rascunho cancelado.')).toBeVisible();
+  await page
+    .getByRole('navigation', { name: 'Navegação principal' })
+    .getByRole('button', { name: 'Meus chamados' })
+    .click();
   await expect(
     page
       .getByRole('region', { name: 'Chamados' })

@@ -566,10 +566,61 @@ textarea {
   color: #1b2431;
 }
 .employee-content {
-  max-width: 900px;
+  max-width: 1120px;
   min-width: 0;
   margin: 0 auto;
   padding: 24px 40px 48px;
+}
+.employee-history-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e6e8ec;
+}
+.employee-content .employee-history-bar nav[aria-label='Conversas'] {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+.employee-history-bar nav p {
+  margin: 0;
+  color: #697386;
+}
+.employee-history-bar nav button {
+  flex: none;
+  padding: 7px 10px;
+  border-radius: 6px;
+  color: #52606d;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+}
+.employee-history-bar nav button[aria-current='page'] {
+  color: #0062c4;
+  background: #eaf4fd;
+  font-weight: 600;
+}
+.employee-history-bar > button {
+  flex: none;
+  padding: 7px 12px;
+  background: #0062c4;
+  font-size: 12px;
+}
+.employee-ticket-view .tickets {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.employee-chat-view[hidden],
+.employee-ticket-view[hidden] {
+  display: none;
 }
 .employee-content nav[aria-label='Conversas'] {
   display: flex;
@@ -612,6 +663,13 @@ textarea {
   .employee-content {
     padding: 20px;
   }
+  .employee-history-bar {
+    align-items: flex-start;
+    flex-direction: column-reverse;
+  }
+  .employee-history-bar nav[aria-label='Conversas'] {
+    width: 100%;
+  }
 }
 .profile {
   max-width: 600px;
@@ -650,10 +708,67 @@ textarea {
   margin: 0;
   overflow-wrap: anywhere;
 }
+.profile-security {
+  margin-top: 28px;
+  overflow: hidden;
+  border: 1px solid #e3e6ea;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px #1b24310d,
+    0 6px 18px #1b24310a;
+}
+.profile-security-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+}
+.profile-security-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f3f5f7;
+  color: #52606d;
+}
+.profile-security-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.profile-security h3,
+.profile-security p {
+  margin: 0;
+}
+.profile-security-main p {
+  color: #697386;
+  font-size: 13px;
+}
+.profile-security-main button {
+  margin-left: auto;
+  color: #52606d;
+  background: #f3f5f7;
+  border: 1px solid #d7dce3;
+  font-size: 13px;
+}
+.profile-security-note {
+  padding: 12px 24px;
+  color: #697386;
+  background: #f3f5f7;
+  font-size: 13px;
+}
 @media (max-width: 480px) {
   .profile-card > div {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+  .profile-security-main {
+    flex-wrap: wrap;
+  }
+  .profile-security-main button {
+    margin-left: 0;
   }
 }
 .tickets {

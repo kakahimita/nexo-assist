@@ -24,7 +24,7 @@ export function History({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [ticketsVersion, setTicketsVersion] = useState(0);
-  const [page, setPage] = useState<'support' | 'profile'>('support');
+  const [page, setPage] = useState<'support' | 'tickets' | 'profile'>('support');
   const busyRef = useRef(false);
   const selectionVersion = useRef(0);
   const call = useCallback(
@@ -148,6 +148,22 @@ export function History({
           </button>
           <button
             type="button"
+            aria-current={page === 'tickets' ? 'page' : undefined}
+            onClick={() => setPage('tickets')}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path d="M4 6h16v14H4zM8 6V4h8v2M4 11h16" />
+            </svg>{' '}
+            Meus chamados
+          </button>
+          <button
+            type="button"
             aria-current={page === 'profile' ? 'page' : undefined}
             onClick={() => setPage('profile')}
           >
@@ -178,7 +194,13 @@ export function History({
         <header className="employee-topbar">
           <span>Service desk de TI</span>
           <span aria-hidden="true">›</span>
-          <strong>{page === 'support' ? 'Atendimento' : 'Meu perfil'}</strong>
+          <strong>
+            {page === 'support'
+              ? 'Atendimento'
+              : page === 'tickets'
+                ? 'Meus chamados'
+                : 'Meu perfil'}
+          </strong>
         </header>
         <div className="employee-content">
           {error && <p role="alert">{error}</p>}
@@ -196,21 +218,47 @@ export function History({
                   <dd>{user.email}</dd>
                 </div>
               </dl>
+              <section className="profile-security" aria-label="Senha">
+                <div className="profile-security-main">
+                  <span className="profile-security-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <circle cx="15" cy="9" r="5" />
+                      <path d="m11.5 12.5-8 8v-4l3-3 2 2 2-2" />
+                    </svg>
+                  </span>
+                  <div>
+                    <h3>Senha</h3>
+                    <p>Gerenciada pela TI da Nexo</p>
+                  </div>
+                  <button type="button" disabled>
+                    Redefinir senha
+                  </button>
+                </div>
+                <p className="profile-security-note">
+                  A redefinição de senha não está disponível nesta demonstração.
+                </p>
+              </section>
             </section>
           )}
-          <div hidden={page !== 'support'}>
-            <p>As mensagens são salvas no histórico.</p>
-            <button disabled={busy} onClick={() => void create()}>
-              Nova conversa
-            </button>
-            <nav aria-label="Conversas">
-              {conversations.length === 0 && <p>Nenhuma conversa ainda.</p>}
-              {conversations.map((item, index) => (
-                <button disabled={busy} key={item.id} onClick={() => void choose(item.id)}>
-                  Conversa {index + 1}
-                </button>
-              ))}
-            </nav>
+          <div className="employee-chat-view" hidden={page !== 'support'}>
+            <div className="employee-history-bar">
+              <nav aria-label="Conversas">
+                {conversations.length === 0 && <p>Nenhuma conversa ainda.</p>}
+                {conversations.map((item, index) => (
+                  <button
+                    disabled={busy}
+                    key={item.id}
+                    aria-current={selected === item.id ? 'page' : undefined}
+                    onClick={() => void choose(item.id)}
+                  >
+                    Conversa {index + 1}
+                  </button>
+                ))}
+              </nav>
+              <button disabled={busy} onClick={() => void create()}>
+                Nova conversa
+              </button>
+            </div>
             {selected && (
               <Consultation
                 key={selected}
@@ -227,6 +275,8 @@ export function History({
                 }}
               />
             )}
+          </div>
+          <div className="employee-ticket-view" hidden={page !== 'tickets'}>
             <Tickets onUnauthorized={onLogout} reloadToken={ticketsVersion} />
           </div>
         </div>
