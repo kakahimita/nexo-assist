@@ -1862,3 +1862,10 @@ button:disabled {
     min-height: 600px;
   }
 }
+
+.support-ticket-number {
+  display: block;
+  color: #5b6472;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}

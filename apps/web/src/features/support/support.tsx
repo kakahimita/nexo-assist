@@ -146,9 +146,9 @@ export function Support({
     await loadQueue();
   }
 
-  async function close() {
+  async function close(outcome?: 'approved' | 'resolved') {
     const targetId = selectedId;
-    if (!(await act('close', '{}'))) return;
+    if (!(await act('close', JSON.stringify(outcome ? { outcome } : {})))) return;
     setDrafts((current) => withoutDraft(current, targetId));
     setDetail(null);
     setSelectedId('');
@@ -197,7 +197,7 @@ export function Support({
             onClaim={() => void claim()}
             onReply={() => void reply()}
             onReturn={() => void returnToAgent()}
-            onClose={() => void close()}
+            onClose={(outcome) => void close(outcome)}
           />
         )}
       </div>

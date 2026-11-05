@@ -42,11 +42,14 @@ export function SupportDetail({
   onClaim: () => void;
   onReply: () => void;
   onReturn: () => void;
-  onClose: () => void;
+  onClose: (outcome?: 'approved' | 'resolved') => void;
 }): React.JSX.Element {
   const owned =
     detail.conversation.state === 'with_analyst' &&
     detail.conversation.assignedAnalystId === user.id;
+  const linkedTicket =
+    detail.tickets.find((ticket) => ticket.id === detail.conversation.contextTicketId) ?? null;
+  const closingRequest = linkedTicket?.type === 'REQ';
 
   return (
     <section aria-label="Atendimento" className="support-detail">
@@ -67,9 +70,20 @@ export function SupportDetail({
             <button type="button" disabled={busy} onClick={onReturn}>
               Devolver ao agente
             </button>
-            <button type="button" disabled={busy} onClick={onClose}>
-              Encerrar atendimento
-            </button>
+            {closingRequest ? (
+              <>
+                <button type="button" disabled={busy} onClick={() => onClose('approved')}>
+                  Aprovar solicitação
+                </button>
+                <button type="button" disabled={busy} onClick={() => onClose('resolved')}>
+                  Concluir atendimento
+                </button>
+              </>
+            ) : (
+              <button type="button" disabled={busy} onClick={() => onClose()}>
+                Encerrar atendimento
+              </button>
+            )}
           </div>
         ) : null}
       </header>
