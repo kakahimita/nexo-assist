@@ -4,6 +4,7 @@ import { normalizeTitle } from './normalize-title.js';
 const fixtures = [
   {
     id: 'fixture-ana-open',
+    number: 20311,
     owner: 'ana.souza@nexo.com.br',
     title: 'Notebook lento',
     description: 'O notebook está lento depois da atualização.',
@@ -14,6 +15,7 @@ const fixtures = [
   },
   {
     id: 'fixture-ana-resolved',
+    number: 20150,
     owner: 'ana.souza@nexo.com.br',
     title: 'Senha bloqueada',
     description: 'A senha de acesso foi desbloqueada.',
@@ -24,6 +26,7 @@ const fixtures = [
   },
   {
     id: 'fixture-bruno-open',
+    number: 10442,
     owner: 'bruno.lima@nexo.com.br',
     title: 'Acesso à VPN',
     description: 'Preciso de acesso à VPN.',
@@ -45,6 +48,7 @@ export async function initializeTicketFixtures(client: PrismaClient): Promise<vo
       update: {},
       create: {
         id: fixture.id,
+        number: fixture.number,
         ownerId: owner.id,
         title: fixture.title,
         normalizedTitle: normalizeTitle(fixture.title),
@@ -67,5 +71,18 @@ export async function initializeTicketFixtures(client: PrismaClient): Promise<vo
         },
       },
     });
+  }
+  for (const type of ['INC', 'REQ'] as const) {
+    const highest = await client.ticket.aggregate({
+      where: { type },
+      _max: { number: true },
+    });
+    const value = highest._max.number;
+    if (value === null) continue;
+    const current = await client.ticketNumberSequence.findUnique({ where: { type } });
+    if (current === null)
+      await client.ticketNumberSequence.create({ data: { type, value } });
+    else if (value > current.value)
+      await client.ticketNumberSequence.update({ where: { type }, data: { value } });
   }
 }
