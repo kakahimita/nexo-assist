@@ -187,9 +187,23 @@ export class ConsultationTools {
     const { query, kind = 'any' } = ConsultTicketsInputSchema.parse(input);
     const owned = await this.tickets.list(user, now);
     const candidates = owned.map(
-      ({ id, title, status, priority, category, createdAt, deadline, slaStartedAt, overdue }) => ({
+      ({
         id,
+        number,
         title,
+        description,
+        status,
+        priority,
+        category,
+        createdAt,
+        deadline,
+        slaStartedAt,
+        overdue,
+      }) => ({
+        id,
+        number,
+        title,
+        description,
         status,
         priority,
         category,
@@ -216,8 +230,10 @@ export class ConsultationTools {
       query && !genericStatus
         ? candidates.filter((ticket) =>
             reference
-              ? normalize(ticket.id) === normalize(query)
+              ? normalize(ticket.number ?? '') === normalize(query) ||
+                normalize(ticket.id) === normalize(query)
               : normalize(ticket.title).includes(normalize(query)) ||
+                normalize(ticket.number ?? '') === normalize(query) ||
                 normalize(ticket.id) === normalize(query),
           )
         : candidates;

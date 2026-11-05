@@ -22,6 +22,7 @@ import { DatabaseService } from '../database/database.service.js';
 import type { Ticket } from '../generated/prisma/client.js';
 import { normalizeTitle } from './normalize-title.js';
 import { findTicketCandidates } from './ticket-candidates.js';
+import { allocateTicketNumber, formatTicketNumber } from './ticket-number.js';
 import { FailureSimulator, isTransientTicketError } from './failure-simulator.js';
 import { canReopen, deadline, isOverdue, type Priority } from './rules.js';
 import { assertEmployee, assertAnalyst, TicketService } from './ticket-service.js';
@@ -56,6 +57,8 @@ export class PrismaTicketService extends TicketService {
     const due = deadline(ticket.slaStartedAt, ticket.priority as Priority);
     return TicketViewSchema.parse({
       id: ticket.id,
+      number:
+        ticket.number === null ? null : formatTicketNumber(ticket.type as 'INC' | 'REQ', ticket.number),
       ownerId: ticket.ownerId,
       title: ticket.title,
       description: ticket.description,
@@ -193,6 +196,7 @@ export class PrismaTicketService extends TicketService {
             ticket = await tx.ticket.create({
               data: {
                 ownerId: user.id,
+                number: await allocateTicketNumber(tx, action.type),
                 title: action.title,
                 normalizedTitle,
                 description: action.description,

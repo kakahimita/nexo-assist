@@ -70,7 +70,9 @@ export class ConsultationTurn {
       this.tickets = proposal.candidates.map(
         ({
           id,
+          number,
           title,
+          description,
           status,
           priority,
           category,
@@ -80,7 +82,9 @@ export class ConsultationTurn {
           overdue,
         }) => ({
           id,
+          number,
           title,
+          description,
           status,
           priority,
           category,

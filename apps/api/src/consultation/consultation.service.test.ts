@@ -5,7 +5,9 @@ import { ConsultationService } from './consultation.service.js';
 const user = { id: 'ana', email: 'ana@example.com', name: 'Ana', role: 'employee' as const };
 const ticket = {
   id: 'INC-1',
+  number: 'INC-20311',
   title: 'Notebook lento',
+  description: 'Lentidão desde a atualização.',
   status: 'open',
   priority: 'medium',
   category: 'hardware',
