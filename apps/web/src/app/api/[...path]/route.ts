@@ -5,6 +5,7 @@ async function forward(
 ): Promise<Response> {
   const { path } = await context.params;
   const route = path.join('/');
+  const health = request.method === 'GET' && route === 'health';
   const existing = /^(session|conversations|conversations\/[a-z0-9]+\/messages)$/.test(route);
   const consultationStream =
     request.method === 'POST' && /^conversations\/[a-z0-9]+\/messages\/stream$/.test(route);
@@ -30,7 +31,8 @@ async function forward(
     !handoff &&
     !draftRecovery &&
     !supportRead &&
-    !supportWrite
+    !supportWrite &&
+    !health
   )
     return new Response(null, { status: 404 });
   if (request.method !== 'GET' && request.headers.get('origin') !== new URL(request.url).origin)

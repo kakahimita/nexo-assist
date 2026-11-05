@@ -18,8 +18,11 @@ worktree with Node 22.23.2 and npm 10.9.8:
   non-failing Next.js pages-directory warning.
 - To complete the browser checks, the test harness and browser test URLs were
   temporarily changed in the isolated worktree to web port 4310 and API port
-  4311; the web build used `NEXT_PUBLIC_API_BASE_URL` for the alternate API and
-  the proxy used `API_BASE_URL`. `npm run test:e2e` then passed all 14 Chromium
+  4311; at that revision the web build consumed `NEXT_PUBLIC_API_BASE_URL`
+  for the alternate API and the proxy used `API_BASE_URL`. (That public
+  variable was later removed: the web client now always calls the `/api`
+  proxy, whose destination is configured server-side through
+  `API_BASE_URL`.) `npm run test:e2e` then passed all 14 Chromium
   tests, including a separate API-process restart with a temporary database.
   The port-only test changes were reverted afterward. This is not a passing
   unmodified `npm run check` invocation.

@@ -120,3 +120,5 @@ The chat ticket-consultation increment for [#36](https://github.com/kakahimita/n
 The ticket-card follow-up [#38](https://github.com/kakahimita/nexo-assist/issues/38) (part of #9) adds server-owned category and creation metadata, the status badge, the amber last update, and the responsive legacy fallback; its executed checks and remaining visual differences are recorded in the same verification document.
 
 The analyst-console increment for [#30](https://github.com/kakahimita/nexo-assist/issues/30) (part of #8) delivers the analyst queue, atomic claim, reply, return, and close on top of the employee handoff core; its deterministic evidence and boundaries are recorded in [human support verification](human-support-verification.md).
+
+The owned-conversation refinement for [#42](https://github.com/kakahimita/nexo-assist/issues/42) (part of #9) adds ownership-aware detail controls, race-safe selection, per-conversation drafts, honest failure handling, role-distinct messages, and authorized ticket context. Its executed evidence and remaining V05 differences are recorded in the same verification.

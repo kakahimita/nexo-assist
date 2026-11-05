@@ -20,6 +20,11 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...nextVitals,
+  {
+    settings: {
+      next: { rootDir: 'apps/web/' },
+    },
+  },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],

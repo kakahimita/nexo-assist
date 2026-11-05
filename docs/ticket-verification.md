@@ -14,7 +14,9 @@ that revision do not add application evidence.
 - `npm run check` passed every stage, including 17 Chromium tests, only with
   temporary test-only substitutions: web port 3000 to 4310, API port 3001 to
   4311, `NEXT_PUBLIC_API_BASE_URL=http://localhost:4311/api` and
-  `API_BASE_URL=http://127.0.0.1:4311/api`. The substitutions were reverted and
+  `API_BASE_URL=http://127.0.0.1:4311/api`. (The public web variable was later
+  removed; the client now always calls the `/api` proxy, configured
+  server-side with `API_BASE_URL`.) The substitutions were reverted and
   are not part of the delivery. A standard `npm run check` invocation could not
   start the browser stage because an existing process occupied ports 3000 and
   3001; that process was left running. This is not a passing unmodified

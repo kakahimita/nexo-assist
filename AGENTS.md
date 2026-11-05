@@ -41,6 +41,15 @@ Derive the branch from its issue: #12 becomes `feature/LAB-0012`.
 Never invent LAB numbers, commit delivery changes to `main`, or merge without
 explicit owner instruction. Read-only investigation needs no issue.
 
+## Local development ports
+
+The owner prefers the project at `http://localhost:3000`, with its API on
+port 3001. These ports may already be occupied by another Nexo Assist instance;
+identify its checkout and branch before deciding how to proceed. When the owner
+asks to run a different version on these ports, replace the existing project
+instance and preserve its database and other user data. Do not stop unrelated
+services. Automated integration and browser tests still need isolated databases.
+
 ## Boundaries
 
 - Use npm workspaces, strict TypeScript, and Next.js/NestJS/Mastra.
