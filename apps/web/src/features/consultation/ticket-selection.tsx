@@ -31,6 +31,7 @@ export function TicketSelection({
           }}
         >
           <span className="ticket-selection-indicator" aria-hidden="true" />
+          {ticket.number && <span className="ticket-selection-number">{ticket.number}</span>}
           <span className="ticket-selection-title">{ticket.title}</span>
           <span className={`ticket-selection-status ${ticket.overdue ? 'overdue' : ticket.status}`}>
             <span aria-hidden="true" />

@@ -16,8 +16,10 @@ async function send(page: import('@playwright/test').Page, text: string) {
 
 const ticket = {
   id: 'fixture-ana-open',
+  number: 'INC-20311',
   title: 'Notebook lento',
-  status: 'open',
+  description: 'Lentidão geral desde a atualização.',
+  status: 'waiting_for_analyst',
   priority: 'medium',
   category: 'hardware',
   createdAt: '2026-11-04T01:00:00.000Z',
@@ -104,14 +106,21 @@ test('B03: shows the detail card for one consulted ticket inside the chat', asyn
   const chat = page.getByRole('region', { name: 'Conversa' });
   const card = chat.getByRole('article', { name: 'Chamado Notebook lento' });
   await expect(card).toBeVisible();
-  await expect(card).toContainText('Aberto');
+  await expect(card.getByText('INC-20311', { exact: true })).toBeVisible();
+  await expect(card.getByText('Lentidão geral desde a atualização.')).toBeVisible();
+  await expect(card).toContainText('Aguardando analista');
   await expect(card).toContainText('Categoria: Hardware');
-  await expect(card).toContainText('Criado em: 03/11/2026');
+  await expect(card).toContainText('Aberto em: 03/11/2026');
   await expect(card).toContainText('Prioridade: Média');
   await expect(card).toContainText('Prazo: 07/11/2026');
   await expect(card).toContainText('Última atualização: há');
   await expect(card.getByText('Prazo vencido')).toHaveCount(0);
   await expect(chat.getByRole('button', { name: 'Falar com um analista' })).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 812 });
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
 });
 
 test('V03: analyst contact appears in an agent response after interaction', async ({ page }) => {
@@ -151,9 +160,11 @@ test('B03 V03: selects one of several consulted tickets before requesting its de
   page,
 }) => {
   await start(page);
+  const firstTicket = { ...ticket, number: 'INC-20311', status: 'open' };
   const secondTicket = {
     ...ticket,
     id: 'fixture-ana-resolved',
+    number: 'INC-20150',
     title: 'Acesso ao e-mail',
     status: 'resolved',
     priority: 'low',
@@ -178,7 +189,7 @@ test('B03 V03: selects one of several consulted tickets before requesting its de
         type: 'done',
         message: agentMessage(
           'Encontrei dois chamados.',
-          decision([ticket, secondTicket], 'answer'),
+          decision([firstTicket, secondTicket], 'answer'),
         ),
       },
     ],
@@ -271,7 +282,8 @@ test('B03: a streamed ticket without metadata renders an honest fallback', async
   const card = chat.getByRole('article', { name: 'Chamado Notebook antigo' });
   await expect(card).toBeVisible();
   await expect(card).toContainText('Categoria: —');
-  await expect(card).toContainText('Criado em: —');
+  await expect(card).toContainText('Aberto em: —');
+  await expect(card.getByText(/^(?:INC|REQ)-\d+$/)).toHaveCount(0);
   await expect(chat.getByRole('alert')).toHaveCount(0);
 });
 
@@ -281,6 +293,7 @@ test('V03: a long ticket keeps its status and overdue text without horizontal ov
   await start(page);
   const longTicket = {
     ...ticket,
+    status: 'open',
     title:
       'Notebook corporativo com lentidão após a atualização do Windows e do antivírus corporativo',
     overdue: true,
