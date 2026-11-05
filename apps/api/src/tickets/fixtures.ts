@@ -80,8 +80,7 @@ export async function initializeTicketFixtures(client: PrismaClient): Promise<vo
     const value = highest._max.number;
     if (value === null) continue;
     const current = await client.ticketNumberSequence.findUnique({ where: { type } });
-    if (current === null)
-      await client.ticketNumberSequence.create({ data: { type, value } });
+    if (current === null) await client.ticketNumberSequence.create({ data: { type, value } });
     else if (value > current.value)
       await client.ticketNumberSequence.update({ where: { type }, data: { value } });
   }

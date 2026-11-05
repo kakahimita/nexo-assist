@@ -18,9 +18,7 @@ export function TicketCard({
       <div className="consultation-ticket-heading">
         <span className="consultation-ticket-identity">
           <span className="consultation-ticket-kind">Chamado</span>
-          {ticket.number && (
-            <span className="consultation-ticket-number">{ticket.number}</span>
-          )}
+          {ticket.number && <span className="consultation-ticket-number">{ticket.number}</span>}
         </span>
         <span className={`consultation-ticket-status ${ticket.status}`}>
           {ticketStatusLabel(ticket.status)}
@@ -55,8 +53,7 @@ export function TicketCard({
         </p>
       </div>
       <p className="consultation-ticket-deadline">
-        <span className="consultation-ticket-label">Prazo:</span>{' '}
-        {formatDeadline(ticket.deadline)}
+        <span className="consultation-ticket-label">Prazo:</span> {formatDeadline(ticket.deadline)}
         {ticket.overdue && <strong> · Prazo vencido</strong>}
       </p>
     </article>

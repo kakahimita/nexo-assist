@@ -132,3 +132,10 @@ removes permanent conversation and analyst actions, places ticket selection and
 contextual human contact in the agent flow, and anchors the composer at the
 desktop frame footer. The PRD's automatic overdue transfer still takes precedence
 over the prototype's optional offer. See [employee visual verification](employee-visual-verification.md).
+
+The ticket number and status follow-up for [#49](https://github.com/kakahimita/nexo-assist/issues/49)
+gives every ticket a public number per type and five real statuses moved by
+handoff, claim and close; the V03 card shows the number, status, description and
+deadline. The PRD Annex B status list is illustrative, so the transition table is
+a documented project convention; a denied request is `resolved`, and one
+conversation links at most one ticket. See the same verification documents.

@@ -826,7 +826,10 @@ test('B11: a linked request offers approve or conclude and shows its number', as
   await page.route('**/api/support/conversations/*', (route) => {
     const id = new URL(route.request().url()).pathname.split('/').at(-1)!;
     return route.fulfill({
-      json: id === 'req' ? detail(item, [], [requestTicket]) : detail(items.find((row) => row.id === id)!),
+      json:
+        id === 'req'
+          ? detail(item, [], [requestTicket])
+          : detail(items.find((row) => row.id === id)!),
     });
   });
   const closes: string[] = [];

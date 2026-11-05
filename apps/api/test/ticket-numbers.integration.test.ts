@@ -65,7 +65,12 @@ describe('B03: ticket numbers', () => {
       expect(second.number).toBe('INC-20313');
       expect(request.number).toBe('REQ-10443');
 
-      const tools = new ConsultationTools(tickets, new KnowledgeService(database), drafts, database);
+      const tools = new ConsultationTools(
+        tickets,
+        new KnowledgeService(database),
+        drafts,
+        database,
+      );
       expect(
         await tools.consultTickets(ana, { query: first.number!, kind: 'reference' }, new Date()),
       ).toMatchObject({ match: 'one', tickets: [{ id: first.id }] });

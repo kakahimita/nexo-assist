@@ -172,3 +172,9 @@ unit, integration, and build but stopped at e2e because the owner's project
 instance occupied port 3001. The full `npm run check` rerun with isolated ports
 3100/3101 passed: typecheck, lint, formatting, 144 unit tests, integration,
 build, and 64 Chromium tests. The local model smoke gate was not run.
+
+## Ticket status at close (#49)
+
+The analyst close action now carries an optional `outcome`. When the conversation's linked ticket is an active request (`REQ`), the console offers **Aprovar solicitação** and **Concluir atendimento**; incidents close with **Encerrar atendimento** and no outcome. The server validates the pair, applies `approved` or `resolved` in the same transaction as the conversation close, and records a `status_changed` event. Claiming moves the linked ticket to `in_progress`; returning to the agent keeps it there. An already terminal or missing ticket never blocks or rolls back the support action.
+
+Integration coverage: outcome required for requests and rejected for incidents; incident close resolves; terminal ticket close leaves status and events unchanged; claim/return sequence. Chromium covers the request close choice, the number in the ticket context, and the unchanged incident control. The full `npm run check` passed (152 unit, 59 integration, 65 Chromium). The limitation remains that a denied request has no dedicated state.

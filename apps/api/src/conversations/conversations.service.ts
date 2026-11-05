@@ -134,7 +134,9 @@ export class ConversationsService {
       return this.conversationView(persisted);
     });
   }
-  private decisionTickets(raw: string | null | undefined): z.infer<typeof ConsultationTicketViewSchema>[] {
+  private decisionTickets(
+    raw: string | null | undefined,
+  ): z.infer<typeof ConsultationTicketViewSchema>[] {
     if (!raw) return [];
     try {
       const parsed = z.array(ConsultationTicketViewSchema).safeParse(JSON.parse(raw) as unknown);

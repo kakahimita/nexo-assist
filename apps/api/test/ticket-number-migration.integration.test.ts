@@ -34,24 +34,24 @@ describe('B13: ticket number and status migration', () => {
 
       db.exec(readFileSync(join(migrations, current, 'migration.sql'), 'utf8'));
 
-      expect(
-        db.prepare('SELECT id, number FROM Ticket ORDER BY createdAt').all(),
-      ).toEqual([
+      expect(db.prepare('SELECT id, number FROM Ticket ORDER BY createdAt').all()).toEqual([
         { id: 'inc-old', number: 20000 },
         { id: 'inc-new', number: 20001 },
         { id: 'req', number: 10000 },
       ]);
-      expect(db.prepare('SELECT type, value FROM TicketNumberSequence ORDER BY type').all()).toEqual(
-        [
-          { type: 'INC', value: 20001 },
-          { type: 'REQ', value: 10000 },
-        ],
-      );
+      expect(
+        db.prepare('SELECT type, value FROM TicketNumberSequence ORDER BY type').all(),
+      ).toEqual([
+        { type: 'INC', value: 20001 },
+        { type: 'REQ', value: 10000 },
+      ]);
       expect(db.prepare('SELECT contextTicketId FROM Conversation WHERE id = ?').get('c')).toEqual({
         contextTicketId: null,
       });
       expect(() =>
-        db.exec(`INSERT INTO Ticket (id, ownerId, title, normalizedTitle, description, type, category, priority, impact, slaStartedAt, number) VALUES ('dup','u','t','t','d','INC','hardware','low','self',CURRENT_TIMESTAMP,20000)`),
+        db.exec(
+          `INSERT INTO Ticket (id, ownerId, title, normalizedTitle, description, type, category, priority, impact, slaStartedAt, number) VALUES ('dup','u','t','t','d','INC','hardware','low','self',CURRENT_TIMESTAMP,20000)`,
+        ),
       ).toThrow();
     } finally {
       db.close();

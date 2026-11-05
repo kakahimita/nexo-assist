@@ -17,9 +17,7 @@ export function SupportTicketContext({
         <ul>
           {tickets.map((ticket) => (
             <li key={ticket.id}>
-              {ticket.number && (
-                <span className="support-ticket-number">{ticket.number}</span>
-              )}
+              {ticket.number && <span className="support-ticket-number">{ticket.number}</span>}
               <strong>{ticket.title}</strong>
               <span>
                 {categories[ticket.category]} · prioridade {priorities[ticket.priority]}

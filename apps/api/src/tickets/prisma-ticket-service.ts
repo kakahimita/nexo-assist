@@ -25,7 +25,15 @@ import { findTicketCandidates } from './ticket-candidates.js';
 import { allocateTicketNumber, formatTicketNumber } from './ticket-number.js';
 import type { TicketStatus } from '@nexo/contracts';
 import { FailureSimulator, isTransientTicketError } from './failure-simulator.js';
-import { canReopen, canSupplement, canTransfer, isActiveStatus, deadline, isOverdue, type Priority } from './rules.js';
+import {
+  canReopen,
+  canSupplement,
+  canTransfer,
+  isActiveStatus,
+  deadline,
+  isOverdue,
+  type Priority,
+} from './rules.js';
 import { assertEmployee, assertAnalyst, TicketService } from './ticket-service.js';
 
 @Injectable()
@@ -59,7 +67,9 @@ export class PrismaTicketService extends TicketService {
     return TicketViewSchema.parse({
       id: ticket.id,
       number:
-        ticket.number === null ? null : formatTicketNumber(ticket.type as 'INC' | 'REQ', ticket.number),
+        ticket.number === null
+          ? null
+          : formatTicketNumber(ticket.type as 'INC' | 'REQ', ticket.number),
       ownerId: ticket.ownerId,
       title: ticket.title,
       description: ticket.description,
@@ -248,7 +258,12 @@ export class PrismaTicketService extends TicketService {
                 });
               ticket = await tx.ticket.update({
                 where: { id: found.id },
-                data: { status: 'open', resolvedAt: null, transferRequested: false, slaStartedAt: now },
+                data: {
+                  status: 'open',
+                  resolvedAt: null,
+                  transferRequested: false,
+                  slaStartedAt: now,
+                },
               });
               kind = 'reopened';
               content = action.reason;
