@@ -11,6 +11,45 @@ import type { ConsultationEngineEvent } from './types.js';
 import { ConsultationTurn } from './turn.js';
 
 describe('B02/B03/B16: deterministic consultation', () => {
+  it('speaks the shared status vocabulary and keeps the deadline', async () => {
+    const db = await createTestDatabase();
+    const database = new DatabaseService(db.url);
+    try {
+      const row = await database.client.user.findUniqueOrThrow({
+        where: { email: 'bruno.lima@nexo.com.br' },
+      });
+      const user = { id: row.id, email: row.email, name: row.name, role: 'employee' as const };
+      await database.client.ticket.update({
+        where: { id: 'fixture-bruno-open' },
+        data: { status: 'in_progress' },
+      });
+      const ticketService = new PrismaTicketService(database, new FailureSimulator());
+      const engine = createFixtureConsultation(
+        new ConsultationTools(
+          ticketService,
+          new KnowledgeService(database),
+          new DraftsService(database, ticketService),
+          database,
+        ),
+      );
+      const turn = new ConsultationTurn();
+      for await (const event of engine.run({
+        user,
+        messages: [{ role: 'employee', content: 'Acesso à VPN' }],
+        signal: new AbortController().signal,
+        now: new Date(),
+      }))
+        turn.apply(event);
+      const snapshot = turn.snapshot();
+      expect(snapshot.text).toContain('em andamento');
+      expect(snapshot.text).toContain('Prazo:');
+      expect(snapshot.text).not.toContain('resolvido');
+    } finally {
+      await database.onModuleDestroy();
+      await db.cleanup();
+    }
+  });
+
   it('clarifies platform, selects owned tickets and redirects out-of-scope questions without writes', async () => {
     const db = await createTestDatabase();
     const database = new DatabaseService(db.url);

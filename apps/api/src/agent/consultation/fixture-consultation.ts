@@ -1,4 +1,4 @@
-import type { ConsultationEngineDecision } from '@nexo/contracts';
+import { ticketStatusLabel, type ConsultationEngineDecision } from '@nexo/contracts';
 import type { ConsultationTools } from '../tools/consultation-tools.js';
 import { explicitFacts } from '../tools/explicit-facts.js';
 import {
@@ -340,7 +340,7 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
           return;
         }
         text = selected
-          ? `${selected.title}: ${selected.status === 'open' ? 'aberto' : 'resolvido'}. Prazo: ${selected.deadline}. ${selected.overdue ? 'O prazo está vencido.' : 'O prazo não está vencido.'}`
+          ? `${selected.title}: ${ticketStatusLabel(selected.status).toLowerCase()}. Prazo: ${selected.deadline}. ${selected.overdue ? 'O prazo está vencido.' : 'O prazo não está vencido.'}`
           : 'Qual chamado você deseja consultar? Selecione uma das opções.';
         decision = {
           intent: 'Consulta de chamado',
