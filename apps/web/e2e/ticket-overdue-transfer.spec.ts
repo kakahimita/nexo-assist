@@ -30,10 +30,6 @@ test('B09 B10 B13: an overdue ticket transfers the conversation and keeps it aft
   const handoffMessage = chat.locator('article.chat-message.agent', { has: card });
   await expect(handoffMessage.getByRole('button', { name: /Notebook lento/ })).toHaveCount(0);
   await page.reload();
-  await page
-    .getByRole('button', { name: /Conversa/ })
-    .last()
-    .click();
   const restored = page.getByRole('region', { name: 'Conversa' });
   await expect(restored.getByRole('status')).toContainText('Aguardando atendimento humano');
   const restoredCard = restored.getByRole('article', { name: 'Chamado Notebook lento' }).last();

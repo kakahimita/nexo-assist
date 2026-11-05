@@ -19,12 +19,14 @@ this pass. Its illustrative copy and disabled recovery/persistent-login controls
 remain intentionally different because those services are unavailable.
 
 This change keeps the backend ticket service and consultation contracts intact.
-The standalone ticket-management view is available through `Meus chamados` in
-employee navigation. The default chat view shows conversation history, messages,
-decision evidence, cards, and composer without appending that management view.
-The selected conversation and unsent message remain mounted when switching
-between chat, ticket management, and profile. The V06 password card shows the
-reset action as disabled and explains that the service is unavailable.
+The employee navigation now follows V02/V03 with `Atendimento` and `Meu perfil`.
+Ticket consultation, draft confirmation, and human transfer remain inside the
+chat. The latest persisted conversation resumes automatically after reload;
+there is no direct employee history list or standalone ticket-management view.
+`Nova conversa` remains available as an application control for starting a
+different session. The selected conversation and unsent message remain mounted
+when switching between chat and profile. The V06 password card shows the reset
+action as disabled and explains that the service is unavailable.
 
 ## Visual comparison
 
@@ -33,19 +35,19 @@ Local application captures: `outputs/consultation-desktop.png`,
 and `outputs/profile-v06-1440x900.png`. The V02/V03 conversation composition is
 closer because the standalone ticket list no longer extends the chat screenshot.
 V06 now contains a second card at the position of the prototype password area.
-The compact history bar can scroll when many conversations exist.
+The later V03 navigation correction removes the compact history bar and the
+extra `Meus chamados` navigation item visible in the earlier captures.
 
 Differences remain: V02/V03 example text, public ticket numbers, ticket
 descriptions, richer status vocabulary, illustrative presence/count indicators,
 and optional handoff buttons depend on unavailable data or conflict with PRD
 behavior. The native Pencil export is unavailable, so exact typography and
-pixel fidelity are not claimed. The separate `Meus chamados` view is an
-implementation choice to retain standalone ticket operations without placing
-them beneath the conversation; it is not an original prototype frame.
+pixel fidelity are not claimed. The extra `Nova conversa` action, message
+heading, and document-flow composer still differ from the Pencil frame.
 
 ## Verification
 
-The full `npm run check` gate passed with isolated ports 3100/3101 and a
+An earlier revision passed the full `npm run check` gate with isolated ports 3100/3101 and a
 temporary database, including typecheck, lint, formatting, unit and integration
 tests, build, and 65 Chromium browser tests. The browser tests cover navigation,
 ticket actions, draft confirmation, long-content overflow, and the read-only
@@ -62,7 +64,7 @@ This exposed layout details that the earlier PR review had missed:
 | Frame | Direct source detail | Remaining application difference |
 | --- | --- | --- |
 | V01 | 800 px showcase and 380 px sign-in form | Split and form width are present; illustrative copy differs intentionally. |
-| V02/V03 | 232 px sidebar, 64 px top bar, 200 px chat side padding, 48 px composer | The extra history toolbar and message heading consume vertical space; the composer still follows document flow rather than occupying the frame footer. |
+| V02/V03 | 232 px sidebar, 64 px top bar, 200 px chat side padding, 48 px composer; no employee history or ticket navigation | Direct history and ticket navigation have been removed. The extra new-conversation action and message heading consume vertical space; the composer still follows document flow rather than occupying the frame footer. |
 | V04/V05 | 64 px rail, 380 px queue, 340 px ticket history, 64 px conversation header | Queue density, conversation header, handoff event presentation, and ticket-history grouping remain different. |
 | V06 | Read-only profile with two cards | Password age and reset delivery are unavailable; the app shows an explicit disabled action. |
 
@@ -70,7 +72,26 @@ Extra application views and states should use the Pencil color, typography,
 spacing, and control patterns without inventing service data. Full V01-V06
 fidelity remains open under issue #9.
 
-For the subsequent direct-source CSS and queue-search changes, typecheck,
+Before the V03 navigation correction, the direct-source CSS and queue-search
+changes passed typecheck,
 lint, 144 unit tests, 53 integration tests, and the targeted Chromium queue
-search and queue-layout tests passed. The complete build/e2e gate has not yet
-been rerun while the owner is viewing the live worktree on ports 3000/3001.
+search and queue-layout tests. At that revision, the complete build/e2e gate
+had not yet been rerun while the owner viewed the live worktree on ports 3000/3001.
+
+## V03 navigation correction
+
+Direct inspection of Pencil frame `vbsNW` confirms Ana's sidebar contains only
+Atendimento and Meu perfil. Ticket selection and the transfer offer are part of
+the conversation; the frame has no employee history list. Conversation
+persistence is a backend requirement and does not imply a separate history
+screen. Atendimento now loads the newest persisted conversation. A loading
+state prevents interaction with the previous conversation while a new one is
+created, and stale initial responses cannot replace the new selection.
+
+Standalone ticket-view browser tests were retired because that screen is no
+longer part of the employee UI. Conversational draft confirmation and ticket
+consultation remain covered in Chromium; authorization, duplicate handling,
+reopening, and idempotent writes remain covered in API integration tests.
+The fresh `npm run check` passed with isolated ports 3100/3101 and a temporary
+database: 144 unit tests, 53 integration tests, and 62 Chromium browser tests.
+This correction does not establish full V02/V03 pixel fidelity.

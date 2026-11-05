@@ -39,8 +39,7 @@ test('B11: analyst claims, replies, and closes a handed-off conversation', async
   const conversations = (await (await page.request.get('/api/conversations')).json()) as Array<{
     id: string;
   }>;
-  const index = conversations.findIndex((conversation) => conversation.id === conversationId);
-  await page.getByRole('button', { name: `Conversa ${index + 1}`, exact: true }).click();
+  expect(conversations.at(-1)?.id).toBe(conversationId);
   await expect(page.getByText('Já li o histórico.')).toBeVisible();
   await page.getByRole('button', { name: 'Sair' }).click();
 

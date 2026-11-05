@@ -26,10 +26,7 @@ test('B14: message cap preserves history and offers a new conversation', async (
   }>;
   const index = conversations.findIndex((conversation) => conversation.id === id);
   expect(index).toBeGreaterThanOrEqual(0);
-  await page
-    .getByRole('navigation', { name: 'Conversas' })
-    .getByRole('button', { name: `Conversa ${index + 1}`, exact: true })
-    .click();
+  expect(conversations.at(-1)?.id).toBe(id);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await expect(chat.getByText('Mensagens: 28 de 30')).toBeVisible();
   await expect(chat.getByText('Restantes: 2')).toBeVisible();
@@ -49,11 +46,7 @@ test('B14: message cap preserves history and offers a new conversation', async (
   expect((await rejected.json()).code).toBe('session_limit');
   await chat.getByRole('button', { name: 'Nova conversa' }).click();
   await expect(chat.getByText('Mensagens: 0 de 30')).toBeVisible();
-  await expect(
-    page
-      .getByRole('navigation', { name: 'Conversas' })
-      .getByRole('button', { name: `Conversa ${index + 1}`, exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Conversas' })).toHaveCount(0);
 });
 
 test('B14: a stale tab displays the server count after a limit rejection', async ({ page }) => {

@@ -7,7 +7,6 @@ import {
   type UserView,
 } from '@nexo/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Tickets } from '../tickets/tickets';
 import { Consultation } from '../consultation/consultation';
 import { Support } from '../support/support';
 
@@ -23,9 +22,10 @@ export function History({
   const [messages, setMessages] = useState<MessageView[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [ticketsVersion, setTicketsVersion] = useState(0);
-  const [page, setPage] = useState<'support' | 'tickets' | 'profile'>('support');
+  const [creating, setCreating] = useState(false);
+  const [page, setPage] = useState<'support' | 'profile'>('support');
   const busyRef = useRef(false);
+  const loadVersion = useRef(0);
   const selectionVersion = useRef(0);
   const call = useCallback(
     async (url: string, options?: RequestInit) => {
@@ -39,35 +39,56 @@ export function History({
     },
     [onLogout],
   );
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<ConversationView[] | null> => {
+    const version = ++loadVersion.current;
     try {
       const data: unknown = await (await call('/api/conversations')).json();
       if (!Array.isArray(data)) throw new Error();
-      setConversations(data.map((item: unknown) => ConversationViewSchema.parse(item)));
+      const parsed = data.map((item: unknown) => ConversationViewSchema.parse(item));
+      if (version === loadVersion.current) setConversations(parsed);
+      return parsed;
     } catch {
-      setError('Não foi possível carregar o histórico.');
+      if (version === loadVersion.current) setError('Não foi possível carregar a conversa.');
+      return null;
     }
   }, [call]);
+  const choose = useCallback(
+    async (id: string) => {
+      const version = ++selectionVersion.current;
+      try {
+        const data: unknown = await (await call(`/api/conversations/${id}/messages`)).json();
+        if (!Array.isArray(data)) throw new Error();
+        if (version !== selectionVersion.current) return;
+        setMessages(data.map((item: unknown) => MessageViewSchema.parse(item)));
+        setSelected(id);
+        setError('');
+      } catch {
+        if (version === selectionVersion.current) setError('Não foi possível carregar a conversa.');
+      }
+    },
+    [call],
+  );
   useEffect(() => {
-    if (user.role === 'employee') void Promise.resolve().then(load);
-  }, [load, user.role]);
-  async function choose(id: string) {
-    const version = ++selectionVersion.current;
-    try {
-      const data: unknown = await (await call(`/api/conversations/${id}/messages`)).json();
-      if (!Array.isArray(data)) throw new Error();
-      if (version !== selectionVersion.current) return;
-      setMessages(data.map((item: unknown) => MessageViewSchema.parse(item)));
-      setSelected(id);
-      setError('');
-    } catch {
-      if (version === selectionVersion.current) setError('Não foi possível carregar a conversa.');
-    }
-  }
+    if (user.role !== 'employee') return;
+    let current = true;
+    const version = selectionVersion.current;
+    void Promise.resolve()
+      .then(load)
+      .then((items) => {
+        if (current && version === selectionVersion.current && items?.length)
+          void choose(items[items.length - 1]!.id);
+      });
+    return () => {
+      current = false;
+    };
+  }, [choose, load, user.role]);
   async function create() {
     if (busyRef.current) return;
     busyRef.current = true;
+    loadVersion.current++;
+    selectionVersion.current++;
     setBusy(true);
+    setCreating(true);
     try {
       const data = ConversationViewSchema.parse(
         await (
@@ -78,13 +99,14 @@ export function History({
           })
         ).json(),
       );
-      await load();
+      setConversations((current) => [...current, data]);
       await choose(data.id);
     } catch {
       setError('Não foi possível criar a conversa.');
     } finally {
       busyRef.current = false;
       setBusy(false);
+      setCreating(false);
     }
   }
   async function logout() {
@@ -148,22 +170,6 @@ export function History({
           </button>
           <button
             type="button"
-            aria-current={page === 'tickets' ? 'page' : undefined}
-            onClick={() => setPage('tickets')}
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="M4 6h16v14H4zM8 6V4h8v2M4 11h16" />
-            </svg>{' '}
-            Meus chamados
-          </button>
-          <button
-            type="button"
             aria-current={page === 'profile' ? 'page' : undefined}
             onClick={() => setPage('profile')}
           >
@@ -194,13 +200,7 @@ export function History({
         <header className="employee-topbar">
           <span>Service desk de TI</span>
           <span aria-hidden="true">›</span>
-          <strong>
-            {page === 'support'
-              ? 'Atendimento'
-              : page === 'tickets'
-                ? 'Meus chamados'
-                : 'Meu perfil'}
-          </strong>
+          <strong>{page === 'support' ? 'Atendimento' : 'Meu perfil'}</strong>
         </header>
         <div className="employee-content">
           {error && <p role="alert">{error}</p>}
@@ -241,25 +241,13 @@ export function History({
             </section>
           )}
           <div className="employee-chat-view" hidden={page !== 'support'}>
-            <div className="employee-history-bar">
-              <nav aria-label="Conversas">
-                {conversations.length === 0 && <p>Nenhuma conversa ainda.</p>}
-                {conversations.map((item, index) => (
-                  <button
-                    disabled={busy}
-                    key={item.id}
-                    aria-current={selected === item.id ? 'page' : undefined}
-                    onClick={() => void choose(item.id)}
-                  >
-                    Conversa {index + 1}
-                  </button>
-                ))}
-              </nav>
+            <div className="employee-conversation-actions">
               <button disabled={busy} onClick={() => void create()}>
                 Nova conversa
               </button>
             </div>
-            {selected && (
+            {creating && <p role="status">Iniciando conversa...</p>}
+            {selected && !creating && (
               <Consultation
                 key={selected}
                 conversationId={selected}
@@ -268,16 +256,12 @@ export function History({
                 setMessages={setMessages}
                 onUnauthorized={onLogout}
                 onStartNew={() => void create()}
-                onTicketCommitted={() => setTicketsVersion((value) => value + 1)}
                 onBusy={(value) => {
                   busyRef.current = value;
                   setBusy(value);
                 }}
               />
             )}
-          </div>
-          <div className="employee-ticket-view" hidden={page !== 'tickets'}>
-            <Tickets onUnauthorized={onLogout} reloadToken={ticketsVersion} />
           </div>
         </div>
       </main>

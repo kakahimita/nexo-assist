@@ -25,15 +25,12 @@ test('B04: employee reviews and confirms a conversation draft', async ({ page })
   await page.screenshot({ path: 'outputs/conversational-draft-desktop.png', fullPage: true });
   await draft.getByRole('button', { name: 'Confirmar rascunho' }).click();
   await expect(draft.getByText('Chamado confirmado.')).toBeVisible();
-  await page
-    .getByRole('navigation', { name: 'Navegação principal' })
-    .getByRole('button', { name: 'Meus chamados' })
-    .click();
-  await expect(
-    page
-      .getByRole('region', { name: 'Chamados' })
-      .getByRole('button', { name: 'Meu notebook não liga no setor 234' }),
-  ).toBeVisible();
+  const tickets = (await (await page.request.get('/api/tickets')).json()) as Array<{
+    title: string;
+  }>;
+  expect(tickets.some((ticket) => ticket.title === 'Meu notebook não liga no setor 234')).toBe(
+    true,
+  );
 });
 
 async function createDraft(page: import('@playwright/test').Page, title: string) {
@@ -68,15 +65,10 @@ test('B04: editing then cancelling a draft does not create a ticket', async ({ p
   await expect(draft.getByText('Projetor do prédio 766 com falha')).toBeVisible();
   await draft.getByRole('button', { name: 'Cancelar rascunho' }).click();
   await expect(draft.getByText('Rascunho cancelado.')).toBeVisible();
-  await page
-    .getByRole('navigation', { name: 'Navegação principal' })
-    .getByRole('button', { name: 'Meus chamados' })
-    .click();
-  await expect(
-    page
-      .getByRole('region', { name: 'Chamados' })
-      .getByRole('button', { name: 'Projetor do prédio 766 com falha' }),
-  ).toHaveCount(0);
+  const tickets = (await (await page.request.get('/api/tickets')).json()) as Array<{
+    title: string;
+  }>;
+  expect(tickets.some((ticket) => ticket.title === 'Projetor do prédio 766 com falha')).toBe(false);
 });
 
 test('B04: stale confirmation reloads the current draft and requires another click', async ({
@@ -125,10 +117,7 @@ test('B14: draft confirmation remains available after the thirtieth message', as
   }>;
   const index = list.findIndex((item) => item.id === id);
   expect(index).toBeGreaterThanOrEqual(0);
-  await page
-    .getByRole('navigation', { name: 'Conversas' })
-    .getByRole('button', { name: `Conversa ${index + 1}`, exact: true })
-    .click();
+  expect(list.at(-1)?.id).toBe(id);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await expect(chat.getByText('Mensagens: 26 de 30')).toBeVisible();
   await chat.getByLabel('Mensagem').fill('Abrir chamado: Minha impressora travou na sala 419');

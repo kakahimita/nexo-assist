@@ -117,10 +117,6 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
     route.fulfill({ json: [user, agent] }),
   );
   await page.reload();
-  await page
-    .getByRole('button', { name: /Conversa/ })
-    .last()
-    .click();
   await expect(page.getByRole('region', { name: 'Conversa' }).getByRole('alert')).toContainText(
     'limite do modelo',
   );

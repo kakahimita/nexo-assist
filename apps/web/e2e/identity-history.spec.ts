@@ -20,8 +20,9 @@ test('B01 B13: login, persist, logout and isolate history', async ({ page }) => 
   }>;
   const index = conversations.findIndex((conversation) => conversation.id === conversationId);
   expect(index).toBeGreaterThanOrEqual(0);
-  await page.getByRole('button', { name: `Conversa ${index + 1}`, exact: true }).click();
+  expect(conversations.at(-1)?.id).toBe(conversationId);
   await expect(page.getByText('Minha conexão caiu')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Conversas' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Sair' }).click();
   await page.getByLabel('E-mail corporativo').fill('bruno.lima@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
@@ -59,7 +60,9 @@ test('B01: unavailable session service offers retry', async ({ page }) => {
   await expect(page.getByLabel('E-mail corporativo')).toBeVisible();
 });
 
-test('B13: a late history response cannot change the selected conversation', async ({ page }) => {
+test('B13 V03: the latest conversation resumes without exposing a history list', async ({
+  page,
+}) => {
   const timestamp = '2026-10-31T00:00:00.000Z';
   await page.route('**/api/session', (route) =>
     route.fulfill({
@@ -94,13 +97,10 @@ test('B13: a late history response cannot change the selected conversation', asy
   await page.route('**/api/conversations/*/draft-proposals', (route) =>
     route.fulfill({ json: [] }),
   );
-  let release = (): void => undefined;
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
+  let requestedOlder = false;
   await page.route('**/api/conversations/*/messages', async (route) => {
     const first = route.request().url().includes('/one/');
-    if (first) await gate;
+    if (first) requestedOlder = true;
     await route.fulfill({
       json: [
         {
@@ -116,13 +116,9 @@ test('B13: a late history response cannot change the selected conversation', asy
     });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Conversa 1' }).click();
-  await page.getByRole('button', { name: 'Conversa 2' }).click();
   await expect(page.getByText('Segunda conversa')).toBeVisible();
-  const lateResponse = page.waitForResponse((response) => response.url().includes('/one/messages'));
-  release();
-  await lateResponse;
-  await expect(page.getByText('Segunda conversa')).toBeVisible();
+  expect(requestedOlder).toBe(false);
+  await expect(page.getByRole('navigation', { name: 'Conversas' })).toHaveCount(0);
   await expect(page.getByText('Primeira conversa')).toHaveCount(0);
 });
 
@@ -177,7 +173,6 @@ test('B13: pending message cannot be submitted twice or edited', async ({ page }
     });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Conversa 1' }).click();
   await page.getByLabel('Mensagem').fill('Olá');
   await page.getByRole('button', { name: 'Enviar mensagem' }).click();
   await expect(page.getByRole('button', { name: 'Enviar mensagem' })).toBeDisabled();

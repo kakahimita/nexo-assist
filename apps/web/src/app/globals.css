@@ -582,43 +582,15 @@ textarea {
   margin: 0 auto;
   padding: 24px max(24px, calc((100vw - 1040px) / 2)) 48px;
 }
-.employee-history-bar {
+.employee-conversation-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   margin-bottom: 24px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e6e8ec;
 }
-.employee-content .employee-history-bar nav[aria-label='Conversas'] {
-  display: flex;
-  gap: 4px;
-  min-width: 0;
-  max-width: 100%;
-  margin: 0;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-}
-.employee-history-bar nav p {
-  margin: 0;
-  color: #697386;
-}
-.employee-history-bar nav button {
-  flex: none;
-  padding: 7px 10px;
-  border-radius: 6px;
-  color: #52606d;
-  background: transparent;
-  font-size: 12px;
-  font-weight: 500;
-}
-.employee-history-bar nav button[aria-current='page'] {
-  color: #0062c4;
-  background: #eaf4fd;
-  font-weight: 600;
-}
-.employee-history-bar > button {
+.employee-conversation-actions > button {
   flex: none;
   padding: 7px 12px;
   background: #0062c4;
@@ -673,13 +645,6 @@ textarea {
   }
   .employee-content {
     padding: 20px;
-  }
-  .employee-history-bar {
-    align-items: flex-start;
-    flex-direction: column-reverse;
-  }
-  .employee-history-bar nav[aria-label='Conversas'] {
-    width: 100%;
   }
 }
 .profile {

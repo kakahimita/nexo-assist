@@ -121,7 +121,7 @@ export async function runFoundationBrowserTests(): Promise<number> {
       waitForUrl(webReadinessUrl, deadline),
     ]);
 
-    const playwright = spawn(process.execPath, [playwrightCli, 'test'], {
+    const playwright = spawn(process.execPath, [playwrightCli, 'test', ...process.argv.slice(2)], {
       cwd: repositoryRoot,
       env: { ...process.env, PLAYWRIGHT_BASE_URL: webUrl },
       shell: false,

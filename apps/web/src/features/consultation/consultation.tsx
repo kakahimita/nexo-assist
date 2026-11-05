@@ -27,7 +27,6 @@ export function Consultation({
   onBusy,
   onUnauthorized,
   onStartNew,
-  onTicketCommitted,
 }: {
   conversationId: string;
   conversation: ConversationView;
@@ -36,7 +35,6 @@ export function Consultation({
   onBusy: (busy: boolean) => void;
   onUnauthorized: () => void;
   onStartNew: () => void;
-  onTicketCommitted: () => void;
 }): React.JSX.Element {
   const [content, setContent] = useState('');
   const [active, setActive] = useState(false);
@@ -269,11 +267,7 @@ export function Consultation({
               </>
             )}
             {message.decision?.draftId && (
-              <DraftCard
-                draftId={message.decision.draftId}
-                onUnauthorized={onUnauthorized}
-                onCommitted={onTicketCommitted}
-              />
+              <DraftCard draftId={message.decision.draftId} onUnauthorized={onUnauthorized} />
             )}
           </article>
         ))}
@@ -288,12 +282,7 @@ export function Consultation({
       {pendingDrafts
         .filter((id) => !messages.some((message) => message.decision?.draftId === id))
         .map((id) => (
-          <DraftCard
-            key={id}
-            draftId={id}
-            onUnauthorized={onUnauthorized}
-            onCommitted={onTicketCommitted}
-          />
+          <DraftCard key={id} draftId={id} onUnauthorized={onUnauthorized} />
         ))}
       {error && <p role="alert">{error}</p>}
       <p className="message-counter">

@@ -53,7 +53,7 @@ export function DraftCard({
 }: {
   draftId: string;
   onUnauthorized: () => void;
-  onCommitted: () => void;
+  onCommitted?: () => void;
 }): React.JSX.Element {
   const [draft, setDraft] = useState<DraftView | null>(null);
   const [error, setError] = useState('');
@@ -117,7 +117,7 @@ export function DraftCard({
       if (action === 'confirm') {
         TicketViewSchema.parse(result);
         await load();
-        onCommitted();
+        onCommitted?.();
       } else setDraft(DraftViewSchema.parse(result));
     } catch (failure) {
       if (failure instanceof RequestError && failure.status === 409) {

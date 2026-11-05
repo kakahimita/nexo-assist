@@ -83,7 +83,6 @@ test('B13: browser history survives restarting the API process', async ({ page, 
     await stop();
     await start();
     await page.reload();
-    await page.getByRole('button', { name: 'Conversa 1' }).click();
     await expect(page.getByText('Histórico após reinício')).toBeVisible();
   } finally {
     await stop();
