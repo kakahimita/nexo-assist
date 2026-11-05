@@ -349,3 +349,65 @@ test('V03: a long ticket keeps its status and overdue text without horizontal ov
     });
   }
 });
+
+test('B04: a supplement draft identifies the affected ticket', async ({ page }) => {
+  await start(page);
+  const operationId = '5da80c1d-1d9d-4b57-97f1-f21bd36e1890';
+  const ticketView = {
+    id: ticket.id,
+    number: ticket.number,
+    title: ticket.title,
+    description: ticket.description,
+    status: ticket.status,
+    priority: ticket.priority,
+    category: ticket.category,
+    createdAt: ticket.createdAt,
+    deadline: ticket.deadline,
+    overdue: ticket.overdue,
+    ownerId: 'user-test',
+    type: 'INC',
+    impact: 'self',
+    transferRequested: false,
+    resolvedAt: null,
+    slaStartedAt: ticket.createdAt,
+  };
+  await page.route('**/api/ticket-drafts/draft-supplement', (route) =>
+    route.fulfill({
+      json: {
+        id: 'draft-supplement',
+        version: 1,
+        operationId,
+        status: 'pending',
+        input: {
+          action: 'supplement',
+          ticketId: 'fixture-ana-open',
+          content: 'Também reinicia sozinho.',
+        },
+        ticket: ticketView,
+      },
+    }),
+  );
+  const message = {
+    ...agentMessage('Vou complementar o chamado.', decision([], 'answer')),
+    decision: { ...decision([], 'answer'), draftId: 'draft-supplement' },
+  };
+  await mockStream(page, [
+    {
+      type: 'user-message',
+      message: {
+        id: 'user-supplement',
+        content: 'Complementar chamado',
+        createdAt: '2026-11-04T12:00:00.000Z',
+        role: 'employee',
+        status: 'completed',
+        decision: null,
+        authorName: null,
+      },
+    },
+    { type: 'done', message },
+  ]);
+  await send(page, 'Complementar chamado');
+  const draft = page.getByRole('article', { name: 'Rascunho do chamado' });
+  await expect(draft).toContainText('INC-20311');
+  await expect(draft).toContainText('Aguardando analista');
+});

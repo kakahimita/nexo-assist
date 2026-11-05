@@ -8,6 +8,7 @@ import {
   type TicketView,
 } from '@nexo/contracts';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { ticketStatusLabel } from '../tickets/labels';
 
 const categories: Record<string, string> = {
   access: 'Acesso',
@@ -340,7 +341,17 @@ export function DraftCard({
                 )}
               </>
             ) : (
-              <p>{value.action === 'supplement' ? value.content : value.reason}</p>
+              <>
+                {draft.ticket && (
+                  <p className="draft-ticket-reference">
+                    {draft.ticket.number && (
+                      <strong className="draft-ticket-number">{draft.ticket.number}</strong>
+                    )}{' '}
+                    {ticketStatusLabel(draft.ticket.status)} · {draft.ticket.title}
+                  </p>
+                )}
+                <p>{value.action === 'supplement' ? value.content : value.reason}</p>
+              </>
             )}
             {value.action !== 'create' && conflicts.length > 0 && (
               <div>

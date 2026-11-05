@@ -202,7 +202,7 @@ export class ConsultationService {
       quickReplies: [],
       actions: partial.actions,
       evidence: partial.evidence,
-      tickets: [ticket],
+      tickets: [{ ...ticket, status: 'waiting_for_analyst' }],
       outcome: 'completed',
       errorCode: null,
       source: engine.source,

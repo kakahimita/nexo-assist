@@ -128,6 +128,15 @@ describe('B09 B10 B13 B16: durable employee handoff', () => {
         state: 'waiting_for_analyst',
         handoff: { reason: 'critical_incident' },
       });
+
+      const overdueMessages = await request(server)
+        .get(`/api/conversations/${overdue.body.id}/messages`)
+        .set('Cookie', cookie)
+        .expect(200);
+      expect(
+        overdueMessages.body.find((message: { role: string }) => message.role === 'agent').decision
+          .tickets[0].status,
+      ).toBe('waiting_for_analyst');
     } finally {
       await app.close();
       await db.cleanup();
@@ -282,6 +291,95 @@ describe('B09 B10 B13 B16: durable employee handoff', () => {
       expect(
         (await client.ticket.findUniqueOrThrow({ where: { id: 'fixture-ana-open' } })).status,
       ).toBe('in_progress');
+    } finally {
+      await client.$disconnect();
+      await app.close();
+      await db.cleanup();
+    }
+  });
+
+  it('prefers the newest single-ticket decision over an older link', async () => {
+    const db = await createTestDatabase();
+    const app = await createApp({
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    });
+    const client = createDatabaseClient(db.url);
+    try {
+      const server = app.getHttpServer();
+      const ana = String(
+        (
+          await request(server)
+            .post('/api/session')
+            .send({ email: 'ana.souza@nexo.com.br', password: 'x' })
+            .expect(201)
+        ).headers['set-cookie']?.[0],
+      );
+      const conversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', ana)
+        .send({})
+        .expect(201);
+      const id = conversation.body.id as string;
+      await client.conversation.update({
+        where: { id },
+        data: { contextTicketId: 'fixture-ana-resolved' },
+      });
+      const decided = {
+        id: 'fixture-ana-open',
+        number: 'INC-20311',
+        title: 'Notebook lento',
+        description: 'Lentidão.',
+        status: 'open',
+        priority: 'medium',
+        category: 'hardware',
+        createdAt: '2026-10-20T12:00:00.000Z',
+        deadline: '2026-10-21T12:00:00.000Z',
+        lastUpdate: '2026-10-20T12:00:00.000Z',
+        overdue: true,
+      };
+      await client.message.create({
+        data: {
+          conversationId: id,
+          role: 'agent',
+          status: 'completed',
+          content: 'Seu chamado está aberto.',
+          decision: {
+            create: {
+              intent: 'Consulta de chamado',
+              action: 'answer',
+              appliedRule: 'Somente chamados do funcionário',
+              confidence: 1,
+              justification: 'Chamado identificado.',
+              missingFactsJson: '[]',
+              quickRepliesJson: '[]',
+              actionsJson: '[]',
+              evidenceJson: '[]',
+              ticketsJson: JSON.stringify([decided]),
+              outcome: 'completed',
+              errorCode: null,
+              source: 'deterministic',
+              promptVersion: 'test',
+            },
+          },
+        },
+      });
+      await request(server)
+        .post(`/api/conversations/${id}/handoff`)
+        .set('Cookie', ana)
+        .send({ reason: 'employee_request' })
+        .expect(201);
+      expect((await client.conversation.findUniqueOrThrow({ where: { id } })).contextTicketId).toBe(
+        'fixture-ana-open',
+      );
+      expect(
+        (await client.ticket.findUniqueOrThrow({ where: { id: 'fixture-ana-open' } })).status,
+      ).toBe('waiting_for_analyst');
+      expect(
+        (await client.ticket.findUniqueOrThrow({ where: { id: 'fixture-ana-resolved' } })).status,
+      ).toBe('resolved');
     } finally {
       await client.$disconnect();
       await app.close();

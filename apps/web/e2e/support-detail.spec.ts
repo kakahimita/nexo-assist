@@ -665,7 +665,7 @@ test('B11 V05: presents role-distinct messages, handoff context, and authorized 
     '2026-11-04T15:00:00.000Z',
   );
   await expect(ticketPanel).not.toContainText('Desta conversa');
-  await expect(ticketPanel).not.toContainText('Outros chamados');
+  await expect(ticketPanel).toContainText('Outros chamados');
 });
 
 test('B11: empty message and ticket lists stay honest', async ({ page }) => {
@@ -822,13 +822,17 @@ test('B11: a linked request offers approve or conclude and shows its number', as
     type: 'REQ' as const,
     number: 'REQ-10442',
   };
+  const otherTicket = {
+    ...ticket('other-ticket', 'Senha bloqueada', 'access', 'medium', 'resolved', false),
+    number: 'INC-20150',
+  };
   let item = conversation('req', 'with_analyst', null);
   await page.route('**/api/support/conversations/*', (route) => {
     const id = new URL(route.request().url()).pathname.split('/').at(-1)!;
     return route.fulfill({
       json:
         id === 'req'
-          ? detail(item, [], [requestTicket])
+          ? detail(item, [], [otherTicket, requestTicket])
           : detail(items.find((row) => row.id === id)!),
     });
   });
@@ -844,9 +848,12 @@ test('B11: a linked request offers approve or conclude and shows its number', as
   await showQueue(page, items);
   await page.locator('[data-conversation-id="req"]').click();
   const region = page.getByRole('region', { name: 'Atendimento' });
-  await expect(region).toContainText('REQ-10442');
+  const current = region.getByRole('region', { name: 'Desta conversa' });
+  await expect(current).toContainText('REQ-10442');
+  await expect(region.getByRole('region', { name: 'Outros chamados' })).toContainText('INC-20150');
   await expect(region.getByRole('button', { name: 'Aprovar solicitação' })).toBeVisible();
   await expect(region.getByRole('button', { name: 'Concluir atendimento' })).toBeVisible();
+  await page.screenshot({ path: 'outputs/analyst-close-choice-1440x900.png', fullPage: true });
   await region.getByRole('button', { name: 'Aprovar solicitação' }).click();
   await expect.poll(() => closes.at(-1)).toContain('"outcome":"approved"');
 });

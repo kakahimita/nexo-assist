@@ -128,6 +128,7 @@ export function SupportDetail({
       <SupportTicketContext
         tickets={detail.tickets}
         employeeName={detail.conversation.employee.name}
+        contextTicketId={detail.conversation.contextTicketId}
       />
       {!owned ? (
         <p className="support-detail-readonly">{readOnlyMessage(detail)}</p>

@@ -25,6 +25,7 @@ import type {
 import { DatabaseService } from '../database/database.service.js';
 import { SessionLimitReachedError } from './session-limit.js';
 import { formatHandoffSummary } from './handoff-summary.js';
+import { resolveContextTicketId } from './context-ticket.js';
 import { toMessageView } from './message-view.js';
 
 @Injectable()
@@ -96,16 +97,23 @@ export class ConversationsService {
       const openTicketCount = await tx.ticket.count({
         where: { ownerId: user.id, status: { in: active } },
       });
-      let ticketId = contextTicketId ?? conversation.contextTicketId;
+      let ticketId = contextTicketId;
       if (!ticketId) {
         const decided = await tx.message.findFirst({
-          where: { conversationId, role: 'agent', decision: { isNot: null } },
+          where: {
+            conversationId,
+            role: 'agent',
+            status: 'completed',
+            decision: { isNot: null },
+          },
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           select: { decision: { select: { ticketsJson: true } } },
         });
-        const tickets = this.decisionTickets(decided?.decision?.ticketsJson);
-        const activeTickets = tickets.filter((ticket) => active.includes(ticket.status));
-        if (activeTickets.length === 1) ticketId = activeTickets[0]!.id;
+        ticketId = resolveContextTicketId({
+          explicit: null,
+          decided: this.decisionTickets(decided?.decision?.ticketsJson),
+          existing: conversation.contextTicketId,
+        });
       }
       const requestedAt = new Date();
       const updated = await tx.conversation.updateMany({

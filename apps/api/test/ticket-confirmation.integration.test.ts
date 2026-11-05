@@ -294,6 +294,50 @@ describe('B04–B06: atomic confirmation', () => {
     }
   });
 
+  it('replays an idempotent confirmation with the current ticket state', async () => {
+    const db = await createTestDatabase();
+    const app = await createApp({
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    });
+    const client = createDatabaseClient(db.url);
+    try {
+      const server = app.getHttpServer();
+      const login = await request(server)
+        .post('/api/session')
+        .send({ email: 'ana.souza@nexo.com.br', password: 'x' })
+        .expect(201);
+      const user = UserViewSchema.parse(login.body);
+      const cookie = String(login.headers['set-cookie']?.[0]);
+      const service = app.get(DraftsService);
+      const draft = (
+        await request(server)
+          .post('/api/ticket-drafts')
+          .set('Cookie', cookie)
+          .send(newTicket)
+          .expect(201)
+      ).body;
+      const request$ = { version: 1, operationId: draft.operationId };
+      const first = await service.confirm(user, draft.id, request$, new Date());
+      await client.ticket.update({
+        where: { id: first.id },
+        data: { status: 'waiting_for_analyst' },
+      });
+      const replay = await service.confirm(user, draft.id, request$, new Date());
+      expect(replay).toMatchObject({
+        id: first.id,
+        status: 'waiting_for_analyst',
+        number: first.number,
+      });
+    } finally {
+      await client.$disconnect();
+      await app.close();
+      await db.cleanup();
+    }
+  });
+
   it('reopens an approved request and clears the pending transfer flag', async () => {
     const db = await createTestDatabase();
     const app = await createApp({

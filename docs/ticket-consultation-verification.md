@@ -74,4 +74,12 @@ Issue [#49](https://github.com/kakahimita/nexo-assist/issues/49) closes the thre
 
 Conventions and limits, recorded rather than hidden: the PRD Annex B status list is illustrative, so the transition table is a documented project convention; there is no `Recusado` state, so a denied request closes as `resolved` with the analyst's justification; one conversation links at most one ticket; legacy decisions stored before this change render without a number instead of inventing one. Analyst search by ticket number remains future work.
 
-Evidence: `npm run check` passed with isolated ports 3100/3101 and temporary databases — typecheck, lint, formatting, 152 unit tests, 59 integration tests, build, and 65 Chromium tests. Integration covers numbering per type and uniqueness, backfill, transition boundaries, close outcome validation, and terminal-ticket no-ops; Chromium covers the number/status/description card, the legacy fallback, one-click selection, and 375 px overflow. Live-model smoke was not run.
+Evidence: `npm run check` passed with isolated ports 3100/3101 and temporary databases — typecheck, lint, formatting, 156 unit tests, 61 integration tests, build, and 65 Chromium tests. Integration covers numbering per type and uniqueness, backfill, transition boundaries, close outcome validation, and terminal-ticket no-ops; Chromium covers the number/status/description card, the legacy fallback, one-click selection, and 375 px overflow. Live-model smoke was not run.
+
+### Review follow-ups
+
+- The context ticket is resolved in the documented order (explicit handoff ticket, newest completed single-ticket decision, then the existing link), so a returned conversation that consults another ticket cannot keep operating on the old one. Failed turns are excluded from the decision lookup.
+- An idempotent confirmation replay re-reads the ticket and returns its current number and status instead of the stored snapshot.
+- The automatic overdue transfer stores the post-handoff `waiting_for_analyst` status in the message decision, so the card matches the waiting banner on a fresh database.
+- A supplement or reopen draft shows the affected ticket's number and status.
+- Number evidence is fresh-database specific: the seed creates `INC-20311`, `INC-20150` and `REQ-10442`, while a migrated existing database is backfilled from `20000`/`10000`.

@@ -117,7 +117,9 @@ describe('B09/B10: overdue consulted tickets are transferred by the backend', ()
     expect(result.appended).toHaveLength(1);
     expect(result.appended[0]!.content).toContain('Notebook lento está com o prazo vencido');
     expect(result.appended[0]!.content).not.toContain('em dia');
-    expect(result.appended[0]!.decision.tickets).toEqual([ticket]);
+    expect(result.appended[0]!.decision.tickets).toEqual([
+      { ...ticket, status: 'waiting_for_analyst' },
+    ]);
     expect(result.types).toEqual(['user-message', 'done', 'handoff-waiting']);
   });
   it('does not transfer when several tickets match, even if one is overdue', async () => {

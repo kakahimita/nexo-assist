@@ -99,6 +99,7 @@ export const DraftViewSchema = z
     input: DraftInputSchema,
     priority: PrioritySchema.optional(),
     candidates: z.array(TicketViewSchema).optional(),
+    ticket: TicketViewSchema.nullable().default(null),
     candidateMatches: z
       .array(z.strictObject({ id, match: z.enum(['exact', 'possible']) }))
       .optional(),

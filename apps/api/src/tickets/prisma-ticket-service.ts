@@ -174,8 +174,12 @@ export class PrismaTicketService extends TicketService {
               prior.fingerprint !== fingerprint
             )
               throw new ConflictException();
+            const stored = TicketViewSchema.parse(JSON.parse(prior.resultJson) as unknown);
+            const current = await tx.ticket.findFirst({
+              where: { id: stored.id, ownerId: user.id },
+            });
             return {
-              value: TicketViewSchema.parse(JSON.parse(prior.resultJson) as unknown),
+              value: current ? this.view(current, now) : stored,
               committed: false,
             };
           }
