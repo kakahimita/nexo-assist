@@ -293,4 +293,57 @@ describe('B04–B06: atomic confirmation', () => {
       await db.cleanup();
     }
   });
+
+  it('reopens an approved request and clears the pending transfer flag', async () => {
+    const db = await createTestDatabase();
+    const app = await createApp({
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    });
+    const client = createDatabaseClient(db.url);
+    try {
+      const server = app.getHttpServer();
+      const login = await request(server)
+        .post('/api/session')
+        .send({ email: 'bruno.lima@nexo.com.br', password: 'x' })
+        .expect(201);
+      const cookie = String(login.headers['set-cookie']?.[0]);
+      const user = UserViewSchema.parse(login.body);
+      const service = app.get(DraftsService);
+      const now = new Date('2026-11-02T12:00:00.000Z');
+      await client.ticket.update({
+        where: { id: 'fixture-bruno-open' },
+        data: {
+          status: 'approved',
+          transferRequested: true,
+          resolvedAt: new Date('2026-10-30T12:00:00.000Z'),
+        },
+      });
+      const reopen = (
+        await request(server)
+          .post('/api/ticket-drafts')
+          .set('Cookie', cookie)
+          .send({ action: 'reopen', ticketId: 'fixture-bruno-open', reason: 'Preciso de novo' })
+          .expect(201)
+      ).body;
+      const reopened = await service.confirm(
+        user,
+        reopen.id,
+        { version: 1, operationId: reopen.operationId },
+        now,
+      );
+      expect(reopened).toMatchObject({
+        status: 'open',
+        transferRequested: false,
+        resolvedAt: null,
+        slaStartedAt: now.toISOString(),
+      });
+    } finally {
+      await client.$disconnect();
+      await app.close();
+      await db.cleanup();
+    }
+  });
 });

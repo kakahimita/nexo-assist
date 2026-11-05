@@ -23,8 +23,9 @@ import type { Ticket } from '../generated/prisma/client.js';
 import { normalizeTitle } from './normalize-title.js';
 import { findTicketCandidates } from './ticket-candidates.js';
 import { allocateTicketNumber, formatTicketNumber } from './ticket-number.js';
+import type { TicketStatus } from '@nexo/contracts';
 import { FailureSimulator, isTransientTicketError } from './failure-simulator.js';
-import { canReopen, deadline, isOverdue, type Priority } from './rules.js';
+import { canReopen, canSupplement, canTransfer, isActiveStatus, deadline, isOverdue, type Priority } from './rules.js';
 import { assertEmployee, assertAnalyst, TicketService } from './ticket-service.js';
 
 @Injectable()
@@ -72,7 +73,7 @@ export class PrismaTicketService extends TicketService {
       resolvedAt: ticket.resolvedAt?.toISOString() ?? null,
       slaStartedAt: ticket.slaStartedAt.toISOString(),
       deadline: due.toISOString(),
-      overdue: ticket.status === 'open' && isOverdue(due, now),
+      overdue: isActiveStatus(ticket.status as TicketStatus) && isOverdue(due, now),
     });
   }
 
@@ -179,7 +180,12 @@ export class PrismaTicketService extends TicketService {
           let content: string;
           if (action.action === 'create') {
             const normalizedTitle = normalizeTitle(action.title);
-            const open = await tx.ticket.findMany({ where: { ownerId: user.id, status: 'open' } });
+            const open = await tx.ticket.findMany({
+              where: {
+                ownerId: user.id,
+                status: { in: ['open', 'waiting_for_analyst', 'in_progress'] },
+              },
+            });
             const matches = findTicketCandidates(action, open).filter(
               ({ ticket, match }) =>
                 match === 'exact' || !parsed.data.dismissedCandidateIds?.includes(ticket.id),
@@ -217,15 +223,17 @@ export class PrismaTicketService extends TicketService {
             if (!found) throw new NotFoundException();
             if (action.action === 'reopen') {
               if (
-                found.status !== 'resolved' ||
                 !found.resolvedAt ||
-                !canReopen(found.resolvedAt, now)
+                !canReopen(found.status as TicketStatus, found.resolvedAt, now)
               )
                 throw new ConflictException();
-              const open = await tx.ticket.findMany({
-                where: { ownerId: user.id, status: 'open' },
+              const active = await tx.ticket.findMany({
+                where: {
+                  ownerId: user.id,
+                  status: { in: ['open', 'waiting_for_analyst', 'in_progress'] },
+                },
               });
-              const matches = findTicketCandidates(found, open).filter(
+              const matches = findTicketCandidates(found, active).filter(
                 ({ ticket: candidate, match }) =>
                   match === 'exact' || !parsed.data.dismissedCandidateIds?.includes(candidate.id),
               );
@@ -240,17 +248,18 @@ export class PrismaTicketService extends TicketService {
                 });
               ticket = await tx.ticket.update({
                 where: { id: found.id },
-                data: { status: 'open', resolvedAt: null, slaStartedAt: now },
+                data: { status: 'open', resolvedAt: null, transferRequested: false, slaStartedAt: now },
               });
               kind = 'reopened';
               content = action.reason;
             } else if (action.action === 'supplement') {
-              if (found.status !== 'open') throw new ConflictException();
+              if (!canSupplement(found.status as TicketStatus)) throw new ConflictException();
               ticket = found;
               kind = 'supplemented';
               content = action.content;
             } else {
-              if (found.status !== 'open' || found.transferRequested) throw new ConflictException();
+              if (!canTransfer(found.status as TicketStatus, found.transferRequested))
+                throw new ConflictException();
               ticket = await tx.ticket.update({
                 where: { id: found.id },
                 data: { transferRequested: true },

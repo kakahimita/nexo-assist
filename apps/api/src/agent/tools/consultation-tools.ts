@@ -10,7 +10,7 @@ import { KnowledgeService, normalizePlatform } from '../../knowledge/knowledge.s
 import { assertEmployee, TicketService } from '../../tickets/ticket-service.js';
 import { DraftsService } from '../../tickets/drafts.service.js';
 import { findTicketCandidates } from '../../tickets/ticket-candidates.js';
-import { canReopen, classifyPriority } from '../../tickets/rules.js';
+import { canReopen, canSupplement, classifyPriority, isActiveStatus } from '../../tickets/rules.js';
 import { DatabaseService } from '../../database/database.service.js';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { activeRequestMessages, deriveClassification, explicitFacts } from './explicit-facts.js';
@@ -163,12 +163,15 @@ export class ConsultationTools {
         .trim();
       if (!proposedText || !employeeText.includes(proposedText))
         throw new BadRequestException('The employee must provide the proposed content');
-      if (change.action === 'supplement' && ticket.status !== 'open')
+      if (change.action === 'supplement' && !canSupplement(ticket.status))
         return ProposeTicketDraftResultSchema.parse({ status: 'not_open' });
       if (change.action === 'reopen') {
-        if (ticket.status === 'open')
+        if (isActiveStatus(ticket.status))
           return ProposeTicketDraftResultSchema.parse({ status: 'already_open' });
-        if (!ticket.resolvedAt || !canReopen(new Date(ticket.resolvedAt), context.now))
+        if (
+          !ticket.resolvedAt ||
+          !canReopen(ticket.status, new Date(ticket.resolvedAt), context.now)
+        )
           return ProposeTicketDraftResultSchema.parse({ status: 'reopen_not_allowed' });
         const matches = findTicketCandidates(ticket, owned);
         if (matches.length)

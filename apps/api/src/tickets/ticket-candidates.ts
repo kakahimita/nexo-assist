@@ -1,4 +1,6 @@
 ﻿import { normalizeTitle } from './normalize-title.js';
+import { isActiveStatus } from './rules.js';
+import type { TicketStatus } from '@nexo/contracts';
 
 type CandidateTicket = { id: string; title: string; description: string; status: string };
 type TicketMatch = 'exact' | 'possible';
@@ -51,7 +53,7 @@ export function findTicketCandidates<T extends CandidateTicket>(
   const query = tokens(`${input.title} ${input.description}`);
   const matches: Array<{ ticket: T; match: TicketMatch }> = [];
   for (const ticket of tickets) {
-    if (ticket.status !== 'open') continue;
+    if (!isActiveStatus(ticket.status as TicketStatus)) continue;
     if (normalizeTitle(ticket.title) === normalizedTitle) {
       matches.push({ ticket, match: 'exact' });
       continue;

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { canReopen, classifyPriority, deadline, isOverdue } from './rules.js';
+import {
+  canReopen,
+  canSupplement,
+  canTransfer,
+  classifyPriority,
+  deadline,
+  isActiveStatus,
+  isOverdue,
+  terminalTimestamp,
+} from './rules.js';
 
 describe('B07: priority from impact and urgency', () => {
   it.each([
@@ -54,8 +63,34 @@ describe('B08: São Paulo business deadlines', () => {
 describe('B06: seven elapsed days for reopening', () => {
   const resolved = new Date('2026-10-01T12:00:00Z');
   it('includes exactly seven days but excludes later or earlier instants', () => {
-    expect(canReopen(resolved, new Date('2026-10-08T12:00:00Z'))).toBe(true);
-    expect(canReopen(resolved, new Date('2026-10-08T12:00:00.001Z'))).toBe(false);
-    expect(canReopen(resolved, new Date('2026-09-30T12:00:00Z'))).toBe(false);
+    expect(canReopen('resolved', resolved, new Date('2026-10-08T12:00:00Z'))).toBe(true);
+    expect(canReopen('resolved', resolved, new Date('2026-10-08T12:00:00.001Z'))).toBe(false);
+    expect(canReopen('resolved', resolved, new Date('2026-09-30T12:00:00Z'))).toBe(false);
+  });
+  it('reopens approved requests but never active tickets', () => {
+    expect(canReopen('approved', resolved, new Date('2026-10-08T12:00:00Z'))).toBe(true);
+    expect(canReopen('open', resolved, new Date('2026-10-08T12:00:00Z'))).toBe(false);
+    expect(canReopen('in_progress', resolved, new Date('2026-10-08T12:00:00Z'))).toBe(false);
+  });
+});
+
+describe('ticket status predicates', () => {
+  it('treats open, waiting and in-progress tickets as active', () => {
+    expect(isActiveStatus('open')).toBe(true);
+    expect(isActiveStatus('waiting_for_analyst')).toBe(true);
+    expect(isActiveStatus('in_progress')).toBe(true);
+    expect(isActiveStatus('approved')).toBe(false);
+    expect(isActiveStatus('resolved')).toBe(false);
+  });
+  it('allows supplements only while active and transfers only from open', () => {
+    expect(canSupplement('waiting_for_analyst')).toBe(true);
+    expect(canSupplement('in_progress')).toBe(true);
+    expect(canSupplement('resolved')).toBe(false);
+    expect(canTransfer('open', false)).toBe(true);
+    expect(canTransfer('open', true)).toBe(false);
+    expect(canTransfer('waiting_for_analyst', false)).toBe(false);
+    expect(terminalTimestamp('approved')).toBe(true);
+    expect(terminalTimestamp('resolved')).toBe(true);
+    expect(terminalTimestamp('open')).toBe(false);
   });
 });
