@@ -488,6 +488,15 @@ button:focus-visible {
   font-size: 13px;
   font-weight: 600;
 }
+.demo-model-key-warning {
+  padding: 10px 12px;
+  border: 1px solid #f4d58d;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #7a4b00;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .demo-model-key button {
   min-height: 40px;
   padding: 0.5rem 0.75rem;

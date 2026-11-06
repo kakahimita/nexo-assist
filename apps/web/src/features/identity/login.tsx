@@ -247,6 +247,10 @@ export function Login(): React.JSX.Element {
                 <p>Opcional — sua chave será usada somente nesta sessão.</p>
               </div>
             </div>
+            <p className="demo-model-key-warning" id="model-api-key-guidance">
+              Utilize apenas uma chave do <strong>nível gratuito (Free Tier)</strong> do Gemini. Não
+              use chaves de projetos com faturamento ativado.
+            </p>
             <label htmlFor="model-api-key">Chave de API do Gemini</label>
             <div className="input-wrap">
               <svg
@@ -262,6 +266,7 @@ export function Login(): React.JSX.Element {
               <input
                 id="model-api-key"
                 name="modelApiKey"
+                aria-describedby="model-api-key-guidance"
                 type="password"
                 autoComplete="off"
                 placeholder="Cole sua chave"
