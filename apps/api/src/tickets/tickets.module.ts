@@ -4,8 +4,10 @@ import { FailureSimulator } from './failure-simulator.js';
 import { PrismaTicketService } from './prisma-ticket-service.js';
 import { TicketService } from './ticket-service.js';
 import { TicketsController } from './tickets.controller.js';
+import { ConversationsModule } from '../conversations/conversations.module.js';
 
 @Module({
+  imports: [ConversationsModule],
   controllers: [TicketsController],
   providers: [
     DraftsService,

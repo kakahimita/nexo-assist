@@ -6,6 +6,7 @@ import {
 import type { ConsultationTools } from '../tools/consultation-tools.js';
 import { explicitFacts } from '../tools/explicit-facts.js';
 import { transitionConversationFlow } from '../../conversations/conversation-flow.js';
+import { fixtureMonitorResolution } from './fixture-resolution.js';
 import {
   CONSULTATION_PROMPT_VERSION,
   type ConsultationEngine,
@@ -121,6 +122,9 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
           missingFacts: [],
           quickReplies: [],
         };
+      } else if (openingIndex < 0 && changeIndex < 0 && /monitor.*sem imagem/i.test(context)) {
+        yield* fixtureMonitorResolution(tools, request);
+        return;
       } else if (changeCommand && changeIndex > openingIndex && !changeFinished) {
         const match = /^(complementar|reabrir) chamado\s*:\s*(.+)$/i.exec(changeCommand);
         const isSupplement = match?.[1]?.toLowerCase() === 'complementar';

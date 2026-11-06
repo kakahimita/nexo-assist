@@ -13,6 +13,8 @@ const normalize = (value: string) =>
 const impact: Record<string, CreateInput['impact']> = {
   'somente eu': 'self',
   'so eu': 'self',
+  'so eu estou afetado': 'self',
+  'somente eu estou afetado': 'self',
   'minha equipe': 'team',
   'toda a empresa': 'company',
 };
@@ -20,31 +22,46 @@ const workState: Record<string, CreateInput['workState']> = {
   'nao consigo trabalhar': 'stopped',
   'trabalho parado': 'stopped',
   'consigo trabalhar com alternativa': 'workaround',
+  'ainda consigo trabalhar com alternativa': 'workaround',
   'trabalho afetado com alternativa': 'workaround',
   'pedido ou melhoria': 'request',
 };
 const urgency: Record<string, CreateInput['urgency']> = {
   'compromisso em risco hoje': 'same_day',
   'sem compromisso em risco hoje': 'normal',
+  'nao tenho compromisso em risco hoje': 'normal',
+  'tenho compromisso em risco hoje': 'same_day',
 };
 
 export function activeRequestMessages(messages: readonly string[]): readonly string[] {
   let start = -1;
   for (let index = 0; index < messages.length; index++) {
     if (
-      /^(?:(?:quero|preciso) )?(?:abrir|criar|novo) (?:um )?chamado\b/u.test(
+      /^(?:(?:(?:quero|preciso) )?(?:abrir|criar|novo) (?:um )?chamado\b|(?:agora|outro problema|outra coisa)[,:]?\s+(?:meu|minha|o|a)\s+(?:notebook|computador|monitor|impressora|projetor|vpn|rede|wifi|senha|acesso|email|e-mail|software|aplicativo)\b)/u.test(
         normalize(messages[index] ?? ''),
       )
     )
       start = index;
   }
+  // A support request starts with the problem, not with a required UI command.
+  // An explicit new opening still resets facts collected for the previous issue.
+  if (start < 0)
+    start = messages.findIndex((message) =>
+      /\b(?:notebook|computador|monitor|impressora|projetor|vpn|rede|wifi|senha|acesso|email|e-mail|software|aplicativo)\b/u.test(
+        normalize(message),
+      ),
+    );
   return start < 0 ? [] : messages.slice(start);
 }
 
 export function explicitFacts(messages: readonly string[]): Partial<ExplicitFacts> {
+  return explicitAnswerFacts(activeRequestMessages(messages));
+}
+
+export function explicitAnswerFacts(messages: readonly string[]): Partial<ExplicitFacts> {
   const facts: Partial<ExplicitFacts> = {};
-  for (const message of activeRequestMessages(messages).slice(1))
-    for (const line of message.split('\n')) {
+  for (const message of messages)
+    for (const line of message.split(/[.!?;\n]+|\s+e\s+/u)) {
       const answer = normalize(line);
       if (answer === 'nao sei' || answer === 'nao tenho certeza') {
         delete facts.impact;
@@ -84,10 +101,19 @@ export function deriveClassification(
   if (/\b(?:senha|acesso)\b/u.test(text)) categories.push('access');
   if (/\b(?:email|e-mail)\b/u.test(text)) categories.push('email');
   if (/\b(?:software|aplicativo)\b/u.test(text)) categories.push('software');
-  const category = explicitCategory ?? (categories.length === 1 ? categories[0] : undefined);
-  const failure = /nao liga|nao funciona|parou|falha|erro|travou|lento|devagar|bloquead/u.test(
-    text,
-  );
+  // A laptop can be the device on which VPN/email/software fails.
+  const serviceCategories = categories.filter((category) => category !== 'hardware');
+  const category =
+    explicitCategory ??
+    (serviceCategories.length === 1
+      ? serviceCategories[0]
+      : categories.length === 1
+        ? categories[0]
+        : undefined);
+  const failure =
+    /nao liga|nao funciona|parou|falha|erro|travou|lento|devagar|bloquead|sem imagem|nao conecta/u.test(
+      text,
+    );
   const type = workState === 'request' ? 'REQ' : failure ? 'INC' : undefined;
   if (!category || !type) return null;
   return { type, category };

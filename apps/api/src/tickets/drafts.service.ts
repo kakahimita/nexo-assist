@@ -19,6 +19,7 @@ import { DatabaseService } from '../database/database.service.js';
 import { findTicketCandidates } from './ticket-candidates.js';
 import { classifyPriority } from './rules.js';
 import { assertEmployee, TicketService } from './ticket-service.js';
+import { ConversationsService } from '../conversations/conversations.service.js';
 
 @Injectable()
 export class DraftsService {
@@ -26,6 +27,8 @@ export class DraftsService {
   constructor(
     @Inject(DatabaseService) private readonly database: DatabaseService,
     @Inject(TicketService) private readonly tickets: TicketService,
+    @Inject(ConversationsService)
+    private readonly conversations: ConversationsService = new ConversationsService(database),
   ) {}
 
   private async prepare(
@@ -65,7 +68,7 @@ export class DraftsService {
   async createForRun(
     user: UserView,
     input: DraftInput,
-    context: { conversationId: string; runId: string },
+    context: { conversationId: string; runId: string; requiresAnalyst?: boolean },
   ): Promise<DraftView> {
     const prepared = await this.prepare(user, input);
     const operation = this.proposalQueue.then(() =>
@@ -111,6 +114,7 @@ export class DraftsService {
             ownerId: user.id,
             conversationId: context.conversationId,
             draftId: draft.id,
+            requiresAnalyst: context.requiresAnalyst === true,
           },
         });
         return draft.id;
@@ -201,6 +205,20 @@ export class DraftsService {
     input: ConfirmDraftInput,
     now: Date,
   ): Promise<TicketView> {
-    return this.tickets.confirm(user, id, input, now);
+    const ticket = await this.tickets.confirm(user, id, input, now);
+    const proposal = await this.database.client.draftProposalRun.findUnique({
+      where: { draftId: id },
+    });
+    if (proposal?.requiresAnalyst && !proposal.handoffCompleted) {
+      await this.conversations.requestHandoff(
+        user,
+        proposal.conversationId,
+        'unresolved_uncertainty',
+        ticket.id,
+        id,
+      );
+      return this.tickets.get(user, ticket.id, now);
+    }
+    return ticket;
   }
 }

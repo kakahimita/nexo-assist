@@ -37,9 +37,20 @@ export const ProposalInputSchema = z.discriminatedUnion('action', [
     action: z.literal('create'),
     title: proposalText.max(200),
     description: proposalText,
+    requiresAnalyst: z.boolean().optional(),
   }),
-  z.strictObject({ action: z.literal('supplement'), ticketId: proposalId, content: proposalText }),
-  z.strictObject({ action: z.literal('reopen'), ticketId: proposalId, reason: proposalText }),
+  z.strictObject({
+    action: z.literal('supplement'),
+    ticketId: proposalId,
+    content: proposalText,
+    requiresAnalyst: z.boolean().optional(),
+  }),
+  z.strictObject({
+    action: z.literal('reopen'),
+    ticketId: proposalId,
+    reason: proposalText,
+    requiresAnalyst: z.boolean().optional(),
+  }),
 ]);
 export const ProposeTicketDraftResultSchema = z.discriminatedUnion('status', [
   z.strictObject({ status: z.literal('draft'), draftId: z.string().min(1) }),

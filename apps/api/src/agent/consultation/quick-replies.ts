@@ -12,5 +12,8 @@ export function isUnsupportedQuickReply(reply: string): boolean {
   const deviceOperation = /\b(?:reinstalar|reinstale|instalar|instale|reiniciar|reinicie)\b/.test(
     text,
   );
-  return write || handoff || deviceOperation;
+  const draftControl = /\b(?:confirmar|confirme|confirmo|cancelar|cancele|editar|edite)\b/.test(
+    text,
+  );
+  return write || handoff || deviceOperation || draftControl;
 }

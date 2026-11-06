@@ -2,6 +2,7 @@
 import {
   CONVERSATION_MESSAGE_LIMIT,
   SessionLimitResponseSchema,
+  ConversationViewSchema,
   type ConsultationAction,
   type ConversationView,
   type MessageView,
@@ -166,6 +167,23 @@ export function Consultation({
     setHumanEngaged(true);
     setHandoff(result.handoff);
   }
+  async function refreshAfterConfirmation(): Promise<void> {
+    try {
+      const response = await fetch('/api/conversations');
+      if (response.status === 401) return onUnauthorized();
+      if (!response.ok) throw new Error();
+      const rows: unknown = await response.json();
+      if (!Array.isArray(rows)) throw new Error();
+      const updated = rows
+        .map((row: unknown) => ConversationViewSchema.parse(row))
+        .find((row) => row.id === conversationId);
+      if (!updated) throw new Error();
+      setHumanEngaged(updated.state === 'waiting_for_analyst' || updated.state === 'with_analyst');
+      setHandoff(updated.handoff);
+    } catch {
+      setError('Chamado confirmado. Recarregue a conversa para verificar o encaminhamento.');
+    }
+  }
   function submit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     void send(content);
@@ -314,7 +332,11 @@ export function Consultation({
               </>
             )}
             {message.decision?.draftId && (
-              <DraftCard draftId={message.decision.draftId} onUnauthorized={onUnauthorized} />
+              <DraftCard
+                draftId={message.decision.draftId}
+                onUnauthorized={onUnauthorized}
+                onCommitted={() => void refreshAfterConfirmation()}
+              />
             )}
           </article>
         ))}
@@ -332,7 +354,12 @@ export function Consultation({
         {pendingDrafts
           .filter((id) => !messages.some((message) => message.decision?.draftId === id))
           .map((id) => (
-            <DraftCard key={id} draftId={id} onUnauthorized={onUnauthorized} />
+            <DraftCard
+              key={id}
+              draftId={id}
+              onUnauthorized={onUnauthorized}
+              onCommitted={() => void refreshAfterConfirmation()}
+            />
           ))}
       </div>
       {error && <p role="alert">{error}</p>}

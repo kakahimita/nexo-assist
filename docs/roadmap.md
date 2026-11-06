@@ -1,5 +1,7 @@
 # Delivery roadmap
 
+The [#52 correction](autonomous-resolution-verification.md) addresses the transition from autonomous troubleshooting to confirmed tickets and human continuation across #6/#7/#10. Its evidence and remaining live-model limits are tracked separately from prototype fidelity.
+
 Parent: [#1](https://github.com/kakahimita/nexo-assist/issues/1).
 Repository documentation: [#2](https://github.com/kakahimita/nexo-assist/issues/2).
 Foundation #3 was merged in PR #14; the identity and conversation-history

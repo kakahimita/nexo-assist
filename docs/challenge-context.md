@@ -139,3 +139,5 @@ handoff, claim and close; the V03 card shows the number, status, description and
 deadline. The PRD Annex B status list is illustrative, so the transition table is
 a documented project convention; a denied request is `resolved`, and one
 conversation links at most one ticket. See the same verification documents.
+
+The autonomous-resolution correction for [#52](https://github.com/kakahimita/nexo-assist/issues/52) makes knowledge-backed troubleshooting precede proactive confirmed ticket preparation and analyst continuation. Its source comparison, reproduced runtime mismatch, deterministic checks, sampled live evidence and limits are recorded in [autonomous resolution verification](autonomous-resolution-verification.md). Broader live reliability remains a separate acceptance gate.

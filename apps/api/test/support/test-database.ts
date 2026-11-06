@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -30,9 +30,12 @@ export async function migrateDatabase(databaseUrl: string): Promise<void> {
 
 export async function createMigratedTestDatabase(): Promise<TestDatabase> {
   const directory = await mkdtemp(join(tmpdir(), 'nexo database with spaces-'));
-  const url = toFileUrl(join(directory, 'nexo test.db'));
+  const databasePath = join(directory, 'nexo test.db');
+  const url = toFileUrl(databasePath);
 
   try {
+    // Prisma's Windows schema engine requires the SQLite file to exist.
+    await writeFile(databasePath, '');
     await migrateDatabase(url);
   } catch (error) {
     await rm(directory, { recursive: true, force: true });

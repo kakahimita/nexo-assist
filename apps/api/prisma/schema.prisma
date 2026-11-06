@@ -127,6 +127,8 @@ model DraftProposalRun {
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   draftId String @unique
   draft TicketDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  requiresAnalyst Boolean @default(false)
+  handoffCompleted Boolean @default(false)
   @@index([ownerId, conversationId])
 }
 
