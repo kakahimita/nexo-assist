@@ -76,7 +76,7 @@ export function createMastraConsultation(tools: ConsultationTools): Consultation
       };
       let configuration;
       try {
-        configuration = parseModelEnvironment(process.env);
+        configuration = parseModelEnvironment(process.env, request.modelApiKey);
       } catch {
         throw new Error('model_unavailable');
       }

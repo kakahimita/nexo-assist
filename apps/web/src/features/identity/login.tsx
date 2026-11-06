@@ -9,6 +9,9 @@ export function Login(): React.JSX.Element {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [sessionError, setSessionError] = useState(false);
+  const [modelKeyStatus, setModelKeyStatus] = useState<'idle' | 'saving' | 'configured' | 'error'>(
+    'idle',
+  );
   const checkSession = useCallback(async () => {
     setLoading(true);
     setSessionError(false);
@@ -40,6 +43,24 @@ export function Login(): React.JSX.Element {
       setUser(UserViewSchema.parse(await response.json()));
     } catch {
       setError('Não foi possível entrar. Confira os dados ou tente novamente.');
+    }
+  }
+  async function configureModelKey(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setModelKeyStatus('saving');
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    try {
+      const response = await fetch('/api/session/model-key', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ modelApiKey: data.get('modelApiKey') }),
+      });
+      if (!response.ok) throw new Error();
+      form.reset();
+      setModelKeyStatus('configured');
+    } catch {
+      setModelKeyStatus('error');
     }
   }
   if (loading)
@@ -215,6 +236,55 @@ export function Login(): React.JSX.Element {
                 Recuperação de senha e a opção de manter conectado ainda não estão disponíveis.
               </p>
             </div>
+          </form>
+          <form className="demo-model-key" onSubmit={configureModelKey}>
+            <div className="demo-model-key-heading">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="m12 2 1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7L12 2Z" />
+              </svg>
+              <div>
+                <h3>Configurar Gemini para esta demonstração</h3>
+                <p>Opcional — sua chave será usada somente nesta sessão.</p>
+              </div>
+            </div>
+            <label htmlFor="model-api-key">Chave de API do Gemini</label>
+            <div className="input-wrap">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+              >
+                <rect x="4.5" y="10" width="15" height="11" rx="2" />
+                <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+              </svg>
+              <input
+                id="model-api-key"
+                name="modelApiKey"
+                type="password"
+                autoComplete="off"
+                placeholder="Cole sua chave"
+                maxLength={512}
+                required
+              />
+            </div>
+            <button type="submit" disabled={modelKeyStatus === 'saving'}>
+              {modelKeyStatus === 'saving' ? 'Configurando...' : 'Usar chave nesta sessão'}
+            </button>
+            {modelKeyStatus === 'configured' && (
+              <p className="demo-model-key-status" role="status">
+                Chave configurada para esta sessão.
+              </p>
+            )}
+            {modelKeyStatus === 'error' && (
+              <p className="demo-model-key-error" role="alert">
+                Não foi possível configurar a chave. Tente novamente.
+              </p>
+            )}
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">
+              Saiba como criar uma chave <span aria-hidden="true">↗</span>
+            </a>
           </form>
         </div>
         <div className="login-footer">

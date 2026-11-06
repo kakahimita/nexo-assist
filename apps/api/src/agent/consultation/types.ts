@@ -15,6 +15,7 @@ export type ConsultationRequest = {
   conversationId?: string;
   runId?: string;
   flow?: ConversationFlow;
+  modelApiKey?: string;
 };
 
 export type ConsultationEngineEvent =

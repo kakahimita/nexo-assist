@@ -11,7 +11,8 @@ import {
 } from '@nestjs/common';
 import { MessageInputSchema } from '@nexo/contracts';
 import type { ServerResponse } from 'node:http';
-import { IdentityGuard, type AuthRequest } from '../identity/identity.guard.js';
+import { IdentityGuard, sessionToken, type AuthRequest } from '../identity/identity.guard.js';
+import { SessionModelKeyStore } from '../identity/session-model-key.store.js';
 import { ConversationsService } from '../conversations/conversations.service.js';
 import { ConsultationService } from './consultation.service.js';
 import { encodeSse } from './sse.js';
@@ -22,6 +23,7 @@ export class ConsultationController {
   constructor(
     @Inject(ConversationsService) private readonly conversations: ConversationsService,
     @Inject(ConsultationService) private readonly consultation: ConsultationService,
+    @Inject(SessionModelKeyStore) private readonly modelKeys: SessionModelKeyStore,
   ) {}
   @Post(':id/messages/stream')
   async stream(
@@ -57,6 +59,7 @@ export class ConsultationController {
         abort.signal,
         randomUUID(),
         stateVersion,
+        this.modelKeys.read(sessionToken(request.headers.cookie)),
       )) {
         if (!response.destroyed) response.write(encodeSse(event));
       }

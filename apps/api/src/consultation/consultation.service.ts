@@ -57,6 +57,7 @@ export class ConsultationService {
     signal: AbortSignal,
     runId: string,
     stateVersion: number,
+    modelApiKey?: string,
   ): AsyncIterable<ConsultationStreamEvent> {
     yield { type: 'user-message', message };
     const turn = new ConsultationTurn();
@@ -79,6 +80,7 @@ export class ConsultationService {
         conversationId,
         runId,
         flow,
+        ...(modelApiKey === undefined ? {} : { modelApiKey }),
       })) {
         if (signal.aborted) throw new Error('interrupted');
         if (event.type === 'handoff') {

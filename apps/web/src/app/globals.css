@@ -443,6 +443,68 @@ button:focus-visible {
 .login-demo p + p {
   margin-top: 6px;
 }
+.demo-model-key {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #b9d9f8;
+  border-radius: 12px;
+  background: #f3f8fd;
+}
+.demo-model-key-heading {
+  display: flex;
+  gap: 10px;
+}
+.demo-model-key-heading > svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  color: #0062c4;
+  stroke-width: 1.8;
+}
+.demo-model-key h3,
+.demo-model-key p {
+  margin: 0;
+}
+.demo-model-key h3 {
+  color: #1b2431;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.demo-model-key-heading p {
+  margin-top: 2px;
+  color: #52606d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.demo-model-key > label {
+  margin: 2px 0 -3px;
+  color: #1b2431;
+  font-size: 13px;
+  font-weight: 600;
+}
+.demo-model-key button {
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: #0062c4;
+  font-size: 13px;
+}
+.demo-model-key a {
+  justify-self: center;
+  color: #0062c4;
+  font-size: 12px;
+  font-weight: 600;
+}
+.demo-model-key-status {
+  color: #0f6b42;
+  font-size: 12px;
+}
+.demo-model-key-error {
+  color: #a61b1b;
+  font-size: 12px;
+}
 .login-footer {
   display: flex;
   justify-content: space-between;
