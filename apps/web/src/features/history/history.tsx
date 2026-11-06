@@ -68,7 +68,6 @@ export function History({
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), AVAILABILITY_TIMEOUT_MS);
 
-    setAvailability('loading');
     void fetchApiReadiness(getApiBaseUrl(), controller.signal)
       .then(() => {
         if (active) setAvailability('ready');
@@ -276,7 +275,10 @@ export function History({
                 <span>Assistente indisponível</span>
                 <button
                   type="button"
-                  onClick={() => setAvailabilityAttempt((attempt) => attempt + 1)}
+                  onClick={() => {
+                    setAvailability('loading');
+                    setAvailabilityAttempt((attempt) => attempt + 1);
+                  }}
                 >
                   Tentar novamente
                 </button>
