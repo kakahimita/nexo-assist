@@ -141,3 +141,5 @@ a documented project convention; a denied request is `resolved`, and one
 conversation links at most one ticket. See the same verification documents.
 
 The autonomous-resolution correction for [#52](https://github.com/kakahimita/nexo-assist/issues/52) makes knowledge-backed troubleshooting precede proactive confirmed ticket preparation and analyst continuation. Its source comparison, reproduced runtime mismatch, deterministic checks, sampled live evidence and limits are recorded in [autonomous resolution verification](autonomous-resolution-verification.md). Broader live reliability remains a separate acceptance gate.
+
+The handoff summary follow-up for [#54](https://github.com/kakahimita/nexo-assist/issues/54) (part of #9) gives the analyst card a fixed collapsed height with `Ver mais`/`Ver menos`, keyboard support and honest overflow detection. Its design note, executed checks and captures are recorded in [human support verification](human-support-verification.md). Visual acceptance and live-model reliability remain open.
