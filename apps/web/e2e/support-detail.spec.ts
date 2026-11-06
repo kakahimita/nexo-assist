@@ -693,7 +693,7 @@ test('B11 V05: expands and collapses a long handoff summary', async ({ page }) =
   await expect(more).toHaveAttribute('aria-expanded', 'false');
   await expect(summary).toHaveAttribute('data-expanded', 'false');
   const collapsed = await summary.boundingBox();
-  expect(collapsed?.height ?? 0).toBeLessThanOrEqual(201);
+  expect(collapsed?.height ?? 0).toBeLessThanOrEqual(101);
 
   await more.focus();
   await page.keyboard.press('Enter');
@@ -713,7 +713,7 @@ test('B11 V05: expands and collapses a long handoff summary', async ({ page }) =
   await expect(moreAgain).toHaveAttribute('aria-expanded', 'false');
   await expect(summary).toHaveAttribute('data-expanded', 'false');
   const recollapsed = await summary.boundingBox();
-  expect(recollapsed?.height ?? 0).toBeLessThanOrEqual(201);
+  expect(recollapsed?.height ?? 0).toBeLessThanOrEqual(101);
   await expect(card.locator('time')).toBeVisible();
 });
 

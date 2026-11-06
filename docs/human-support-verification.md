@@ -183,7 +183,7 @@ The ticket context panel groups the conversation's linked ticket under **Desta c
 
 ## Handoff summary expand and collapse (#54)
 
-The V05 handoff card keeps a 200 px collapsed summary area. When the summary
+The V05 handoff card keeps a 100 px collapsed summary area. When the summary
 overflows, a `Ver mais` button next to `Solicitada em` expands the card to the
 full text (with a `min(60vh, 480px)` safety cap and its own scroll); `Ver menos`
 restores the collapsed height. Summaries shorter than the cap keep their natural
@@ -200,7 +200,7 @@ label and `aria-expanded`, keyboard activation, expansion without overlapping th
 message area, and the return to the collapsed height; the existing V05 case
 asserts that a short summary shows no control. Captures from the owner instance
 on port 3100: `outputs/handoff-before.png`, `outputs/handoff-collapsed.png` and
-`outputs/handoff-expanded.png` (before 478 px card; after 200 px collapsed and
+`outputs/handoff-expanded.png` (before 478 px card; after 100 px collapsed and
 380 px expanded for the same summary). No model key was used and
 `npm run smoke:model` was not run.
 

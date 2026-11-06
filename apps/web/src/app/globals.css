@@ -1948,7 +1948,7 @@ button:disabled {
   line-height: 20px;
 }
 .support-handoff-summary {
-  max-height: 200px;
+  max-height: 100px;
   overflow: hidden;
 }
 .support-handoff-summary p {

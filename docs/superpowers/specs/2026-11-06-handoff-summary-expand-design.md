@@ -44,7 +44,7 @@ analyst reveal or hide the rest of the summary.
 
 ## Decisions made with the owner
 
-- The collapsed height is about ten lines (`200px` at the current 13.5 px/20 px
+- The collapsed height is about five lines (`100px` at the current 13.5 px/20 px
   type) and is one CSS value, easy to tune during review.
 - The label is `Ver mais` / `Ver menos`, matching the frame.
 - The toggle sits in the bottom row next to `Solicitada em`, so heading, reason
