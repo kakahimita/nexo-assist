@@ -99,9 +99,9 @@ describe('B17: browser health client', () => {
   it('B17: returns the readiness contract from the ready endpoint', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        jsonResponse({ status: 'ok', service: 'nexo-api', database: 'ready' }),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(jsonResponse({ status: 'ok', service: 'nexo-api', database: 'ready' })),
     );
 
     await expect(fetchApiReadiness(baseUrl)).resolves.toEqual({
@@ -114,9 +114,14 @@ describe('B17: browser health client', () => {
   it('B17: rejects an unavailable readiness response with code http', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        jsonResponse({ status: 'unavailable', service: 'nexo-api', database: 'unavailable' }, 503),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(
+            { status: 'unavailable', service: 'nexo-api', database: 'unavailable' },
+            503,
+          ),
+        ),
     );
 
     await expect(fetchApiReadiness(baseUrl)).rejects.toMatchObject({ code: 'http' });

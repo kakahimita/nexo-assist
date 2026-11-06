@@ -10,6 +10,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Tickets } from '../tickets/tickets';
 import { Consultation } from '../consultation/consultation';
 import { Support } from '../support/support';
+import { fetchApiReadiness, getApiBaseUrl } from '../system-status/api';
+import { getEmployeeInitials } from './employee-initials';
+
+const AVAILABILITY_TIMEOUT_MS = 5_000;
 
 export function History({
   user,
@@ -25,6 +29,8 @@ export function History({
   const [busy, setBusy] = useState(false);
   const [ticketsVersion, setTicketsVersion] = useState(0);
   const [page, setPage] = useState<'support' | 'profile'>('support');
+  const [availability, setAvailability] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
   const busyRef = useRef(false);
   const selectionVersion = useRef(0);
   const call = useCallback(
@@ -51,6 +57,31 @@ export function History({
   useEffect(() => {
     if (user.role === 'employee') void Promise.resolve().then(load);
   }, [load, user.role]);
+  useEffect(() => {
+    if (user.role !== 'employee') return;
+
+    let active = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), AVAILABILITY_TIMEOUT_MS);
+
+    setAvailability('loading');
+    void fetchApiReadiness(getApiBaseUrl(), controller.signal)
+      .then(() => {
+        if (active) setAvailability('ready');
+      })
+      .catch(() => {
+        if (active) setAvailability('unavailable');
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+      });
+
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [availabilityAttempt, user.role]);
   async function choose(id: string) {
     const version = ++selectionVersion.current;
     try {
@@ -155,6 +186,9 @@ export function History({
           </button>
         </nav>
         <div className="employee-account">
+          <span aria-hidden="true" className="employee-avatar">
+            {getEmployeeInitials(user.name)}
+          </span>
           <p>
             <strong>{user.name}</strong>
             <span>{user.email}</span>
@@ -169,6 +203,25 @@ export function History({
           <span>Service desk de TI</span>
           <span aria-hidden="true">›</span>
           <strong>{page === 'support' ? 'Atendimento' : 'Meu perfil'}</strong>
+          <div
+            className={`employee-availability employee-availability-${availability}`}
+            role="status"
+          >
+            <span aria-hidden="true" className="employee-availability-dot" />
+            {availability === 'loading' && <span>Verificando disponibilidade</span>}
+            {availability === 'ready' && <span>Assistente online</span>}
+            {availability === 'unavailable' && (
+              <>
+                <span>Assistente indisponível</span>
+                <button
+                  type="button"
+                  onClick={() => setAvailabilityAttempt((attempt) => attempt + 1)}
+                >
+                  Tentar novamente
+                </button>
+              </>
+            )}
+          </div>
         </header>
         <div className="employee-content">
           {error && <p role="alert">{error}</p>}
