@@ -1,5 +1,5 @@
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -9,6 +9,7 @@ import { startFreshConversation } from './employee-chat';
 
 test('B13: browser history survives restarting the API process', async ({ page, baseURL }) => {
   const directory = await mkdtemp(join(tmpdir(), 'nexo-browser-restart-'));
+  await writeFile(join(directory, 'test.db'), '');
   const databaseUrl = `file:${join(directory, 'test.db').replaceAll('\\', '/')}`;
   const exec = promisify(execFile);
   const env = { ...process.env, DATABASE_URL: databaseUrl };

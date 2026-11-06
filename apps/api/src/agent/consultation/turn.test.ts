@@ -30,6 +30,25 @@ const decision = {
   quickReplies: [],
 };
 describe('B12: decisions use actual tool results', () => {
+  it('keeps confirmation and cancellation in the real draft controls', () => {
+    const turn = new ConsultationTurn();
+    turn.apply({
+      type: 'decision',
+      decision: {
+        ...decision,
+        quickReplies: ['Confirmar chamado', 'Cancelar rascunho', 'Editar chamado', 'Windows 11'],
+      },
+    });
+    expect(turn.snapshot().decision.quickReplies).toEqual(['Windows 11']);
+  });
+  it('uses the structured reply as the visible answer for live evaluation', () => {
+    const turn = new ConsultationTurn();
+    turn.apply({
+      type: 'decision',
+      decision: { ...decision, reply: 'Verifique os cabos. Resolveu?' },
+    });
+    expect(turn.snapshot().text).toBe('Verifique os cabos. Resolveu?');
+  });
   it('exposes a draft reference only for a successful validated proposal result', () => {
     const turn = new ConsultationTurn();
     turn.apply({

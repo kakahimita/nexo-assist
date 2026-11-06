@@ -84,7 +84,13 @@ export class ConsultationTools {
           .trim();
         return text.length > 0 && parts.some((part) => part.includes(text));
       };
-      if (!supported(proposal.title) || !supported(proposal.description))
+      if (
+        !supported(proposal.title) ||
+        !proposal.description
+          .split('\n')
+          .filter((line) => line.trim())
+          .every(supported)
+      )
         throw new BadRequestException('Title and description must be supported by the employee');
       change = {
         action: 'create',
@@ -97,7 +103,10 @@ export class ConsultationTools {
         urgency: facts.urgency,
       };
     } else {
-      change = proposal;
+      change =
+        proposal.action === 'supplement'
+          ? { action: proposal.action, ticketId: proposal.ticketId, content: proposal.content }
+          : { action: proposal.action, ticketId: proposal.ticketId, reason: proposal.reason };
     }
     const owned = await this.tickets.list(user, context.now);
     if (change.action === 'create') {
@@ -181,7 +190,10 @@ export class ConsultationTools {
           });
       }
     }
-    const draft = await this.drafts.createForRun(user, change, context);
+    const draft = await this.drafts.createForRun(user, change, {
+      ...context,
+      requiresAnalyst: proposal.requiresAnalyst === true,
+    });
     return ProposeTicketDraftResultSchema.parse({ status: 'draft', draftId: draft.id });
   }
   async consultTickets(user: UserView, input: unknown, now: Date) {

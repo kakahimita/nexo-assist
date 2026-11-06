@@ -39,4 +39,4 @@ export interface ConsultationEngine {
   run(request: ConsultationRequest): AsyncIterable<ConsultationEngineEvent>;
 }
 
-export const CONSULTATION_PROMPT_VERSION = 'consultation-v6';
+export const CONSULTATION_PROMPT_VERSION = 'consultation-v7';

@@ -4,6 +4,41 @@ import { createFixtureConsultation } from './fixture-consultation.js';
 import type { ConsultationEngineEvent } from './types.js';
 
 describe('fixture consultation routing', () => {
+  it('offers applicable monitor guidance rather than ticket consultation for a natural report', async () => {
+    const engine = createFixtureConsultation({
+      consultTickets: async () => {
+        throw new Error('Unexpected ticket consultation');
+      },
+      searchKnowledge: async () => ({
+        platform: 'unknown',
+        matches: [
+          {
+            id: 'kb-monitor-not-detected',
+            title: 'Monitor não detectado',
+            summary: '',
+            body: 'Verifique os cabos e a entrada selecionada no monitor.',
+            platform: 'any',
+            applicability: 'applicable',
+            reason: 'Compatível',
+          },
+        ],
+      }),
+    } as unknown as ConsultationTools);
+    const events = [];
+    for await (const event of engine.run({
+      user: { id: 'bruno', email: 'bruno@nexo.com.br', name: 'Bruno', role: 'employee' },
+      messages: [{ role: 'employee', content: 'Meu monitor está sem imagem' }],
+      signal: new AbortController().signal,
+      now: new Date(),
+    }))
+      events.push(event);
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: 'decision',
+        decision: expect.objectContaining({ quickReplies: ['Resolveu', 'Não resolveu'] }),
+      }),
+    );
+  });
   it('clarifies a generic VPN problem without consulting tickets', async () => {
     const engine = createFixtureConsultation({
       consultTickets: async () => {

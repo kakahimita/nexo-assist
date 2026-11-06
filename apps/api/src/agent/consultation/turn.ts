@@ -139,7 +139,7 @@ export class ConsultationTurn {
         }
       : this.decision;
     return {
-      text: this.text,
+      text: decision.reply?.trim() || this.text,
       actions: [...this.actions],
       evidence: [...this.evidence],
       tickets: [...this.tickets],

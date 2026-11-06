@@ -95,6 +95,7 @@ export class ConversationsService {
     conversationId: string,
     reason: HandoffReason,
     contextTicketId: string | null = null,
+    confirmedDraftId?: string,
   ): Promise<ConversationView> {
     this.employee(user);
     return this.database.client.$transaction(async (tx) => {
@@ -102,12 +103,41 @@ export class ConversationsService {
         where: { id: conversationId, ownerId: user.id },
       });
       if (!conversation) throw new NotFoundException();
+      if (confirmedDraftId) {
+        const proposal = await tx.draftProposalRun.findFirst({
+          where: {
+            draftId: confirmedDraftId,
+            ownerId: user.id,
+            conversationId,
+            requiresAnalyst: true,
+            draft: { status: 'committed' },
+          },
+        });
+        if (!proposal) throw new NotFoundException();
+        if (proposal.handoffCompleted) return this.conversationView(conversation);
+        await tx.draftProposalRun.update({
+          where: { id: proposal.id },
+          data: { handoffCompleted: true },
+        });
+        if (conversation.state !== 'agent') return this.conversationView(conversation);
+      }
       const latest = await tx.message.findFirst({
         where: { conversationId },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: { content: true },
       });
       const active = ['open', 'waiting_for_analyst', 'in_progress'];
+      const first = await tx.message.findFirst({
+        where: { conversationId, role: 'employee' },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: { content: true },
+      });
+      const recent = await tx.message.findMany({
+        where: { conversationId, status: 'completed' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 8,
+        select: { role: true, content: true },
+      });
       const openTicketCount = await tx.ticket.count({
         where: { ownerId: user.id, status: { in: active } },
       });
@@ -130,6 +160,14 @@ export class ConversationsService {
         });
       }
       const requestedAt = new Date();
+      if (
+        ticketId &&
+        !(await tx.ticket.findFirst({
+          where: { id: ticketId, ownerId: user.id },
+          select: { id: true },
+        }))
+      )
+        throw new NotFoundException();
       const updated = await tx.conversation.updateMany({
         where: {
           id: conversationId,
@@ -147,6 +185,8 @@ export class ConversationsService {
             reason,
             latestMessage: latest?.content,
             openTicketCount,
+            initialMessage: first?.content,
+            recentMessages: recent.reverse(),
           }),
           handoffRequestedAt: requestedAt,
         },

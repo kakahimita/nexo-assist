@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { restoreConversationFlow, transitionConversationFlow } from './conversation-flow.js';
 
 describe('transitionConversationFlow', () => {
+  it('does not turn a denied same-day commitment into urgency', () => {
+    expect(
+      transitionConversationFlow(
+        { mode: 'support', stage: 'diagnosis', facts: { subject: 'VPN' } },
+        'Não tenho compromisso em risco hoje',
+      ).facts.urgency,
+    ).toBe('normal');
+  });
   it('keeps short diagnostic replies in the active support case', () => {
     const started = transitionConversationFlow(
       { mode: 'none', stage: 'idle', facts: {} },

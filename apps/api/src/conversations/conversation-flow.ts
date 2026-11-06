@@ -1,4 +1,5 @@
 import { EmptyConversationFlow, type ConversationFlow } from '@nexo/contracts';
+import { explicitAnswerFacts } from '../agent/tools/explicit-facts.js';
 
 function normalized(value: string): string {
   return value
@@ -33,10 +34,10 @@ function extractedFacts(message: string): Record<string, string> {
   if (platform) facts.platform = `Windows ${platform}`;
   const error = /\b(?:erro|codigo)\s*(?:de\s*)?(\d{3,6})\b/.exec(value)?.[1];
   if (error) facts.errorCode = error;
-  if (/\b(?:so eu|somente eu)\b/.test(value)) facts.impact = 'one_person';
-  if (/\b(?:equipe|time)\b/.test(value)) facts.impact = 'team';
-  if (/\b(?:empresa|todos)\b/.test(value)) facts.impact = 'company';
-  if (/\b(?:hoje|reuniao|prazo)\b/.test(value)) facts.urgency = 'same_day';
+  const explicit = explicitAnswerFacts([message]);
+  if (explicit.impact) facts.impact = explicit.impact === 'self' ? 'one_person' : explicit.impact;
+  if (explicit.workState) facts.workState = explicit.workState;
+  if (explicit.urgency) facts.urgency = explicit.urgency;
   return facts;
 }
 
