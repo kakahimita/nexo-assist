@@ -111,6 +111,16 @@ describe('B17: browser health client', () => {
     });
   });
 
+  it('B17: requests readiness through the relative web proxy base', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ status: 'ok', service: 'nexo-api', database: 'ready' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchApiReadiness('/api')).resolves.toMatchObject({ database: 'ready' });
+    expect(fetchMock).toHaveBeenCalledWith('/api/ready', expect.anything());
+  });
+
   it('B17: rejects an unavailable readiness response with code http', async () => {
     vi.stubGlobal(
       'fetch',

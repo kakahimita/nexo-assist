@@ -64,7 +64,7 @@ export async function fetchApiReadiness(
 ): Promise<ReadinessResponse> {
   const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
 
-  if (!/^https?:\/\//i.test(normalizedBaseUrl)) {
+  if (!/^(https?:\/\/|\/)/i.test(normalizedBaseUrl)) {
     throw new ApiHealthError('network');
   }
 

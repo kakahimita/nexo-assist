@@ -8,6 +8,18 @@ async function signInAsAna(page: import('@playwright/test').Page): Promise<void>
   await page.getByRole('button', { name: 'Entrar' }).click();
 }
 
+test('V03: availability reaches the real readiness endpoint through the web proxy', async ({
+  page,
+}) => {
+  const readyResponse = page.waitForResponse('**/api/ready');
+  await signInAsAna(page);
+
+  expect((await readyResponse).ok()).toBe(true);
+  await expect(page.getByRole('status').filter({ hasText: 'Assistente online' })).toBeVisible({
+    timeout: 15_000,
+  });
+});
+
 test('V03/V06: signed-in employee shows initials and ready assistant availability', async ({
   page,
 }) => {
@@ -21,7 +33,7 @@ test('V03/V06: signed-in employee shows initials and ready assistant availabilit
   await signInAsAna(page);
 
   await expect(page.locator('.employee-avatar')).toHaveText('AS');
-  await expect(page.getByRole('status', { name: 'Assistente online' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Assistente online' })).toBeVisible();
 });
 
 test('V03: employee top bar reports availability while readiness is pending', async ({ page }) => {
@@ -29,7 +41,7 @@ test('V03: employee top bar reports availability while readiness is pending', as
 
   await signInAsAna(page);
 
-  await expect(page.getByRole('status', { name: 'Verificando disponibilidade' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Verificando disponibilidade' })).toBeVisible();
 });
 
 test('V03: employee can retry after an unavailable assistant check', async ({ page }) => {
@@ -46,9 +58,9 @@ test('V03: employee can retry after an unavailable assistant check', async ({ pa
 
   await signInAsAna(page);
 
-  await expect(page.getByRole('status', { name: 'Assistente indisponível' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Assistente indisponível' })).toBeVisible();
   await page.getByRole('button', { name: 'Tentar novamente' }).click();
-  await expect(page.getByRole('status', { name: 'Assistente online' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Assistente online' })).toBeVisible();
 });
 
 test('V03/V06: employee avatar and availability do not overflow a narrow screen', async ({
@@ -65,7 +77,7 @@ test('V03/V06: employee avatar and availability do not overflow a narrow screen'
   await signInAsAna(page);
 
   await expect(page.locator('.employee-avatar')).toBeVisible();
-  await expect(page.getByRole('status', { name: 'Assistente online' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Assistente online' })).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(
