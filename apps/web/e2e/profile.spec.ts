@@ -50,6 +50,30 @@ test('V03: employee can retry after an unavailable assistant check', async ({ pa
   await expect(page.getByRole('status', { name: 'Assistente online' })).toBeVisible();
 });
 
+test('V03/V06: employee avatar and availability do not overflow a narrow screen', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.route('**/api/ready', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'ok', service: 'nexo-api', database: 'ready' }),
+    }),
+  );
+
+  await signInAsAna(page);
+
+  await expect(page.locator('.employee-avatar')).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Assistente online' })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    )
+    .toBe(true);
+});
+
 test('V06: profile displays the signed-in employee and preserves the conversation', async ({
   page,
 }) => {

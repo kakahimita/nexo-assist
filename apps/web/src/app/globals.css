@@ -659,7 +659,8 @@ textarea {
     margin: 0;
   }
   .employee-topbar {
-    padding: 0 20px;
+    flex-wrap: wrap;
+    padding: 10px 20px;
   }
   .employee-content {
     padding: 20px;
