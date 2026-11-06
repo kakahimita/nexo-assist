@@ -1,5 +1,5 @@
-import { HealthResponseSchema } from '@nexo/contracts';
-import type { HealthResponse } from '@nexo/contracts';
+import { HealthResponseSchema, ReadinessResponseSchema } from '@nexo/contracts';
+import type { HealthResponse, ReadinessResponse } from '@nexo/contracts';
 
 export type ApiHealthErrorCode = 'network' | 'http' | 'invalid-response';
 
@@ -50,6 +50,45 @@ export async function fetchApiHealth(
   }
 
   const result = HealthResponseSchema.safeParse(payload);
+
+  if (!result.success) {
+    throw new ApiHealthError('invalid-response');
+  }
+
+  return result.data;
+}
+
+export async function fetchApiReadiness(
+  baseUrl: string,
+  signal?: AbortSignal,
+): Promise<ReadinessResponse> {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+
+  if (!/^https?:\/\//i.test(normalizedBaseUrl)) {
+    throw new ApiHealthError('network');
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${normalizedBaseUrl}/ready`, signal === undefined ? {} : { signal });
+  } catch {
+    throw new ApiHealthError('network');
+  }
+
+  if (!response.ok) {
+    throw new ApiHealthError('http');
+  }
+
+  let payload: unknown;
+
+  try {
+    payload = await response.json();
+  } catch {
+    throw new ApiHealthError('invalid-response');
+  }
+
+  const result = ReadinessResponseSchema.safeParse(payload);
 
   if (!result.success) {
     throw new ApiHealthError('invalid-response');
