@@ -1,5 +1,9 @@
 # Challenge acceptance and test matrix
 
+The [#62 natural support interpretation](natural-support-verification.md) tracks
+semantic proposal provenance and the separate real-model conversational gate for
+B02/B04/B07/B09–B16. Deterministic success is not live conversational acceptance.
+
 The [#60 login viewport refinement](login-viewport-verification.md) records bounded
 desktop no-scroll checks and continued narrow-screen access for V01.
 

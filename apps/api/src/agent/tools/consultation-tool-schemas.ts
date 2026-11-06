@@ -1,5 +1,6 @@
 ﻿import { z } from 'zod';
 import { ConsultationTicketViewSchema, TicketViewSchema } from '@nexo/contracts';
+import { SupportInterpretationSchema } from './support-interpretation.js';
 const query = z.string().trim().min(1).max(400);
 const proposalText = z.string().trim().min(1).max(4000);
 const proposalId = z.string().trim().min(1).max(200);
@@ -30,14 +31,15 @@ export const SearchKnowledgeResultSchema = z.strictObject({
     }),
   ),
 });
-// The model proposes only a title and description; the server derives type,
-// category, impact, work state and urgency from the employee's explicit answers.
+// The internal deterministic adapter retains explicit-answer compatibility.
+// Live model proposals require evidenced semantic facts in ModelProposalInputSchema.
 export const ProposalInputSchema = z.discriminatedUnion('action', [
   z.strictObject({
     action: z.literal('create'),
     title: proposalText.max(200),
     description: proposalText,
     requiresAnalyst: z.boolean().optional(),
+    interpretation: SupportInterpretationSchema.optional(),
   }),
   z.strictObject({
     action: z.literal('supplement'),
@@ -51,6 +53,11 @@ export const ProposalInputSchema = z.discriminatedUnion('action', [
     reason: proposalText,
     requiresAnalyst: z.boolean().optional(),
   }),
+]);
+export const ModelProposalInputSchema = z.discriminatedUnion('action', [
+  ProposalInputSchema.options[0].extend({ interpretation: SupportInterpretationSchema }),
+  ProposalInputSchema.options[1],
+  ProposalInputSchema.options[2],
 ]);
 export const ProposeTicketDraftResultSchema = z.discriminatedUnion('status', [
   z.strictObject({ status: z.literal('draft'), draftId: z.string().min(1) }),

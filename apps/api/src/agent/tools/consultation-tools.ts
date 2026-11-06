@@ -14,6 +14,7 @@ import { canReopen, canSupplement, classifyPriority, isActiveStatus } from '../.
 import { DatabaseService } from '../../database/database.service.js';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { activeRequestMessages, deriveClassification, explicitFacts } from './explicit-facts.js';
+import { validateSupportInterpretation } from './support-interpretation.js';
 import {
   ConsultTicketsInputSchema,
   ConsultTicketsResultSchema,
@@ -39,7 +40,7 @@ export class ConsultationTools {
   async proposeDraft(
     user: UserView,
     input: unknown,
-    context: { conversationId: string; runId: string; now: Date },
+    context: { conversationId: string; runId: string; now: Date; messageIds?: readonly string[] },
   ) {
     if (!user) throw new UnauthorizedException();
     assertEmployee(user);
@@ -56,10 +57,13 @@ export class ConsultationTools {
       const messages = await this.database.client.message.findMany({
         where: { conversationId: context.conversationId, role: 'employee' },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-        select: { content: true },
+        select: { id: true, content: true },
       });
-      const source = messages.map(({ content }) => content);
-      const facts = explicitFacts(source);
+      const semantic = proposal.interpretation
+        ? validateSupportInterpretation(proposal.interpretation, messages, context.messageIds)
+        : null;
+      const source = semantic?.source ?? messages.map(({ content }) => content);
+      const facts = semantic ?? explicitFacts(source);
       if (!facts.impact || !facts.workState || !facts.urgency)
         throw new BadRequestException('Explicit impact, work state and urgency are required');
       if (
@@ -70,10 +74,10 @@ export class ConsultationTools {
         }) === 'critical'
       )
         return ProposeTicketDraftResultSchema.parse({ status: 'critical_requires_handoff' });
-      const classification = deriveClassification(source, facts.workState);
+      const classification = semantic ?? deriveClassification(source, facts.workState);
       if (!classification)
         throw new BadRequestException('Ticket type and category must be supported by the employee');
-      const parts = activeRequestMessages(source).map((message) =>
+      const parts = (semantic ? source : activeRequestMessages(source)).map((message) =>
         normalize(message)
           .replace(/[^\p{L}\p{N}]+/gu, ' ')
           .trim(),

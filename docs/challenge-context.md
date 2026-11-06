@@ -1,5 +1,9 @@
 # Challenge context
 
+The owner's #62 follow-up replaces live-agent phrase matching with evidenced
+semantic proposal facts and complete support examples. Quality and live-provider
+status are recorded in [natural support verification](natural-support-verification.md).
+
 The owner's #58 follow-up replaces illustrative login indicators with historical
 service aggregates and expiring analyst presence. This explicitly extends the
 prototype-only metrics scope; original reference figures remain examples, not

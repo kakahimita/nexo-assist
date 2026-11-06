@@ -123,7 +123,13 @@ async function main(): Promise<void> {
         user,
         conversationId: conversation.id,
         runId,
-        messages: messages.map((content) => ({ role: 'employee' as const, content })),
+        messages: (await conversations.messages(user, conversation.id)).map(
+          ({ id, role, content }) => ({
+            id,
+            role: role === 'agent' ? ('agent' as const) : ('employee' as const),
+            content,
+          }),
+        ),
         signal: AbortSignal.timeout(60000),
         now: new Date(),
       })) {
@@ -208,7 +214,13 @@ async function main(): Promise<void> {
           user,
           conversationId: itemConversation.id,
           runId: itemRun,
-          messages: scenario.messages.map((content) => ({ role: 'employee' as const, content })),
+          messages: (await conversations.messages(user, itemConversation.id)).map(
+            ({ id, role, content }) => ({
+              id,
+              role: role === 'agent' ? ('agent' as const) : ('employee' as const),
+              content,
+            }),
+          ),
           signal: AbortSignal.timeout(60000),
           now: new Date(),
         })) {

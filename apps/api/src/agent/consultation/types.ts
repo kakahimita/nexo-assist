@@ -9,7 +9,7 @@ export type ConsultationToolName = import('@nexo/contracts').ConsultationToolNam
 
 export type ConsultationRequest = {
   user: UserView;
-  messages: Array<{ role: 'employee' | 'agent'; content: string }>;
+  messages: Array<{ id?: string; role: 'employee' | 'agent'; content: string }>;
   signal: AbortSignal;
   now: Date;
   conversationId?: string;
@@ -39,4 +39,4 @@ export interface ConsultationEngine {
   run(request: ConsultationRequest): AsyncIterable<ConsultationEngineEvent>;
 }
 
-export const CONSULTATION_PROMPT_VERSION = 'consultation-v7';
+export const CONSULTATION_PROMPT_VERSION = 'consultation-v8';

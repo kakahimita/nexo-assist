@@ -2,6 +2,7 @@ import type { ConsultationEngineDecision } from '@nexo/contracts';
 import { explicitFacts } from '../tools/explicit-facts.js';
 import type { ConsultationTools } from '../tools/consultation-tools.js';
 import type { ConsultationEngineEvent, ConsultationRequest } from './types.js';
+import { fixtureNaturalProposal, NATURAL_SUPPORT_REPORT } from './fixture-natural-proposal.js';
 
 // Controlled monitor scenario for CI. It does not stand in for live-model evaluation.
 export async function* fixtureMonitorResolution(
@@ -33,6 +34,31 @@ export async function* fixtureMonitorResolution(
     reply = `${article.body} Isso resolveu?`;
     quickReplies = ['Resolveu', 'Não resolveu'];
   } else {
+    if (employee.includes(NATURAL_SUPPORT_REPORT)) {
+      const result = await fixtureNaturalProposal(tools, request);
+      yield {
+        type: 'tool-result',
+        toolCallId: 'natural-support-draft',
+        tool: 'propose-ticket-draft',
+        result,
+      };
+      yield {
+        type: 'decision',
+        decision: {
+          intent: 'Suporte ao monitor',
+          action: 'answer',
+          appliedRule: 'Fatos semânticos com evidência',
+          confidence: 1,
+          justification: 'Cenário controlado, não avaliação do modelo.',
+          missingFacts: [],
+          quickReplies: [],
+          reply:
+            'Confira o rascunho. Após sua confirmação, o chamado seguirá para um atendente com o histórico.',
+        },
+      };
+      yield { type: 'finish' };
+      return;
+    }
     const facts = explicitFacts(employee);
     action = 'clarify';
     if (!facts.impact) {
