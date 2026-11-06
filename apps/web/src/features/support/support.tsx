@@ -20,9 +20,11 @@ function withoutDraft(drafts: Record<string, string>, id: string): Record<string
 export function Support({
   user,
   onLogout,
+  onQueueCountChange,
 }: {
   user: UserView;
   onLogout: () => void;
+  onQueueCountChange?: (count: number) => void;
 }): React.JSX.Element {
   const [filter, setFilter] = useState<SupportConversationFilter>('waiting');
   const [selectedId, setSelectedId] = useState('');
@@ -42,6 +44,10 @@ export function Support({
     error: queueError,
     reload: loadQueue,
   } = useSupportQueue(filter, onLogout);
+
+  useEffect(() => {
+    if (queueStatus === 'ready') onQueueCountChange?.(queue.length);
+  }, [onQueueCountChange, queue.length, queueStatus]);
 
   const call = useCallback(
     async (url: string, options?: RequestInit) => {

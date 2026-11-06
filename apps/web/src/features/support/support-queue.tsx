@@ -3,13 +3,16 @@
 import type { SupportConversationFilter, SupportConversationSummary } from '@nexo/contracts';
 import { useState } from 'react';
 
+import { getEmployeeInitials } from '../history/employee-initials';
+import { formatFullDateTime, formatQueueTime, supportAvatarTone } from './support-visuals';
+
 const filters: Array<{ value: SupportConversationFilter; label: string }> = [
   { value: 'all', label: 'Todas' },
   { value: 'waiting', label: 'Para você' },
   { value: 'owned', label: 'Minhas' },
 ];
 
-const stateLabels = {
+export const stateLabels = {
   agent: 'Com o agente',
   waiting_for_analyst: 'Aguardando atendente',
   with_analyst: 'Em atendimento',
@@ -53,16 +56,30 @@ export function SupportQueue({
         ),
       )
     : items;
+
   return (
     <section aria-label="Conversas" className="support-list">
-      <h2>Conversas</h2>
+      <header className="support-list-header">
+        <h2>Conversas</h2>
+      </header>
       <label className="support-search">
         <span className="visually-hidden">Pesquisar conversas</span>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
         <input
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Pesquisar conversa"
+          placeholder="Pesquisar conversa ou chamado"
         />
       </label>
       <nav aria-label="Filtros" className="support-filters">
@@ -80,7 +97,7 @@ export function SupportQueue({
       </nav>
       {status === 'loading' && <p role="status">Carregando conversas…</p>}
       {status === 'error' && (
-        <div role="alert">
+        <div role="alert" className="support-list-alert">
           <p>{error}</p>
           <button type="button" onClick={onRetry}>
             Tentar novamente
@@ -91,37 +108,51 @@ export function SupportQueue({
       {status === 'ready' && items.length > 0 && visibleItems.length === 0 && (
         <p>Nenhuma conversa encontrada.</p>
       )}
-      {status === 'ready' && (
+      {status === 'ready' && visibleItems.length > 0 && (
         <ul>
           {visibleItems.map((item) => (
             <li key={item.id}>
               <button
                 type="button"
+                className="support-queue-card"
                 data-conversation-id={item.id}
                 aria-current={selectedId === item.id ? 'true' : undefined}
                 disabled={busy}
                 onClick={() => onSelect(item.id)}
               >
-                <span aria-hidden="true" className="support-queue-initials">
-                  {item.employee.name.slice(0, 2).toUpperCase()}
+                <span
+                  aria-hidden="true"
+                  className={`support-queue-avatar support-tone-${supportAvatarTone(item.employee.name)}`}
+                >
+                  {getEmployeeInitials(item.employee.name)}
                 </span>
-                <strong className="support-queue-name">{item.employee.name}</strong>
-                <span className="support-queue-preview">
-                  {item.lastMessage?.content ?? 'Sem mensagens.'}
+                <span className="support-queue-content">
+                  <span className="support-queue-top">
+                    <strong className="support-queue-name">{item.employee.name}</strong>
+                    {item.lastMessage && (
+                      <time className="support-queue-time" dateTime={item.lastMessage.createdAt}>
+                        <span className="visually-hidden">
+                          {formatFullDateTime(item.lastMessage.createdAt)}
+                        </span>
+                        <span aria-hidden="true">
+                          {formatQueueTime(item.lastMessage.createdAt)}
+                        </span>
+                      </time>
+                    )}
+                  </span>
+                  <span className="support-queue-preview">
+                    {item.lastMessage?.content ?? 'Sem mensagens.'}
+                  </span>
+                  <span className="support-queue-status" data-state={item.state}>
+                    <span aria-hidden="true" className="support-queue-dot" />
+                    <span className="support-queue-state">{stateLabels[item.state]}</span>
+                    {item.handoff && (
+                      <span className="support-queue-reason">
+                        {reasonLabels[item.handoff.reason]}
+                      </span>
+                    )}
+                  </span>
                 </span>
-                <span className="support-queue-state">{stateLabels[item.state]}</span>
-                {item.handoff && (
-                  <span className="support-queue-reason">{reasonLabels[item.handoff.reason]}</span>
-                )}
-                {item.lastMessage && (
-                  <time className="support-queue-time" dateTime={item.lastMessage.createdAt}>
-                    {new Intl.DateTimeFormat('pt-BR', {
-                      dateStyle: 'short',
-                      timeStyle: 'short',
-                      timeZone: 'America/Sao_Paulo',
-                    }).format(new Date(item.lastMessage.createdAt))}
-                  </time>
-                )}
               </button>
             </li>
           ))}
