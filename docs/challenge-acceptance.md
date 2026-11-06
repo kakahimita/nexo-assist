@@ -1,5 +1,8 @@
 # Challenge acceptance and test matrix
 
+The [#60 login viewport refinement](login-viewport-verification.md) records bounded
+desktop no-scroll checks and continued narrow-screen access for V01.
+
 The owner's [#58 functional metrics extension](service-metrics-verification.md)
 adds measured V01 login indicators, explicit employee resolution confirmation and
 expiring analyst presence. These supersede the design's sample numbers without
