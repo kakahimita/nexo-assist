@@ -6,7 +6,9 @@ async function forward(
   const { path } = await context.params;
   const route = path.join('/');
   const health = request.method === 'GET' && route === 'health';
-  const existing = /^(session|conversations|conversations\/[a-z0-9]+\/messages)$/.test(route);
+  const existing = /^(session(?:\/model-key)?|conversations|conversations\/[a-z0-9]+\/messages)$/.test(
+    route,
+  );
   const consultationStream =
     request.method === 'POST' && /^conversations\/[a-z0-9]+\/messages\/stream$/.test(route);
   const handoff = request.method === 'POST' && /^conversations\/[a-z0-9]+\/handoff$/.test(route);
