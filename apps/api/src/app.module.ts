@@ -4,6 +4,7 @@ import type { DynamicModule } from '@nestjs/common';
 import type { ApiEnvironment } from './config/environment.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
+import { MetricsModule } from './metrics/metrics.module.js';
 import { IdentityModule } from './identity/identity.module.js';
 import { ConversationsModule } from './conversations/conversations.module.js';
 import { TicketsModule } from './tickets/tickets.module.js';
@@ -24,6 +25,7 @@ export class AppModule {
       imports: [
         DatabaseModule.register(environment.databaseUrl),
         HealthModule,
+        MetricsModule,
         IdentityModule.register(environment.webOrigin.startsWith('https://')),
         ConversationsModule,
         TicketsModule,

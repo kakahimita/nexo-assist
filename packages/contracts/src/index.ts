@@ -10,3 +10,4 @@ export * from './conversation-flow.js';
 export * from './ticket.js';
 export * from './consultation.js';
 export * from './support.js';
+export * from './metrics.js';

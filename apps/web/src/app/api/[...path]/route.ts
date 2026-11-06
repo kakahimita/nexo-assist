@@ -7,6 +7,10 @@ async function forward(
   const route = path.join('/');
   const health = request.method === 'GET' && route === 'health';
   const readiness = request.method === 'GET' && route === 'ready';
+  const metrics = request.method === 'GET' && route === 'metrics';
+  const presence = request.method === 'POST' && route === 'session/presence';
+  const resolution =
+    request.method === 'POST' && /^conversations\/[a-z0-9]+\/resolution$/.test(route);
   const existing =
     /^(session(?:\/model-key)?|conversations|conversations\/[a-z0-9]+\/messages)$/.test(route);
   const consultationStream =
@@ -38,7 +42,10 @@ async function forward(
     !supportRead &&
     !supportWrite &&
     !health &&
-    !readiness
+    !readiness &&
+    !metrics &&
+    !presence &&
+    !resolution
   )
     return new Response(null, { status: 404 });
   if (request.method !== 'GET' && request.headers.get('origin') !== new URL(request.url).origin)

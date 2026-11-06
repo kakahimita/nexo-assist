@@ -1,5 +1,10 @@
 # Challenge context
 
+The owner's #58 follow-up replaces illustrative login indicators with historical
+service aggregates and expiring analyst presence. This explicitly extends the
+prototype-only metrics scope; original reference figures remain examples, not
+acceptance targets. Definitions and evidence: [service metrics](service-metrics-verification.md).
+
 Source snapshot: PRD v5 and the owner's original Pencil design, preserved on
 2026-10-31 under [issue #12](https://github.com/kakahimita/nexo-assist/issues/12).
 This is a maintained summary, not a replacement for the original sources.

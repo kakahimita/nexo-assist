@@ -51,6 +51,57 @@ export class ConversationsService {
     const row = await this.database.client.conversation.create({ data: { ownerId: user.id } });
     return this.conversationView(row);
   }
+  async confirmResolution(
+    user: UserView,
+    conversationId: string,
+    messageId: string,
+  ): Promise<ConversationView> {
+    this.employee(user);
+    return this.database.client.$transaction(async (tx) => {
+      const conversation = await tx.conversation.findFirst({
+        where: { id: conversationId, ownerId: user.id },
+      });
+      if (!conversation) throw new NotFoundException();
+      if (conversation.state === 'closed' && conversation.resolvedByAgentMessageId === messageId)
+        return this.conversationView(conversation);
+      const latest = await tx.message.findFirst({
+        where: { conversationId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        include: { decision: true },
+      });
+      const pending = await tx.draftProposalRun.count({
+        where: { conversationId, draft: { status: 'pending' } },
+      });
+      if (
+        pending ||
+        conversation.handoffRequestedAt ||
+        conversation.state !== 'agent' ||
+        latest?.id !== messageId ||
+        latest.role !== 'agent' ||
+        latest.status !== 'completed' ||
+        latest.decision?.outcome !== 'completed'
+      )
+        throw new ConflictException();
+      const guarded = await tx.conversation.updateMany({
+        where: {
+          id: conversationId,
+          ownerId: user.id,
+          state: 'agent',
+          stateVersion: conversation.stateVersion,
+        },
+        data: {
+          state: 'closed',
+          closedAt: new Date(),
+          resolvedByAgentMessageId: messageId,
+          stateVersion: { increment: 1 },
+        },
+      });
+      if (guarded.count !== 1) throw new ConflictException();
+      return this.conversationView(
+        await tx.conversation.findUniqueOrThrow({ where: { id: conversationId } }),
+      );
+    });
+  }
   private conversationView(row: {
     id: string;
     createdAt: Date;

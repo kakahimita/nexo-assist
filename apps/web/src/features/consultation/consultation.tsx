@@ -48,7 +48,35 @@ export function Consultation({
   const [serverUsed, setServerUsed] = useState(0);
   const [pendingDrafts, setPendingDrafts] = useState<string[]>([]);
   const [humanEngaged, setHumanEngaged] = useState(employeeStage(conversation.state) === 'human');
-  const closed = conversation.state === 'closed';
+  const [resolutionConfirmed, setResolutionConfirmed] = useState(false);
+  const closed = conversation.state === 'closed' || resolutionConfirmed;
+  async function confirmResolution(messageId: string) {
+    if (activeRef.current || closed) return;
+    activeRef.current = true;
+    setActive(true);
+    onBusy(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}/resolution`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ messageId }),
+      });
+      if (response.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (!response.ok) throw new Error();
+      ConversationViewSchema.parse(await response.json());
+      setResolutionConfirmed(true);
+    } catch {
+      setError('Não foi possível confirmar a resolução. Atualize a conversa e tente novamente.');
+    } finally {
+      activeRef.current = false;
+      setActive(false);
+      onBusy(false);
+    }
+  }
   const now = new Date();
   const [handoff, setHandoff] = useState(conversation.handoff);
   const pausedState = humanEngaged
@@ -277,6 +305,7 @@ export function Consultation({
                 message.decision &&
                 message.decision.action !== 'handoff' &&
                 !humanEngaged &&
+                !closed &&
                 (message.decision.quickReplies.length > 0 ||
                   (message.decision.tickets.length === 1 && !closed)) && (
                   <div className="quick-replies">
@@ -288,7 +317,9 @@ export function Consultation({
                         onClick={() =>
                           void (/falar com (um )?analista/i.test(reply)
                             ? requestHandoff()
-                            : send(reply))
+                            : /^resolveu[.!]?$/i.test(reply) && message.id === messages.at(-1)?.id
+                              ? confirmResolution(message.id)
+                              : send(reply))
                         }
                       >
                         {reply}
@@ -310,6 +341,24 @@ export function Consultation({
                   </div>
                 )}
             </div>
+            {message.id === messages.at(-1)?.id &&
+              message.role === 'agent' &&
+              message.status === 'completed' &&
+              message.decision?.outcome === 'completed' &&
+              message.decision.action === 'answer' &&
+              !message.decision.quickReplies.some((reply) => /^resolveu[.!]?$/i.test(reply)) &&
+              !humanEngaged &&
+              !closed &&
+              !conversation.handoff &&
+              pendingDrafts.length === 0 && (
+                <button
+                  type="button"
+                  disabled={active}
+                  onClick={() => void confirmResolution(message.id)}
+                >
+                  Meu problema foi resolvido
+                </button>
+              )}
             {message.status === 'failed' && (
               <p role="alert">
                 {errors[message.decision?.errorCode ?? ''] ??

@@ -112,9 +112,12 @@ persisted messages and ownership, not by replaying writes.
 
 ## Interface and limits
 
-Follow the five mandatory screens and add a read-only basic profile. Sample
-performance metrics, analyst counts, and SSO/password links are illustrative,
-not implemented services. Include loading, empty, error, quota, waiting, closed,
+Follow the five mandatory screens and add a read-only basic profile.
+SSO/password links are illustrative, not implemented services. Login performance
+metrics use historical persisted data (see [definitions](service-metrics-verification.md));
+analyst presence uses authenticated session heartbeats with a 60-second expiry.
+Employee-confirmed self-service resolution closes the conversation independently
+of tickets and invalidates stale agent runs. Include loading, empty, error, quota, waiting, closed,
 and reconnect states, keyboard access, and narrow-screen support.
 
 Original PDF/Pencil references stay outside this public repository. Recreated UI

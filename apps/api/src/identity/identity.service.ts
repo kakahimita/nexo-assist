@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserViewSchema, type LoginInput, type UserView } from '@nexo/contracts';
 import { DatabaseService } from '../database/database.service.js';
 
@@ -32,6 +32,16 @@ export class IdentityService {
   async logout(token: string): Promise<void> {
     if (/^[0-9a-f]{64}$/.test(token))
       await this.database.client.session.deleteMany({ where: { tokenHash: this.hash(token) } });
+  }
+  async heartbeat(token: string): Promise<void> {
+    const user = await this.resolve(token);
+    if (!user) throw new UnauthorizedException();
+    if (user.role !== 'analyst') throw new ForbiddenException();
+    const updated = await this.database.client.session.updateMany({
+      where: { tokenHash: this.hash(token), expiresAt: { gt: new Date() } },
+      data: { lastSeenAt: new Date() },
+    });
+    if (!updated.count) throw new UnauthorizedException();
   }
   private hash(token: string): string {
     return createHash('sha256').update(token).digest('hex');
