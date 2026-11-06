@@ -74,6 +74,14 @@ These conventions resolve PRD ambiguities and must be tested and disclosed.
 
 ## Agent and evidence
 
+Live create proposals interpret natural employee messages into typed facts with
+message-ID/quotation evidence, scoped to the current problem and server run
+snapshot. The backend validates provenance and computes priority; it retains
+authorization, confirmation and idempotency. Semantic correctness and choosing
+the right problem boundary remain model tasks requiring real-model evaluation.
+Legacy phrase matching remains only in deterministic proposal fixtures, not as a
+fallback for missing live interpretation. See [verification](natural-support-verification.md).
+
 The foundation has a private, explicitly invoked Mastra nonce tool and streaming
 smoke command. It is not the service-desk agent and exposes no HTTP endpoint.
 

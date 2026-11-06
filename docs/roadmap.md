@@ -1,5 +1,8 @@
 # Delivery roadmap
 
+The owner's [#62 interpretation follow-up](natural-support-verification.md) improves
+free-form support within #6/#7/#10, with independent deterministic and live gates.
+
 The owner's [#58 functional metrics extension](service-metrics-verification.md)
 replaces V01's illustrative indicators with historical measurements and analyst
 presence; the bounded calculation and browser evidence are documented separately.

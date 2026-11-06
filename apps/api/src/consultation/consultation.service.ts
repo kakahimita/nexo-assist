@@ -72,8 +72,8 @@ export class ConsultationService {
       let finished = false;
       for await (const event of this.engine.run({
         user,
-        messages: history.flatMap(({ role, content }) =>
-          role === 'analyst' ? [] : [{ role, content }],
+        messages: history.flatMap(({ id, role, content }) =>
+          role === 'analyst' ? [] : [{ id, role, content }],
         ),
         signal,
         now: new Date(),

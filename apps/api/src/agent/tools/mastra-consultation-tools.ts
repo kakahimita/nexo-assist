@@ -3,7 +3,7 @@ import { UserViewSchema } from '@nexo/contracts';
 import {
   ConsultTicketsInputSchema,
   ConsultTicketsResultSchema,
-  ProposalInputSchema,
+  ModelProposalInputSchema,
   ProposeTicketDraftResultSchema,
   SearchKnowledgeInputSchema,
   SearchKnowledgeResultSchema,
@@ -27,8 +27,9 @@ export function createConsultationTools(tools: ConsultationTools) {
   return {
     proposeDraft: createTool({
       id: 'propose-ticket-draft',
-      description: 'Propose a draft for employee review. Never writes a ticket.',
-      inputSchema: ProposalInputSchema,
+      description:
+        'Propose a draft for review. For create, interpret the current problem and cite employee message IDs and exact quotations for every fact. Never guess missing/ambiguous facts or write a ticket. The server derives priority.',
+      inputSchema: ModelProposalInputSchema,
       outputSchema: ProposeTicketDraftResultSchema,
       toModelOutput: (result) => ({ type: 'json', value: modelSafe(result) as never }),
       execute: async (input, context) => {
@@ -36,6 +37,7 @@ export function createConsultationTools(tools: ConsultationTools) {
         const now = context?.requestContext?.get('now');
         const conversationId = context?.requestContext?.get('conversationId');
         const runId = context?.requestContext?.get('runId');
+        const messageIds = context?.requestContext?.get('messageIds');
         if (
           !(now instanceof Date) ||
           Number.isNaN(now.getTime()) ||
@@ -43,7 +45,17 @@ export function createConsultationTools(tools: ConsultationTools) {
           typeof runId !== 'string'
         )
           throw new Error('Missing server context');
-        return tools.proposeDraft(user, input, { now, conversationId, runId });
+        const parsed = ModelProposalInputSchema.parse(input);
+        if (parsed.action === 'create' && !Array.isArray(messageIds))
+          throw new Error('Missing server message snapshot');
+        return tools.proposeDraft(user, parsed, {
+          now,
+          conversationId,
+          runId,
+          ...(Array.isArray(messageIds) && messageIds.every((id) => typeof id === 'string')
+            ? { messageIds }
+            : {}),
+        });
       },
     }),
     consultTickets: createTool({
