@@ -180,3 +180,33 @@ The analyst close action now carries an optional `outcome`. When the conversatio
 Integration coverage: outcome required for requests and rejected for incidents; incident close resolves; terminal ticket close leaves status and events unchanged; claim/return sequence. Chromium covers the request close choice, the number in the ticket context, and the unchanged incident control. The full `npm run check` passed (156 unit, 61 integration, 65 Chromium; one consultation browser case was retried as flaky). The limitation remains that a denied request has no dedicated state.
 
 The ticket context panel groups the conversation's linked ticket under **Desta conversa** and the rest under **Outros chamados**, so the analyst can see which request the approve/conclude action changes. Capture: `outputs/analyst-close-choice-1440x900.png`.
+
+## Handoff summary expand and collapse (#54)
+
+The V05 handoff card keeps a 100 px collapsed summary area. When the summary
+overflows, a `Ver mais` button next to `Solicitada em` expands the card to the
+full text (with a `min(60vh, 480px)` safety cap and its own scroll); `Ver menos`
+restores the collapsed height. Summaries shorter than the cap keep their natural
+height and show no control. The control is a real button with `aria-expanded`
+and `aria-controls`, operable by keyboard, and the state resets when another
+conversation is selected. No server contract, typography, color or spacing
+changed.
+
+Executed evidence on 2026-11-06 from `feature/LAB-0054`: the full
+`npm run check` passed with isolated ports 3102/3103 — typecheck, lint,
+formatting, 181 unit tests, 63 integration tests, production build, and 76
+Chromium tests. The new browser case covers the collapsed height, the toggle
+label and `aria-expanded`, keyboard activation, expansion without overlapping the
+message area, and the return to the collapsed height; the existing V05 case
+asserts that a short summary shows no control. Captures from the owner instance
+on port 3100: `outputs/handoff-before.png`, `outputs/handoff-collapsed.png` and
+`outputs/handoff-expanded.png` (before 478 px card; after 100 px collapsed and
+380 px expanded for the same summary). No model key was used and
+`npm run smoke:model` was not run.
+
+An earlier `npm run check` attempt stopped in the unit phase because nested local
+worktrees under `work/` run duplicate copies of the same database-heavy
+knowledge test and timed out under parallel load. `vitest.config.ts` now excludes
+`work/**` from both projects, so local worktrees no longer multiply the suite;
+the counts above are the project's own tests.
+

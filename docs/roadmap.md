@@ -1,6 +1,6 @@
 # Delivery roadmap
 
-The [#52 correction](autonomous-resolution-verification.md) addresses the transition from autonomous troubleshooting to confirmed tickets and human continuation across #6/#7/#10. Its evidence and remaining live-model limits are tracked separately from prototype fidelity.
+The [#52 correction](autonomous-resolution-verification.md) addresses the transition from autonomous troubleshooting to confirmed tickets and human continuation across #6/#7/#10. Its evidence and remaining live-model limits are tracked separately from prototype fidelity. The [#54 handoff summary follow-up](human-support-verification.md) adds the collapsed/expanded analyst card described in issue #54; full V05 fidelity remains #9.
 
 Parent: [#1](https://github.com/kakahimita/nexo-assist/issues/1).
 Repository documentation: [#2](https://github.com/kakahimita/nexo-assist/issues/2).

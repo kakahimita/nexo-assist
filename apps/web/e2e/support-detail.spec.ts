@@ -666,6 +666,55 @@ test('B11 V05: presents role-distinct messages, handoff context, and authorized 
   );
   await expect(ticketPanel).not.toContainText('Desta conversa');
   await expect(ticketPanel).toContainText('Outros chamados');
+  await expect(region.locator('.support-handoff-toggle')).toHaveCount(0);
+});
+
+test('B11 V05: expands and collapses a long handoff summary', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const longSummary = 'Contexto detalhado da transferência para o analista. '
+    .repeat(36)
+    .slice(0, 1900);
+  const { items } = await prepareQueue(page, (analystId) => [
+    conversation('owned', 'with_analyst', analystId, {
+      reason: 'critical_incident',
+      summary: longSummary,
+      requestedAt: '2026-11-04T12:00:00.000Z',
+    }),
+  ]);
+  await detailRoute(page, items);
+
+  const region = page.getByRole('region', { name: 'Atendimento' });
+  await page.locator('[data-conversation-id="owned"]').click();
+
+  const card = region.locator('.support-handoff');
+  const summary = card.locator('.support-handoff-summary');
+  const more = card.getByRole('button', { name: 'Ver mais' });
+  await expect(more).toBeVisible();
+  await expect(more).toHaveAttribute('aria-expanded', 'false');
+  await expect(summary).toHaveAttribute('data-expanded', 'false');
+  const collapsed = await summary.boundingBox();
+  expect(collapsed?.height ?? 0).toBeLessThanOrEqual(101);
+
+  await more.focus();
+  await page.keyboard.press('Enter');
+  const less = card.getByRole('button', { name: 'Ver menos' });
+  await expect(less).toHaveAttribute('aria-expanded', 'true');
+  await expect(summary).toHaveAttribute('data-expanded', 'true');
+  const expanded = await summary.boundingBox();
+  expect(expanded?.height ?? 0).toBeGreaterThan((collapsed?.height ?? 0) + 100);
+
+  const cardBox = await card.boundingBox();
+  const messageBox = await region.locator('.support-messages').boundingBox();
+  expect((cardBox?.y ?? 0) + (cardBox?.height ?? 0)).toBeLessThanOrEqual((messageBox?.y ?? 0) + 1);
+  expect(messageBox?.height ?? 0).toBeGreaterThan(0);
+
+  await less.click();
+  const moreAgain = card.getByRole('button', { name: 'Ver mais' });
+  await expect(moreAgain).toHaveAttribute('aria-expanded', 'false');
+  await expect(summary).toHaveAttribute('data-expanded', 'false');
+  const recollapsed = await summary.boundingBox();
+  expect(recollapsed?.height ?? 0).toBeLessThanOrEqual(101);
+  await expect(card.locator('time')).toBeVisible();
 });
 
 test('B11: empty message and ticket lists stay honest', async ({ page }) => {
