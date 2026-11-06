@@ -1,5 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { ConfirmDraftInputSchema, DraftInputSchema, DraftViewSchema } from './ticket.js';
+import {
+  ConfirmDraftInputSchema,
+  DraftInputSchema,
+  DraftViewSchema,
+  TicketStatusSchema,
+  TicketViewSchema,
+  ticketStatusLabel,
+} from './ticket.js';
+
+describe('ticket status and number vocabulary', () => {
+  const ticket = {
+    id: 't1',
+    ownerId: 'u1',
+    title: 'VPN',
+    description: 'Sem conexão',
+    type: 'INC',
+    category: 'network_vpn',
+    priority: 'medium',
+    impact: 'self',
+    status: 'open',
+    transferRequested: false,
+    createdAt: '2026-11-01T12:00:00.000Z',
+    resolvedAt: null,
+    slaStartedAt: '2026-11-01T12:00:00.000Z',
+    deadline: '2026-11-03T12:00:00.000Z',
+    overdue: false,
+  };
+  it('accepts the five ticket statuses and rejects the old vocabulary', () => {
+    for (const status of ['open', 'waiting_for_analyst', 'in_progress', 'approved', 'resolved']) {
+      expect(TicketStatusSchema.parse(status)).toBe(status);
+    }
+    expect(TicketStatusSchema.safeParse('waiting').success).toBe(false);
+  });
+  it('labels every status in Brazilian Portuguese', () => {
+    expect(ticketStatusLabel('open')).toBe('Aberto');
+    expect(ticketStatusLabel('waiting_for_analyst')).toBe('Aguardando analista');
+    expect(ticketStatusLabel('in_progress')).toBe('Em andamento');
+    expect(ticketStatusLabel('approved')).toBe('Aprovado');
+    expect(ticketStatusLabel('resolved')).toBe('Resolvido');
+  });
+  it('keeps legacy tickets without a number valid', () => {
+    expect(TicketViewSchema.parse(ticket).number).toBeNull();
+    expect(TicketViewSchema.parse({ ...ticket, number: 'INC-20311' }).number).toBe('INC-20311');
+  });
+});
 
 describe('B04: strict ticket draft contracts', () => {
   const create = {

@@ -1,22 +1,25 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 async function start(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
 }
 
 async function send(page: import('@playwright/test').Page, text: string) {
   await page.getByLabel('Mensagem').fill(text);
-  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await page.getByRole('button', { name: 'Enviar', exact: true }).click();
 }
 
 const ticket = {
   id: 'fixture-ana-open',
+  number: 'INC-20311',
   title: 'Notebook lento',
-  status: 'open',
+  description: 'Lentidão geral desde a atualização.',
+  status: 'waiting_for_analyst',
   priority: 'medium',
   category: 'hardware',
   createdAt: '2026-11-04T01:00:00.000Z',
@@ -25,14 +28,18 @@ const ticket = {
   overdue: false,
 };
 
-const decision = (tickets: unknown[], action: 'answer' | 'handoff'): Record<string, unknown> => ({
+const decision = (
+  tickets: unknown[],
+  action: 'answer' | 'handoff',
+  quickReplies: string[] = [],
+): Record<string, unknown> => ({
   intent: 'Consulta de chamado',
   action,
   appliedRule: 'Somente chamados do funcionário',
   confidence: 1,
   justification: 'Chamado identificado.',
   missingFacts: [],
-  quickReplies: [],
+  quickReplies,
   actions: [
     {
       id: 'consult-1',
@@ -99,22 +106,65 @@ test('B03: shows the detail card for one consulted ticket inside the chat', asyn
   const chat = page.getByRole('region', { name: 'Conversa' });
   const card = chat.getByRole('article', { name: 'Chamado Notebook lento' });
   await expect(card).toBeVisible();
-  await expect(card).toContainText('Aberto');
+  await expect(card.getByText('INC-20311', { exact: true })).toBeVisible();
+  await expect(card.getByText('Lentidão geral desde a atualização.')).toBeVisible();
+  await expect(card).toContainText('Aguardando analista');
   await expect(card).toContainText('Categoria: Hardware');
-  await expect(card).toContainText('Criado em: 03/11/2026');
+  await expect(card).toContainText('Aberto em: 03/11/2026');
   await expect(card).toContainText('Prioridade: Média');
   await expect(card).toContainText('Prazo: 07/11/2026');
   await expect(card).toContainText('Última atualização: há');
   await expect(card.getByText('Prazo vencido')).toHaveCount(0);
+  await expect(chat.getByRole('button', { name: 'Falar com um analista' })).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 812 });
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test('V03: analyst contact appears in an agent response after interaction', async ({ page }) => {
+  await start(page);
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  await expect(chat.getByRole('button', { name: /Falar com .*analista/i })).toHaveCount(0);
+  await mockStream(page, [
+    {
+      type: 'user-message',
+      message: {
+        id: 'question',
+        content: 'Qual o status do meu chamado?',
+        createdAt: '2026-11-04T12:00:00.000Z',
+        role: 'employee',
+        status: 'completed',
+        decision: null,
+        authorName: null,
+      },
+    },
+    {
+      type: 'done',
+      message: agentMessage(
+        'Posso chamar um analista para ajudar.',
+        decision([], 'answer', ['Falar com um analista', 'Não, obrigado']),
+      ),
+    },
+  ]);
+  await send(page, 'Qual o status do meu chamado?');
+  const option = chat.getByRole('button', { name: 'Falar com um analista' });
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
+  await expect(option).toHaveCount(0);
 });
 
 test('B03 V03: selects one of several consulted tickets before requesting its details', async ({
   page,
 }) => {
   await start(page);
+  const firstTicket = { ...ticket, number: 'INC-20311', status: 'open' };
   const secondTicket = {
     ...ticket,
     id: 'fixture-ana-resolved',
+    number: 'INC-20150',
     title: 'Acesso ao e-mail',
     status: 'resolved',
     priority: 'low',
@@ -139,7 +189,7 @@ test('B03 V03: selects one of several consulted tickets before requesting its de
         type: 'done',
         message: agentMessage(
           'Encontrei dois chamados.',
-          decision([ticket, secondTicket], 'answer'),
+          decision([firstTicket, secondTicket], 'answer'),
         ),
       },
     ],
@@ -148,14 +198,17 @@ test('B03 V03: selects one of several consulted tickets before requesting its de
   await send(page, 'Qual o status dos meus chamados?');
   const chat = page.getByRole('region', { name: 'Conversa' });
   const choices = chat.getByRole('group', { name: 'Chamados encontrados' });
+  await page.route('**/api/conversations/*/ticket-selection', (route) =>
+    route.fulfill({ status: 201, json: {} }),
+  );
   await expect(choices).toBeVisible();
-  await expect(choices.getByRole('radio', { name: /Notebook lento.*Aberto/ })).toBeVisible();
-  await expect(choices.getByRole('radio', { name: /Acesso ao e-mail.*Resolvido/ })).toBeVisible();
-  const details = chat.getByRole('button', { name: 'Ver detalhes' });
-  await expect(details).toBeDisabled();
-  await choices.getByRole('radio', { name: /Acesso ao e-mail.*Resolvido/ }).check();
-  await expect(details).toBeEnabled();
-  await details.click();
+  await expect(choices.getByRole('button', { name: /Notebook lento.*Aberto/ })).toBeVisible();
+  await expect(choices.getByRole('button', { name: /Acesso ao e-mail.*Resolvido/ })).toBeVisible();
+  await expect(chat.getByRole('button', { name: 'Ver detalhes' })).toHaveCount(0);
+  await choices.getByRole('button', { name: /Acesso ao e-mail.*Resolvido/ }).click();
+  await expect(
+    choices.getByRole('button', { name: /Acesso ao e-mail.*Resolvido/ }).first(),
+  ).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => requests.at(-1)).toContain('Acesso ao e-mail');
   expect(requests.at(-1)).not.toContain('Notebook lento');
 });
@@ -232,7 +285,8 @@ test('B03: a streamed ticket without metadata renders an honest fallback', async
   const card = chat.getByRole('article', { name: 'Chamado Notebook antigo' });
   await expect(card).toBeVisible();
   await expect(card).toContainText('Categoria: —');
-  await expect(card).toContainText('Criado em: —');
+  await expect(card).toContainText('Aberto em: —');
+  await expect(card.getByText(/^(?:INC|REQ)-\d+$/)).toHaveCount(0);
   await expect(chat.getByRole('alert')).toHaveCount(0);
 });
 
@@ -242,6 +296,7 @@ test('V03: a long ticket keeps its status and overdue text without horizontal ov
   await start(page);
   const longTicket = {
     ...ticket,
+    status: 'open',
     title:
       'Notebook corporativo com lentidão após a atualização do Windows e do antivírus corporativo',
     overdue: true,
@@ -296,4 +351,66 @@ test('V03: a long ticket keeps its status and overdue text without horizontal ov
       path: `outputs/ticket-card-${viewport.width}x${viewport.height}-card.png`,
     });
   }
+});
+
+test('B04: a supplement draft identifies the affected ticket', async ({ page }) => {
+  await start(page);
+  const operationId = '5da80c1d-1d9d-4b57-97f1-f21bd36e1890';
+  const ticketView = {
+    id: ticket.id,
+    number: ticket.number,
+    title: ticket.title,
+    description: ticket.description,
+    status: ticket.status,
+    priority: ticket.priority,
+    category: ticket.category,
+    createdAt: ticket.createdAt,
+    deadline: ticket.deadline,
+    overdue: ticket.overdue,
+    ownerId: 'user-test',
+    type: 'INC',
+    impact: 'self',
+    transferRequested: false,
+    resolvedAt: null,
+    slaStartedAt: ticket.createdAt,
+  };
+  await page.route('**/api/ticket-drafts/draft-supplement', (route) =>
+    route.fulfill({
+      json: {
+        id: 'draft-supplement',
+        version: 1,
+        operationId,
+        status: 'pending',
+        input: {
+          action: 'supplement',
+          ticketId: 'fixture-ana-open',
+          content: 'Também reinicia sozinho.',
+        },
+        ticket: ticketView,
+      },
+    }),
+  );
+  const message = {
+    ...agentMessage('Vou complementar o chamado.', decision([], 'answer')),
+    decision: { ...decision([], 'answer'), draftId: 'draft-supplement' },
+  };
+  await mockStream(page, [
+    {
+      type: 'user-message',
+      message: {
+        id: 'user-supplement',
+        content: 'Complementar chamado',
+        createdAt: '2026-11-04T12:00:00.000Z',
+        role: 'employee',
+        status: 'completed',
+        decision: null,
+        authorName: null,
+      },
+    },
+    { type: 'done', message },
+  ]);
+  await send(page, 'Complementar chamado');
+  const draft = page.getByRole('article', { name: 'Rascunho do chamado' });
+  await expect(draft).toContainText('INC-20311');
+  await expect(draft).toContainText('Aguardando analista');
 });

@@ -14,6 +14,8 @@ export const priorities: Record<string, string> = {
   low: 'Baixa',
 };
 
-export function ticketStatusLabel(status: 'open' | 'resolved'): string {
-  return status === 'open' ? 'Aberto' : 'Resolvido';
+import { ticketStatusLabel as sharedTicketStatusLabel, type TicketStatus } from '@nexo/contracts';
+
+export function ticketStatusLabel(status: TicketStatus): string {
+  return sharedTicketStatusLabel(status);
 }

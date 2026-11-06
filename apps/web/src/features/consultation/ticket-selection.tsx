@@ -1,8 +1,10 @@
 'use client';
 
 import type { ConsultationTicketView } from '@nexo/contracts';
-import { useId, useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { ticketStatusLabel } from '../tickets/labels';
+
+const dateFormatter = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
 
 export function TicketSelection({
   tickets,
@@ -13,37 +15,36 @@ export function TicketSelection({
   disabled: boolean;
   onSelect: (ticket: ConsultationTicketView) => void;
 }): React.JSX.Element {
-  const [selectedId, setSelectedId] = useState('');
-  const groupName = useId();
-  const selectedTicket = tickets.find((ticket) => ticket.id === selectedId);
-
-  function submit(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    if (disabled || selectedTicket === undefined) return;
-    onSelect(selectedTicket);
-  }
-
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   return (
-    <form className="ticket-selection" onSubmit={submit}>
-      <fieldset disabled={disabled}>
-        <legend>Chamados encontrados</legend>
-        {tickets.map((ticket) => (
-          <label key={ticket.id}>
-            <input
-              type="radio"
-              name={groupName}
-              value={ticket.id}
-              checked={selectedId === ticket.id}
-              onChange={() => setSelectedId(ticket.id)}
-            />{' '}
-            {ticket.title} · {ticketStatusLabel(ticket.status)}
+    <div className="ticket-selection" role="group" aria-label="Chamados encontrados">
+      {tickets.map((ticket) => (
+        <button
+          className={`ticket-selection-row${selectedId === ticket.id ? ' selected' : ''}`}
+          type="button"
+          aria-pressed={selectedId === ticket.id}
+          disabled={disabled}
+          key={ticket.id}
+          onClick={() => {
+            setSelectedId(ticket.id);
+            onSelect(ticket);
+          }}
+        >
+          <span className="ticket-selection-indicator" aria-hidden="true" />
+          {ticket.number && <span className="ticket-selection-number">{ticket.number}</span>}
+          <span className="ticket-selection-title">{ticket.title}</span>
+          <span className={`ticket-selection-status ${ticket.overdue ? 'overdue' : ticket.status}`}>
+            <span aria-hidden="true" />
+            {ticketStatusLabel(ticket.status)}
             {ticket.overdue ? ' · prazo vencido' : ''}
-          </label>
-        ))}
-      </fieldset>
-      <button type="submit" disabled={disabled || selectedTicket === undefined}>
-        Ver detalhes
-      </button>
-    </form>
+          </span>
+          {ticket.createdAt && (
+            <time dateTime={ticket.createdAt} className="ticket-selection-date">
+              {dateFormatter.format(new Date(ticket.createdAt))}
+            </time>
+          )}
+        </button>
+      ))}
+    </div>
   );
 }

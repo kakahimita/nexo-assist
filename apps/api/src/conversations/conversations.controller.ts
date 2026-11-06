@@ -40,6 +40,15 @@ export class ConversationsController {
     if (!parsed.success) throw new BadRequestException();
     return this.conversations.append(request.user, id, parsed.data.content);
   }
+  @Post(':id/ticket-selection') selectTicket(
+    @Req() request: AuthRequest,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    const parsed = z.strictObject({ ticketId: z.string().min(1) }).safeParse(body);
+    if (!parsed.success) throw new BadRequestException();
+    return this.conversations.selectTicketForConsultation(request.user, id, parsed.data.ticketId);
+  }
   @Post(':id/handoff') handoff(
     @Req() request: AuthRequest,
     @Param('id') id: string,

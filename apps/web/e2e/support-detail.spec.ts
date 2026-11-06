@@ -29,6 +29,7 @@ type MessageFixture = {
 
 type TicketFixture = {
   id: string;
+  number: string | null;
   ownerId: string;
   title: string;
   description: string;
@@ -50,7 +51,17 @@ function conversation(
   state: ConversationState,
   assignedAnalystId: string | null,
   handoff: HandoffFixture | null = null,
-) {
+): {
+  id: string;
+  state: ConversationState;
+  stateVersion: number;
+  employee: { id: string; name: string };
+  handoff: HandoffFixture | null;
+  assignedAnalystId: string | null;
+  contextTicketId: string | null;
+  closedAt: string | null;
+  lastMessage: null;
+} {
   return {
     id,
     state,
@@ -58,6 +69,7 @@ function conversation(
     employee: { id: `${id}-employee`, name: `Pessoa ${id}` },
     handoff,
     assignedAnalystId,
+    contextTicketId: null,
     closedAt: state === 'closed' ? '2026-11-04T12:10:00.000Z' : null,
     lastMessage: null,
   };
@@ -91,6 +103,7 @@ function ticket(
 ): TicketFixture {
   return {
     id,
+    number: null,
     ownerId: 'owned-employee',
     title,
     description: `Descrição de ${title}`,
@@ -569,6 +582,7 @@ test('B11 B15: committed return and close succeed even when the queue refresh fa
 test('B11 V05: presents role-distinct messages, handoff context, and authorized tickets', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1567, height: 900 });
   const { items } = await prepareQueue(page, (analystId) => [
     conversation('owned', 'with_analyst', analystId, {
       reason: 'critical_incident',
@@ -609,6 +623,7 @@ test('B11 V05: presents role-distinct messages, handoff context, and authorized 
 
   const region = page.getByRole('region', { name: 'Atendimento' });
   await page.locator('[data-conversation-id="owned"]').click();
+  await page.screenshot({ path: 'outputs/analyst-console-v05-1567x900.png', fullPage: true });
 
   await expect(region.getByRole('heading', { name: 'Resumo da transferência' })).toBeVisible();
   await expect(region).toContainText('Motivo: Incidente crítico');
@@ -650,7 +665,7 @@ test('B11 V05: presents role-distinct messages, handoff context, and authorized 
     '2026-11-04T15:00:00.000Z',
   );
   await expect(ticketPanel).not.toContainText('Desta conversa');
-  await expect(ticketPanel).not.toContainText('Outros chamados');
+  await expect(ticketPanel).toContainText('Outros chamados');
 });
 
 test('B11: empty message and ticket lists stay honest', async ({ page }) => {
@@ -793,3 +808,52 @@ for (const viewport of [
     }
   });
 }
+
+test('B11: a linked request offers approve or conclude and shows its number', async ({ page }) => {
+  let items: ReturnType<typeof conversation>[] = [];
+  await page.route('**/api/support/conversations?filter=waiting', (route) =>
+    route.fulfill({ json: items }),
+  );
+  await page.route('**/api/support/conversations?filter=all', (route) =>
+    route.fulfill({ json: items }),
+  );
+  const requestTicket = {
+    ...ticket('req-ticket', 'Segundo monitor', 'hardware', 'high', 'open', false),
+    type: 'REQ' as const,
+    number: 'REQ-10442',
+  };
+  const otherTicket = {
+    ...ticket('other-ticket', 'Senha bloqueada', 'access', 'medium', 'resolved', false),
+    number: 'INC-20150',
+  };
+  let item = conversation('req', 'with_analyst', null);
+  await page.route('**/api/support/conversations/*', (route) => {
+    const id = new URL(route.request().url()).pathname.split('/').at(-1)!;
+    return route.fulfill({
+      json:
+        id === 'req'
+          ? detail(item, [], [otherTicket, requestTicket])
+          : detail(items.find((row) => row.id === id)!),
+    });
+  });
+  const closes: string[] = [];
+  await page.route('**/api/support/conversations/*/close', (route) => {
+    closes.push(route.request().postData() ?? '');
+    return route.fulfill({ json: item });
+  });
+
+  const analystId = await loginAsAnalyst(page);
+  item = { ...conversation('req', 'with_analyst', analystId), contextTicketId: 'req-ticket' };
+  items = [item];
+  await showQueue(page, items);
+  await page.locator('[data-conversation-id="req"]').click();
+  const region = page.getByRole('region', { name: 'Atendimento' });
+  const current = region.getByRole('region', { name: 'Desta conversa' });
+  await expect(current).toContainText('REQ-10442');
+  await expect(region.getByRole('region', { name: 'Outros chamados' })).toContainText('INC-20150');
+  await expect(region.getByRole('button', { name: 'Aprovar solicitação' })).toBeVisible();
+  await expect(region.getByRole('button', { name: 'Concluir atendimento' })).toBeVisible();
+  await page.screenshot({ path: 'outputs/analyst-close-choice-1440x900.png', fullPage: true });
+  await region.getByRole('button', { name: 'Aprovar solicitação' }).click();
+  await expect.poll(() => closes.at(-1)).toContain('"outcome":"approved"');
+});

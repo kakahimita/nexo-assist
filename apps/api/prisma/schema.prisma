@@ -48,7 +48,10 @@ model Conversation {
   handoffRequestedAt DateTime?
   assignedAnalystId String?
   assignedAnalyst User? @relation("AssignedConversations", fields: [assignedAnalystId], references: [id])
+  contextTicketId String?
+  contextTicket Ticket? @relation("ConversationContextTicket", fields: [contextTicketId], references: [id], onDelete: SetNull)
   closedAt DateTime?
+  flowJson String @default("{\"mode\":\"none\",\"stage\":\"idle\",\"facts\":{}}")
   messages Message[]
   draftProposalRuns DraftProposalRun[]
 }
@@ -68,6 +71,7 @@ model Message {
 
 model Ticket {
   id String @id @default(cuid())
+  number Int?
   ownerId String
   owner User @relation(fields: [ownerId], references: [id])
   title String
@@ -83,7 +87,14 @@ model Ticket {
   resolvedAt DateTime?
   slaStartedAt DateTime
   events TicketEvent[]
+  contextConversations Conversation[] @relation("ConversationContextTicket")
+  @@unique([type, number])
   @@index([ownerId])
+}
+
+model TicketNumberSequence {
+  type  String @id
+  value Int
 }
 
 model TicketEvent {

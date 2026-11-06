@@ -7,7 +7,6 @@ import {
   type UserView,
 } from '@nexo/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Tickets } from '../tickets/tickets';
 import { Consultation } from '../consultation/consultation';
 import { Support } from '../support/support';
 
@@ -20,12 +19,16 @@ export function History({
 }): React.JSX.Element {
   const [conversations, setConversations] = useState<ConversationView[]>([]);
   const [selected, setSelected] = useState('');
+  const [currentPaused, setCurrentPaused] = useState<'waiting_for_analyst' | 'with_analyst' | null>(
+    null,
+  );
   const [messages, setMessages] = useState<MessageView[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [ticketsVersion, setTicketsVersion] = useState(0);
+  const [creating, setCreating] = useState(false);
   const [page, setPage] = useState<'support' | 'profile'>('support');
   const busyRef = useRef(false);
+  const loadVersion = useRef(0);
   const selectionVersion = useRef(0);
   const call = useCallback(
     async (url: string, options?: RequestInit) => {
@@ -39,35 +42,53 @@ export function History({
     },
     [onLogout],
   );
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<ConversationView[] | null> => {
+    const version = ++loadVersion.current;
     try {
       const data: unknown = await (await call('/api/conversations')).json();
       if (!Array.isArray(data)) throw new Error();
-      setConversations(data.map((item: unknown) => ConversationViewSchema.parse(item)));
+      const parsed = data.map((item: unknown) => ConversationViewSchema.parse(item));
+      if (version === loadVersion.current) setConversations(parsed);
+      return parsed;
     } catch {
-      setError('Não foi possível carregar o histórico.');
+      if (version === loadVersion.current) setError('Não foi possível carregar a conversa.');
+      return null;
     }
   }, [call]);
-  useEffect(() => {
-    if (user.role === 'employee') void Promise.resolve().then(load);
-  }, [load, user.role]);
-  async function choose(id: string) {
-    const version = ++selectionVersion.current;
-    try {
-      const data: unknown = await (await call(`/api/conversations/${id}/messages`)).json();
-      if (!Array.isArray(data)) throw new Error();
-      if (version !== selectionVersion.current) return;
-      setMessages(data.map((item: unknown) => MessageViewSchema.parse(item)));
-      setSelected(id);
-      setError('');
-    } catch {
-      if (version === selectionVersion.current) setError('Não foi possível carregar a conversa.');
-    }
-  }
-  async function create() {
+  const choose = useCallback(
+    async (id: string) => {
+      const version = ++selectionVersion.current;
+      try {
+        const data: unknown = await (await call(`/api/conversations/${id}/messages`)).json();
+        if (!Array.isArray(data)) throw new Error();
+        if (version !== selectionVersion.current) return;
+        setMessages(data.map((item: unknown) => MessageViewSchema.parse(item)));
+        setSelected(id);
+        setCurrentPaused(null);
+        setError('');
+      } catch {
+        if (version === selectionVersion.current) setError('Não foi possível carregar a conversa.');
+      }
+    },
+    [call],
+  );
+  const reportPaused = useCallback(
+    (state: 'waiting_for_analyst' | 'with_analyst' | null) => {
+      setCurrentPaused(state);
+      if (!state) return;
+      setConversations((current) =>
+        current.map((item) => (item.id === selected ? { ...item, state } : item)),
+      );
+    },
+    [selected],
+  );
+  const create = useCallback(async () => {
     if (busyRef.current) return;
     busyRef.current = true;
+    loadVersion.current++;
+    selectionVersion.current++;
     setBusy(true);
+    setCreating(true);
     try {
       const data = ConversationViewSchema.parse(
         await (
@@ -78,15 +99,31 @@ export function History({
           })
         ).json(),
       );
-      await load();
+      setConversations((current) => [...current, data]);
       await choose(data.id);
     } catch {
       setError('Não foi possível criar a conversa.');
     } finally {
       busyRef.current = false;
       setBusy(false);
+      setCreating(false);
     }
-  }
+  }, [call, choose]);
+  useEffect(() => {
+    if (user.role !== 'employee') return;
+    let current = true;
+    const version = selectionVersion.current;
+    void Promise.resolve()
+      .then(load)
+      .then((items) => {
+        if (!current || version !== selectionVersion.current || items === null) return;
+        if (items.length) void choose(items[items.length - 1]!.id);
+        else void create();
+      });
+    return () => {
+      current = false;
+    };
+  }, [choose, create, load, user.role]);
   async function logout() {
     try {
       await call('/api/session', { method: 'DELETE' });
@@ -97,19 +134,43 @@ export function History({
   }
   if (user.role === 'analyst') {
     return (
-      <main className="history">
-        <header>
-          <h1>Nexo Assist</h1>
-          <p>Olá, {user.name}</p>
-          <button disabled={busy} onClick={() => void logout()}>
-            Sair
-          </button>
-        </header>
-        {error && <p role="alert">{error}</p>}
-        <Support user={user} onLogout={onLogout} />
-      </main>
+      <div className="analyst-layout">
+        <aside className="analyst-rail" aria-label="Navegação do suporte">
+          <span className="analyst-mark" aria-label="Nexo Assist">
+            N
+          </span>
+          <span className="analyst-rail-label">Conversas</span>
+          <div className="analyst-account">
+            <span className="analyst-avatar" aria-hidden="true">
+              {user.name.slice(0, 2).toUpperCase()}
+            </span>
+            <span className="analyst-account-name">{user.name}</span>
+            <button type="button" disabled={busy} onClick={() => void logout()}>
+              Sair
+            </button>
+          </div>
+        </aside>
+        <main className="analyst-main">
+          {error && <p role="alert">{error}</p>}
+          <Support user={user} onLogout={onLogout} />
+        </main>
+      </div>
     );
   }
+  const currentConversation = conversations.find((item) => item.id === selected) ?? null;
+  const pausedConversation =
+    conversations
+      .map((item) =>
+        item.id === selected && currentPaused ? { ...item, state: currentPaused } : item,
+      )
+      .filter((item) => item.state === 'waiting_for_analyst' || item.state === 'with_analyst')
+      .at(-1) ?? null;
+  const selectedPaused =
+    currentPaused !== null ||
+    currentConversation?.state === 'waiting_for_analyst' ||
+    currentConversation?.state === 'with_analyst';
+  const otherPaused =
+    pausedConversation && pausedConversation.id !== selected ? pausedConversation : null;
   return (
     <div className="employee-layout">
       <aside className="employee-sidebar">
@@ -186,22 +247,66 @@ export function History({
                   <dd>{user.email}</dd>
                 </div>
               </dl>
+              <section className="profile-security" aria-label="Senha">
+                <div className="profile-security-main">
+                  <span className="profile-security-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <circle cx="15" cy="9" r="5" />
+                      <path d="m11.5 12.5-8 8v-4l3-3 2 2 2-2" />
+                    </svg>
+                  </span>
+                  <div>
+                    <h3>Senha</h3>
+                    <p>Gerenciada pela TI da Nexo</p>
+                  </div>
+                  <button type="button" disabled>
+                    Redefinir senha
+                  </button>
+                </div>
+                <p className="profile-security-note">
+                  A redefinição de senha não está disponível nesta demonstração.
+                </p>
+              </section>
             </section>
           )}
-          <div hidden={page !== 'support'}>
-            <p>As mensagens são salvas no histórico.</p>
-            <button disabled={busy} onClick={() => void create()}>
-              Nova conversa
-            </button>
-            <nav aria-label="Conversas">
-              {conversations.length === 0 && <p>Nenhuma conversa ainda.</p>}
-              {conversations.map((item, index) => (
-                <button disabled={busy} key={item.id} onClick={() => void choose(item.id)}>
-                  Conversa {index + 1}
+          <div className="employee-chat-view" hidden={page !== 'support'}>
+            {creating && <p role="status">Iniciando conversa...</p>}
+            {selected && selectedPaused && currentConversation && (
+              <div className="employee-paused-bar" role="status">
+                <span>
+                  {(currentPaused ?? currentConversation.state) === 'waiting_for_analyst'
+                    ? 'Seu atendimento está aguardando um analista.'
+                    : 'Seu atendimento está com um analista.'}
+                </span>
+                <button type="button" disabled={busy || creating} onClick={() => void create()}>
+                  Iniciar nova conversa
                 </button>
-              ))}
-            </nav>
-            {selected && (
+              </div>
+            )}
+            {selected && !selectedPaused && otherPaused && (
+              <div className="employee-paused-bar" role="status">
+                <span>
+                  Você tem um atendimento{' '}
+                  {otherPaused.state === 'waiting_for_analyst'
+                    ? 'aguardando um analista'
+                    : 'com um analista'}
+                  .
+                </span>
+                <button
+                  type="button"
+                  disabled={busy || creating}
+                  onClick={() => void choose(otherPaused.id)}
+                >
+                  Voltar ao atendimento
+                </button>
+              </div>
+            )}
+            {!creating && !selected && error && (
+              <button type="button" onClick={() => void create()}>
+                Tentar novamente
+              </button>
+            )}
+            {selected && !creating && (
               <Consultation
                 key={selected}
                 conversationId={selected}
@@ -210,14 +315,13 @@ export function History({
                 setMessages={setMessages}
                 onUnauthorized={onLogout}
                 onStartNew={() => void create()}
-                onTicketCommitted={() => setTicketsVersion((value) => value + 1)}
+                onPausedState={reportPaused}
                 onBusy={(value) => {
                   busyRef.current = value;
                   setBusy(value);
                 }}
               />
             )}
-            <Tickets onUnauthorized={onLogout} reloadToken={ticketsVersion} />
           </div>
         </div>
       </main>

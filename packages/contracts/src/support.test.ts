@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SupportCloseInputSchema,
   SupportConversationSummarySchema,
   SupportConversationViewSchema,
   SupportReplyInputSchema,
@@ -56,5 +57,25 @@ describe('B11 support contracts', () => {
     expect(SupportReplyInputSchema.safeParse({ content: 'olá', authorId: 'x' }).success).toBe(
       false,
     );
+  });
+  it('validates the close outcome and defaults the legacy link', () => {
+    expect(SupportCloseInputSchema.safeParse({}).success).toBe(true);
+    expect(SupportCloseInputSchema.safeParse({ outcome: 'approved' }).success).toBe(true);
+    expect(SupportCloseInputSchema.safeParse({ outcome: 'resolved' }).success).toBe(true);
+    expect(SupportCloseInputSchema.safeParse({ outcome: 'rejected' }).success).toBe(false);
+    expect(SupportCloseInputSchema.safeParse({ outcome: 'approved', ownerId: 'x' }).success).toBe(
+      false,
+    );
+    const summary = SupportConversationSummarySchema.parse({
+      id: 'c1',
+      state: 'with_analyst',
+      stateVersion: 1,
+      employee: { id: 'u1', name: 'Ana Souza' },
+      handoff: null,
+      assignedAnalystId: 'a1',
+      closedAt: null,
+      lastMessage: null,
+    });
+    expect(summary.contextTicketId).toBeNull();
   });
 });

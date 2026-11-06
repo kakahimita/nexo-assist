@@ -137,12 +137,17 @@ export class DraftsService {
       input.action === 'create'
         ? findTicketCandidates(input, await this.tickets.list(user, new Date()))
         : undefined;
+    const ticket =
+      input.action === 'create'
+        ? null
+        : await this.tickets.get(user, input.ticketId, new Date()).catch(() => null);
     return DraftViewSchema.parse({
       id: draft.id,
       version: draft.version,
       status: draft.status,
       operationId: current.operationId,
       input,
+      ticket,
       ...(input.action === 'create'
         ? {
             priority: current.priority,

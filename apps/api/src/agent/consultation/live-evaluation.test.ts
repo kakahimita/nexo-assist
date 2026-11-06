@@ -55,7 +55,9 @@ describe('live evaluation assertions', () => {
       tickets: [
         {
           id: 'fixture-bruno-open',
+          number: 'REQ-10442',
           title: 'VPN',
+          description: null,
           status: 'open' as const,
           priority: 'low' as const,
           category: null,

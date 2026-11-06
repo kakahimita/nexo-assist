@@ -5,7 +5,9 @@ import { ConsultationService } from './consultation.service.js';
 const user = { id: 'ana', email: 'ana@example.com', name: 'Ana', role: 'employee' as const };
 const ticket = {
   id: 'INC-1',
+  number: 'INC-20311',
   title: 'Notebook lento',
+  description: 'Lentidão desde a atualização.',
   status: 'open',
   priority: 'medium',
   category: 'hardware',
@@ -53,6 +55,7 @@ function fakeConversations(current = true) {
     handoffs,
     conversations: {
       messages: async () => [],
+      flow: async () => ({ mode: 'none', stage: 'idle', facts: {} }),
       appendAgentTurnIfCurrent: async (
         _user: unknown,
         _conversationId: string,
@@ -115,7 +118,9 @@ describe('B09/B10: overdue consulted tickets are transferred by the backend', ()
     expect(result.appended).toHaveLength(1);
     expect(result.appended[0]!.content).toContain('Notebook lento está com o prazo vencido');
     expect(result.appended[0]!.content).not.toContain('em dia');
-    expect(result.appended[0]!.decision.tickets).toEqual([ticket]);
+    expect(result.appended[0]!.decision.tickets).toEqual([
+      { ...ticket, status: 'waiting_for_analyst' },
+    ]);
     expect(result.types).toEqual(['user-message', 'done', 'handoff-waiting']);
   });
   it('does not transfer when several tickets match, even if one is overdue', async () => {
@@ -132,5 +137,14 @@ describe('B09/B10: overdue consulted tickets are transferred by the backend', ()
     const result = await run([consult([ticket]), answer, { type: 'finish' }], false);
     expect(result.handoffs).toEqual([]);
     expect(result.types).toEqual(['user-message', 'handoff-waiting']);
+  });
+  it('uses the structured reply instead of any raw model text', async () => {
+    const result = await run([
+      { type: 'decision', decision: { ...answer.decision, reply: 'Olá! Como posso ajudar?' } },
+      { type: 'finish' },
+    ]);
+    expect(result.appended[0]!.content).toBe('Olá! Como posso ajudar?');
+    expect(result.appended[0]!.content).not.toContain('intent');
+    expect(result.types).toEqual(['user-message', 'done']);
   });
 });

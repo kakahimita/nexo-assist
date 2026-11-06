@@ -5,6 +5,12 @@ export const LoginInputSchema = z.strictObject({
   password: z.string().min(1),
 });
 export type LoginInput = z.infer<typeof LoginInputSchema>;
+
+export const DemoModelKeyInputSchema = z.strictObject({
+  modelApiKey: z.string().trim().min(1).max(512),
+});
+export type DemoModelKeyInput = z.infer<typeof DemoModelKeyInputSchema>;
+
 export const UserViewSchema = z.strictObject({
   id: z.string(),
   name: z.string(),

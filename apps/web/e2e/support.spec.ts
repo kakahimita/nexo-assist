@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 async function login(page: import('@playwright/test').Page, email: string) {
   await page.goto('/');
@@ -10,14 +11,17 @@ async function login(page: import('@playwright/test').Page, email: string) {
 
 test('B11: analyst claims, replies, and closes a handed-off conversation', async ({ page }) => {
   await login(page, 'ana.souza@nexo.com.br');
-  const creation = page.waitForResponse(
-    (response) =>
-      response.url().endsWith('/api/conversations') && response.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
-  const conversationId = (await (await creation).json()).id as string;
+  const conversationId = await startFreshConversation(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
-  await chat.getByRole('button', { name: 'Falar com analista' }).click();
+  expect(
+    (
+      await page.request.post(`/api/conversations/${conversationId}/handoff`, {
+        headers: { origin: new URL(page.url()).origin },
+        data: { reason: 'employee_request' },
+      })
+    ).status(),
+  ).toBe(201);
+  await page.reload();
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
   await page.getByRole('button', { name: 'Sair' }).click();
 
@@ -39,8 +43,7 @@ test('B11: analyst claims, replies, and closes a handed-off conversation', async
   const conversations = (await (await page.request.get('/api/conversations')).json()) as Array<{
     id: string;
   }>;
-  const index = conversations.findIndex((conversation) => conversation.id === conversationId);
-  await page.getByRole('button', { name: `Conversa ${index + 1}`, exact: true }).click();
+  expect(conversations.at(-1)?.id).toBe(conversationId);
   await expect(page.getByText('Já li o histórico.')).toBeVisible();
   await page.getByRole('button', { name: 'Sair' }).click();
 

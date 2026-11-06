@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -10,6 +11,7 @@ import {
   SupportConversationSummarySchema,
   SupportConversationViewSchema,
   type MessageView,
+  type SupportCloseInput,
   type SupportConversationFilter,
   type SupportConversationSummary,
   type SupportConversationView,
@@ -19,6 +21,9 @@ import { toMessageView } from '../conversations/message-view.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { assertAnalyst, TicketService } from '../tickets/ticket-service.js';
+import { isActiveStatus } from '../tickets/rules.js';
+import { transitionTicket } from '../tickets/status-transition.js';
+import type { TicketStatus } from '@nexo/contracts';
 
 @Injectable()
 export class HumanSupportService {
@@ -68,11 +73,19 @@ export class HumanSupportService {
 
   async claim(user: UserView, conversationId: string): Promise<SupportConversationSummary> {
     assertAnalyst(user);
-    const updated = await this.database.client.conversation.updateMany({
-      where: { id: conversationId, state: 'waiting_for_analyst' },
-      data: { state: 'with_analyst', assignedAnalystId: user.id, stateVersion: { increment: 1 } },
+    await this.database.client.$transaction(async (tx) => {
+      const updated = await tx.conversation.updateMany({
+        where: { id: conversationId, state: 'waiting_for_analyst' },
+        data: { state: 'with_analyst', assignedAnalystId: user.id, stateVersion: { increment: 1 } },
+      });
+      if (updated.count !== 1) throw new ConflictException();
+      const conversation = await tx.conversation.findUniqueOrThrow({
+        where: { id: conversationId },
+        select: { contextTicketId: true },
+      });
+      if (conversation.contextTicketId)
+        await transitionTicket(tx, conversation.contextTicketId, 'in_progress', new Date());
     });
-    if (updated.count !== 1) throw new ConflictException();
     return this.loadSummary(conversationId);
   }
 
@@ -112,14 +125,41 @@ export class HumanSupportService {
     return this.loadSummary(conversationId);
   }
 
-  async close(user: UserView, conversationId: string): Promise<SupportConversationSummary> {
+  async close(
+    user: UserView,
+    conversationId: string,
+    input: SupportCloseInput,
+  ): Promise<SupportConversationSummary> {
     assertAnalyst(user);
     await this.assertOwned(user, conversationId);
-    const updated = await this.database.client.conversation.updateMany({
-      where: { id: conversationId, state: 'with_analyst', assignedAnalystId: user.id },
-      data: { state: 'closed', closedAt: new Date(), stateVersion: { increment: 1 } },
+    await this.database.client.$transaction(async (tx) => {
+      const conversation = await tx.conversation.findUniqueOrThrow({
+        where: { id: conversationId },
+        select: { contextTicketId: true },
+      });
+      const ticket = conversation.contextTicketId
+        ? await tx.ticket.findUnique({
+            where: { id: conversation.contextTicketId },
+            select: { id: true, type: true, status: true },
+          })
+        : null;
+      let next: TicketStatus | null = null;
+      if (ticket && isActiveStatus(ticket.status as TicketStatus)) {
+        if (ticket.type === 'REQ') {
+          if (!input.outcome) throw new BadRequestException();
+          next = input.outcome;
+        } else {
+          if (input.outcome) throw new BadRequestException();
+          next = 'resolved';
+        }
+      }
+      const updated = await tx.conversation.updateMany({
+        where: { id: conversationId, state: 'with_analyst', assignedAnalystId: user.id },
+        data: { state: 'closed', closedAt: new Date(), stateVersion: { increment: 1 } },
+      });
+      if (updated.count !== 1) throw new ConflictException();
+      if (ticket && next) await transitionTicket(tx, ticket.id, next, new Date());
     });
-    if (updated.count !== 1) throw new ConflictException();
     return this.loadSummary(conversationId);
   }
 
@@ -161,6 +201,7 @@ export class HumanSupportService {
     handoffSummary: string | null;
     handoffRequestedAt: Date | null;
     assignedAnalystId: string | null;
+    contextTicketId: string | null;
     closedAt: Date | null;
     owner: { id: string; name: string };
     messages: Array<{ content: string; role: string; createdAt: Date }>;
@@ -180,6 +221,7 @@ export class HumanSupportService {
               requestedAt: row.handoffRequestedAt.toISOString(),
             },
       assignedAnalystId: row.assignedAnalystId,
+      contextTicketId: row.contextTicketId,
       closedAt: row.closedAt?.toISOString() ?? null,
       lastMessage: latest
         ? { content: latest.content, role: latest.role, createdAt: latest.createdAt.toISOString() }

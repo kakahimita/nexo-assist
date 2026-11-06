@@ -42,15 +42,21 @@ export function SupportDetail({
   onClaim: () => void;
   onReply: () => void;
   onReturn: () => void;
-  onClose: () => void;
+  onClose: (outcome?: 'approved' | 'resolved') => void;
 }): React.JSX.Element {
   const owned =
     detail.conversation.state === 'with_analyst' &&
     detail.conversation.assignedAnalystId === user.id;
+  const linkedTicket =
+    detail.tickets.find((ticket) => ticket.id === detail.conversation.contextTicketId) ?? null;
+  const closingRequest = linkedTicket?.type === 'REQ';
 
   return (
     <section aria-label="Atendimento" className="support-detail">
-      <header className="support-detail-header">
+      <header className="support-detail-header" data-state={detail.conversation.state}>
+        <span className="support-detail-avatar" aria-hidden="true">
+          {detail.conversation.employee.name.slice(0, 2).toUpperCase()}
+        </span>
         <div className="support-detail-title">
           <strong>{detail.conversation.employee.name}</strong>
           <span role="status">{stateLabel(detail, owned)}</span>
@@ -64,9 +70,20 @@ export function SupportDetail({
             <button type="button" disabled={busy} onClick={onReturn}>
               Devolver ao agente
             </button>
-            <button type="button" disabled={busy} onClick={onClose}>
-              Encerrar atendimento
-            </button>
+            {closingRequest ? (
+              <>
+                <button type="button" disabled={busy} onClick={() => onClose('approved')}>
+                  Aprovar solicitação
+                </button>
+                <button type="button" disabled={busy} onClick={() => onClose('resolved')}>
+                  Concluir atendimento
+                </button>
+              </>
+            ) : (
+              <button type="button" disabled={busy} onClick={() => onClose()}>
+                Encerrar atendimento
+              </button>
+            )}
           </div>
         ) : null}
       </header>
@@ -111,6 +128,7 @@ export function SupportDetail({
       <SupportTicketContext
         tickets={detail.tickets}
         employeeName={detail.conversation.employee.name}
+        contextTicketId={detail.conversation.contextTicketId}
       />
       {!owned ? (
         <p className="support-detail-readonly">{readOnlyMessage(detail)}</p>

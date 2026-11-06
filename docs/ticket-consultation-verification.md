@@ -63,3 +63,23 @@ Differences that remain:
 - The overdue offer buttons ("Falar com um analista", "Adicionar informação", "Não, obrigado") are intentionally absent: the transfer is automatic.
 - The action chips read "Consulta de chamados", not the prototype's per-action labels.
 - Typography and spacing are approximate. Native Pencil exports are unavailable, so exact fidelity is not claimed.
+
+## Ticket number and status follow-up in PR #47 (#49)
+
+Issue [#49](https://github.com/kakahimita/nexo-assist/issues/49) closes the three data gaps listed above: tickets now carry a public number, the consultation view carries the description, and the status vocabulary has five real states.
+
+- **Number.** `Ticket.number` is allocated per type inside the confirmation transaction (`INC-20311`, `REQ-10442`) and sent as a formatted string. The migration backfills existing rows using `createdAt, id` per type; the seed keeps the PRD examples. Consultation reference search accepts the formatted number.
+- **Status.** `open`, `waiting_for_analyst`, `in_progress`, `approved` and `resolved` are persisted and moved only by supported actions: handoff sets waiting for the linked ticket, claim sets in progress, returning keeps in progress, closing an incident resolves it, and closing a request requires an explicit approve/conclude outcome. Reopening a resolved or approved ticket inside seven days returns it to open and clears the transfer flag.
+- **Card.** The employee card now shows `Chamado · INC-20311 · status`, the description, and the grid Categoria, Prioridade, Aberto em, Última atualização. The deadline stays visible in its own line (`Prazo: … · Prazo vencido`) to keep B03's deadline evidence, and the selection rows show the number.
+
+Conventions and limits, recorded rather than hidden: the PRD Annex B status list is illustrative, so the transition table is a documented project convention; there is no `Recusado` state, so a denied request closes as `resolved` with the analyst's justification; one conversation links at most one ticket; legacy decisions stored before this change render without a number instead of inventing one. Analyst search by ticket number remains future work.
+
+Evidence: `npm run check` passed with isolated ports 3100/3101 and temporary databases — typecheck, lint, formatting, 156 unit tests, 61 integration tests, build, and 65 Chromium tests. Integration covers numbering per type and uniqueness, backfill, transition boundaries, close outcome validation, and terminal-ticket no-ops; Chromium covers the number/status/description card, the legacy fallback, one-click selection, and 375 px overflow. Live-model smoke was not run.
+
+### Review follow-ups
+
+- The context ticket is resolved in the documented order (explicit handoff ticket, newest completed single-ticket decision, then the existing link), so a returned conversation that consults another ticket cannot keep operating on the old one. Failed turns are excluded from the decision lookup.
+- An idempotent confirmation replay re-reads the ticket and returns its current number and status instead of the stored snapshot.
+- The automatic overdue transfer stores the post-handoff `waiting_for_analyst` status in the message decision, so the card matches the waiting banner on a fresh database.
+- A supplement or reopen draft shows the affected ticket's number and status.
+- Number evidence is fresh-database specific: the seed creates `INC-20311`, `INC-20150` and `REQ-10442`, while a migrated existing database is backfilled from `20000`/`10000`.

@@ -7,6 +7,8 @@ import type {
   UserView,
 } from '@nexo/contracts';
 import { ConversationsService } from '../conversations/conversations.service.js';
+import { restoreConversationFlow } from '../conversations/conversation-flow.js';
+import { resumeSupportFlow } from '../conversations/conversation-flow.js';
 import { ConsultationTurn } from '../agent/consultation/turn.js';
 import type { ConsultationEngine, ConsultationEngineEvent } from '../agent/consultation/types.js';
 import { ConsultTicketsResultSchema } from '../agent/tools/consultation-tool-schemas.js';
@@ -34,6 +36,14 @@ function errorCode(error: unknown, signal: AbortSignal): ErrorCode {
     ? message
     : 'model_unavailable';
 }
+function singleActiveTicket(turn: ConsultationTurn): string | null {
+  const active = turn
+    .partial()
+    .tickets.filter((ticket) =>
+      ['open', 'waiting_for_analyst', 'in_progress'].includes(ticket.status),
+    );
+  return active.length === 1 ? active[0]!.id : null;
+}
 @Injectable()
 export class ConsultationService {
   constructor(
@@ -47,11 +57,18 @@ export class ConsultationService {
     signal: AbortSignal,
     runId: string,
     stateVersion: number,
+    modelApiKey?: string,
   ): AsyncIterable<ConsultationStreamEvent> {
     yield { type: 'user-message', message };
     const turn = new ConsultationTurn();
     try {
       const history = await this.conversations.messages(user, conversationId);
+      const storedFlow = await this.conversations.flow(user, conversationId);
+      const flow = restoreConversationFlow(
+        storedFlow,
+        history.filter((item) => item.role === 'employee').map((item) => item.content),
+      );
+      let nextFlow = flow;
       let finished = false;
       for await (const event of this.engine.run({
         user,
@@ -62,14 +79,25 @@ export class ConsultationService {
         now: new Date(),
         conversationId,
         runId,
+        flow,
+        ...(modelApiKey === undefined ? {} : { modelApiKey }),
       })) {
         if (signal.aborted) throw new Error('interrupted');
         if (event.type === 'handoff') {
-          await this.conversations.requestHandoff(user, conversationId, event.reason);
+          await this.conversations.requestHandoff(
+            user,
+            conversationId,
+            event.reason,
+            singleActiveTicket(turn),
+          );
           yield { type: 'handoff-waiting' };
           return;
         }
         const before = turn.partial().actions.length;
+        if (event.type === 'flow') {
+          nextFlow = event.flow;
+          continue;
+        }
         turn.apply(event);
         const overdue = overdueConsultedTicket(event);
         if (overdue) {
@@ -89,7 +117,12 @@ export class ConsultationService {
           event.decision.action === 'handoff' &&
           event.decision.missingFacts.length === 0
         ) {
-          await this.conversations.requestHandoff(user, conversationId, 'unresolved_uncertainty');
+          await this.conversations.requestHandoff(
+            user,
+            conversationId,
+            'unresolved_uncertainty',
+            singleActiveTicket(turn),
+          );
           yield { type: 'handoff-waiting' };
           return;
         }
@@ -100,9 +133,16 @@ export class ConsultationService {
       if (signal.aborted) throw new Error('interrupted');
       if (!finished) throw new Error('invalid_output');
       const snapshot = turn.snapshot();
-      if (!snapshot.text.trim()) throw new Error('invalid_output');
+      const visibleText = snapshot.decision.reply?.trim() || snapshot.text.trim();
+      if (!visibleText) throw new Error('invalid_output');
       const decision: ConsultationDecisionView = {
-        ...snapshot.decision,
+        intent: snapshot.decision.intent,
+        action: snapshot.decision.action,
+        appliedRule: snapshot.decision.appliedRule,
+        confidence: snapshot.decision.confidence,
+        justification: snapshot.decision.justification,
+        missingFacts: snapshot.decision.missingFacts,
+        quickReplies: snapshot.decision.quickReplies,
         actions: snapshot.actions,
         evidence: snapshot.evidence,
         tickets: snapshot.tickets,
@@ -111,16 +151,20 @@ export class ConsultationService {
         source: this.engine.source,
         draftId: snapshot.draftId,
       };
+      if (flow.mode === 'ticket_consultation' && flow.facts.selectedTicketId) {
+        nextFlow = resumeSupportFlow(flow);
+      }
       const final = await this.conversations.appendAgentTurnIfCurrent(
         user,
         conversationId,
         stateVersion,
         {
-          content: snapshot.text,
+          content: visibleText,
           status: 'completed',
           decision,
           promptVersion: this.engine.promptVersion,
           runId,
+          flow: nextFlow,
         },
       );
       if (final === null) {
@@ -184,7 +228,7 @@ export class ConsultationService {
       quickReplies: [],
       actions: partial.actions,
       evidence: partial.evidence,
-      tickets: [ticket],
+      tickets: [{ ...ticket, status: 'waiting_for_analyst' }],
       outcome: 'completed',
       errorCode: null,
       source: engine.source,
@@ -206,7 +250,7 @@ export class ConsultationService {
       return;
     }
     yield { type: 'done', message };
-    await this.conversations.requestHandoff(user, conversationId, 'overdue_ticket');
+    await this.conversations.requestHandoff(user, conversationId, 'overdue_ticket', ticket.id);
     yield { type: 'handoff-waiting' };
   }
 }

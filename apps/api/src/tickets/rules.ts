@@ -1,3 +1,5 @@
+import type { TicketStatus } from '@nexo/contracts';
+
 export type Priority = 'critical' | 'high' | 'medium' | 'low';
 export type Impact = 'self' | 'team' | 'company' | 'unknown';
 export type WorkState = 'stopped' | 'workaround' | 'request' | 'unknown';
@@ -110,7 +112,26 @@ export function isOverdue(due: Date, now: Date): boolean {
   return now.getTime() > due.getTime();
 }
 
-export function canReopen(resolvedAt: Date, now: Date): boolean {
-  const elapsed = now.getTime() - resolvedAt.getTime();
+export function canReopen(status: TicketStatus, terminalAt: Date, now: Date): boolean {
+  if (!terminalTimestamp(status)) return false;
+  const elapsed = now.getTime() - terminalAt.getTime();
   return elapsed >= 0 && elapsed <= 7 * 24 * HOUR;
+}
+
+const activeStatuses: readonly TicketStatus[] = ['open', 'waiting_for_analyst', 'in_progress'];
+
+export function isActiveStatus(status: TicketStatus): boolean {
+  return activeStatuses.includes(status);
+}
+
+export function terminalTimestamp(status: TicketStatus): boolean {
+  return status === 'approved' || status === 'resolved';
+}
+
+export function canSupplement(status: TicketStatus): boolean {
+  return isActiveStatus(status);
+}
+
+export function canTransfer(status: TicketStatus, transferRequested: boolean): boolean {
+  return status === 'open' && !transferRequested;
 }

@@ -1,6 +1,11 @@
-import type { ConsultationEngineDecision } from '@nexo/contracts';
+import {
+  EmptyConversationFlow,
+  ticketStatusLabel,
+  type ConsultationEngineDecision,
+} from '@nexo/contracts';
 import type { ConsultationTools } from '../tools/consultation-tools.js';
 import { explicitFacts } from '../tools/explicit-facts.js';
+import { transitionConversationFlow } from '../../conversations/conversation-flow.js';
 import {
   CONSULTATION_PROMPT_VERSION,
   type ConsultationEngine,
@@ -13,6 +18,8 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
     promptVersion: CONSULTATION_PROMPT_VERSION,
     async *run(request) {
       const latest = request.messages.at(-1)?.content ?? '';
+      const flow = transitionConversationFlow(request.flow ?? EmptyConversationFlow, latest);
+      yield { type: 'flow', flow } as ConsultationEngineEvent;
       const context = request.messages
         .filter((message) => message.role === 'employee')
         .map((message) => message.content)
@@ -68,7 +75,39 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
         );
       let text = '';
       let decision: ConsultationEngineDecision;
-      if (
+      if (flow.mode === 'ticket_consultation') {
+        const selectedTicketId = flow.facts.selectedTicketId;
+        const result = await tools.consultTickets(
+          request.user,
+          selectedTicketId ? { query: selectedTicketId, kind: 'reference' } : {},
+          request.now,
+        );
+        yield {
+          type: 'tool-result',
+          toolCallId: 'tickets',
+          tool: 'consult-tickets',
+          result,
+        } as ConsultationEngineEvent;
+        const selected = result.match === 'one' ? result.tickets[0] : undefined;
+        if (selected?.overdue) {
+          yield { type: 'handoff', reason: 'overdue_ticket' };
+          return;
+        }
+        text = selected
+          ? `${selected.title}: ${ticketStatusLabel(selected.status).toLowerCase()}. Prazo: ${selected.deadline}.`
+          : 'Você tem chamados abertos. Sobre qual deles quer saber?';
+        decision = {
+          intent: 'Consulta de chamado',
+          action: selected ? 'answer' : 'clarify',
+          appliedRule: 'Somente chamados do funcionário',
+          confidence: 1,
+          justification: selected
+            ? 'Chamado selecionado pela pessoa.'
+            : 'A pessoa pediu uma consulta de chamados.',
+          missingFacts: selected ? [] : ['chamado'],
+          quickReplies: [],
+        };
+      } else if (
         /\b(rh|ferias|financeiro|reembolso|instalacoes|facilities|predial|limpeza)\b/.test(recent)
       ) {
         text =
@@ -315,6 +354,36 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
           missingFacts: article ? [] : ['versão do Windows'],
           quickReplies: article ? [] : ['Windows 10', 'Windows 11'],
         };
+      } else if (/\bvpn\b/.test(recent)) {
+        text =
+          'Qual versão do Windows e qual mensagem ou código de erro aparece ao conectar à VPN?';
+        decision = {
+          intent: 'Falha de VPN',
+          action: 'clarify',
+          appliedRule: 'Compatibilidade com a versão do Windows',
+          confidence: 0.5,
+          justification: 'A versão do Windows e a mensagem de erro são necessárias.',
+          missingFacts: ['versão do Windows', 'mensagem de erro'],
+          quickReplies: ['Windows 10', 'Windows 11'],
+        };
+      } else if (
+        !flow.facts.subject &&
+        !/\b(?:status|andamento|prazo|situacao|situação|consult(?:a|ar)?|acompanhar)\b/.test(
+          recent,
+        ) &&
+        !/\b(?:INC|REQ)-[\w-]+\b/i.test(latest)
+      ) {
+        text =
+          'Descreva o equipamento ou serviço e o que acontece. Para consultar um chamado, informe o número ou pergunte pelo status.';
+        decision = {
+          intent: 'Solicitação de TI',
+          action: 'clarify',
+          appliedRule: 'Identificação da necessidade',
+          confidence: 0.5,
+          justification: 'Não há uma solicitação explícita de consulta de chamado.',
+          missingFacts: ['descrição'],
+          quickReplies: [],
+        };
       } else {
         const reference = latest.match(/\b(?:INC|REQ)-[\w-]+\b/i)?.[0];
         const title = /notebook lento/i.test(latest)
@@ -340,7 +409,7 @@ export function createFixtureConsultation(tools: ConsultationTools): Consultatio
           return;
         }
         text = selected
-          ? `${selected.title}: ${selected.status === 'open' ? 'aberto' : 'resolvido'}. Prazo: ${selected.deadline}. ${selected.overdue ? 'O prazo está vencido.' : 'O prazo não está vencido.'}`
+          ? `${selected.title}: ${ticketStatusLabel(selected.status).toLowerCase()}. Prazo: ${selected.deadline}. ${selected.overdue ? 'O prazo está vencido.' : 'O prazo não está vencido.'}`
           : 'Qual chamado você deseja consultar? Selecione uma das opções.';
         decision = {
           intent: 'Consulta de chamado',
