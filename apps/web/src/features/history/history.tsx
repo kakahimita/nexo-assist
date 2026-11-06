@@ -37,6 +37,36 @@ export function History({
   const busyRef = useRef(false);
   const loadVersion = useRef(0);
   const selectionVersion = useRef(0);
+  useEffect(() => {
+    if (user.role !== 'analyst') return;
+    const controller = new AbortController();
+    let running = false;
+    const heartbeat = async () => {
+      if (document.visibilityState !== 'visible' || running) return;
+      running = true;
+      try {
+        await fetch('/api/session/presence', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(5_000)]),
+        });
+      } catch {
+        /* Presence expires without successful heartbeats. */
+      } finally {
+        running = false;
+      }
+    };
+    void heartbeat();
+    const interval = setInterval(() => void heartbeat(), 20_000);
+    const visible = () => void heartbeat();
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', visible);
+    };
+  }, [user.role]);
   const call = useCallback(
     async (url: string, options?: RequestInit) => {
       const response = await fetch(url, options);

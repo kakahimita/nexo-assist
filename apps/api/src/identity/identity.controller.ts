@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { DemoModelKeyInputSchema, LoginInputSchema } from '@nexo/contracts';
+import { z } from 'zod';
 import { IdentityGuard, sessionToken, type AuthRequest } from './identity.guard.js';
 import { IdentityService } from './identity.service.js';
 import { SessionModelKeyStore } from './session-model-key.store.js';
@@ -83,6 +84,13 @@ export class IdentityController {
   @UseGuards(IdentityGuard)
   current(@Req() request: AuthRequest) {
     return request.user;
+  }
+  @Post('presence')
+  @HttpCode(204)
+  @UseGuards(IdentityGuard)
+  async presence(@Req() request: AuthRequest, @Body() body: unknown) {
+    if (!z.strictObject({}).safeParse(body).success) throw new BadRequestException();
+    await this.identity.heartbeat(sessionToken(request.headers.cookie));
   }
   @Delete()
   @HttpCode(204)

@@ -1,5 +1,9 @@
 # Delivery roadmap
 
+The owner's [#58 functional metrics extension](service-metrics-verification.md)
+replaces V01's illustrative indicators with historical measurements and analyst
+presence; the bounded calculation and browser evidence are documented separately.
+
 The [#52 correction](autonomous-resolution-verification.md) addresses the transition from autonomous troubleshooting to confirmed tickets and human continuation across #6/#7/#10. Its evidence and remaining live-model limits are tracked separately from prototype fidelity. The [#54 handoff summary follow-up](human-support-verification.md) adds the collapsed/expanded analyst card described in issue #54; full V05 fidelity remains #9.
 
 Parent: [#1](https://github.com/kakahimita/nexo-assist/issues/1).

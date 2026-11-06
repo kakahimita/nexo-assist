@@ -1,5 +1,10 @@
 # Challenge acceptance and test matrix
 
+The owner's [#58 functional metrics extension](service-metrics-verification.md)
+adds measured V01 login indicators, explicit employee resolution confirmation and
+expiring analyst presence. These supersede the design's sample numbers without
+changing the original reference assets.
+
 The [#52 autonomous-resolution correction](autonomous-resolution-verification.md) records bounded B02/B04/B07/B09–B13/B15–B16 regression coverage and sampled real-model browser evidence. It does not replace the original sources or establish exhaustive live reliability or visual acceptance.
 
 Status: requirements; foundation B17 evidence is recorded in [foundation verification](foundation-verification.md). Identity and conversation-history evidence for #4, including its limits, is recorded in [identity and history verification](identity-history-verification.md). Full B13, B16 and visual acceptance remain broader than this increment. Other rows remain planned unless independently demonstrated.

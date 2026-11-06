@@ -2,6 +2,7 @@
 import { UserViewSchema, type UserView } from '@nexo/contracts';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { History } from '../history/history';
+import { ServiceIndicators } from './service-metrics';
 
 export function Login(): React.JSX.Element {
   const [user, setUser] = useState<UserView | null>(null);
@@ -111,25 +112,7 @@ export function Login(): React.JSX.Element {
             </div>
           </div>
         </div>
-        <div className="intro-metrics" aria-label="Exemplo ilustrativo de indicadores">
-          <p className="metrics-caption">Indicadores ilustrativos</p>
-          <div className="intro-highlights">
-            <div>
-              <strong>8 s</strong>
-              <span>primeira resposta, em média</span>
-            </div>
-            <div>
-              <strong>72%</strong>
-              <span>resolvidos sem fila</span>
-            </div>
-            <div>
-              <strong>
-                6 <i aria-hidden="true" />
-              </strong>
-              <span>analistas online agora</span>
-            </div>
-          </div>
-        </div>
+        <ServiceIndicators />
       </section>
       <main className="login-main">
         <div className="login-topline">

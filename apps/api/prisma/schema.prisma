@@ -32,8 +32,10 @@ model Session {
   id String @id @default(cuid())
   tokenHash String @unique
   expiresAt DateTime
+  lastSeenAt DateTime?
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([lastSeenAt, expiresAt])
 }
 
 model Conversation {
@@ -51,6 +53,7 @@ model Conversation {
   contextTicketId String?
   contextTicket Ticket? @relation("ConversationContextTicket", fields: [contextTicketId], references: [id], onDelete: SetNull)
   closedAt DateTime?
+  resolvedByAgentMessageId String?
   flowJson String @default("{\"mode\":\"none\",\"stage\":\"idle\",\"facts\":{}}")
   messages Message[]
   draftProposalRuns DraftProposalRun[]
