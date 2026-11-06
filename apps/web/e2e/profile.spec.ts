@@ -41,7 +41,9 @@ test('V03: employee top bar reports availability while readiness is pending', as
 
   await signInAsAna(page);
 
-  await expect(page.getByRole('status').filter({ hasText: 'Verificando disponibilidade' })).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Verificando disponibilidade' }),
+  ).toBeVisible();
 });
 
 test('V03: employee can retry after an unavailable assistant check', async ({ page }) => {
@@ -58,7 +60,9 @@ test('V03: employee can retry after an unavailable assistant check', async ({ pa
 
   await signInAsAna(page);
 
-  await expect(page.getByRole('status').filter({ hasText: 'Assistente indisponível' })).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Assistente indisponível' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Tentar novamente' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Assistente online' })).toBeVisible();
 });
