@@ -194,7 +194,7 @@ changed.
 
 Executed evidence on 2026-11-06 from `feature/LAB-0054`: the full
 `npm run check` passed with isolated ports 3102/3103 — typecheck, lint,
-formatting, 650 unit tests, 232 integration tests, production build, and 76
+formatting, 181 unit tests, 63 integration tests, production build, and 76
 Chromium tests. The new browser case covers the collapsed height, the toggle
 label and `aria-expanded`, keyboard activation, expansion without overlapping the
 message area, and the return to the collapsed height; the existing V05 case
@@ -204,9 +204,9 @@ on port 3100: `outputs/handoff-before.png`, `outputs/handoff-collapsed.png` and
 380 px expanded for the same summary). No model key was used and
 `npm run smoke:model` was not run.
 
-A first `npm run check` attempt stopped in the unit phase: the nested worktrees
-under `work/` run duplicate copies of the same database-heavy knowledge test and
-timed out under parallel load. The same suite passed on rerun, and the full check
-then passed end to end. Those worktrees are local and ignored; excluding
-`work/**` from Vitest discovery is not part of this increment.
+An earlier `npm run check` attempt stopped in the unit phase because nested local
+worktrees under `work/` run duplicate copies of the same database-heavy
+knowledge test and timed out under parallel load. `vitest.config.ts` now excludes
+`work/**` from both projects, so local worktrees no longer multiply the suite;
+the counts above are the project's own tests.
 
