@@ -250,6 +250,11 @@ describe('B04: collect missing facts before proposing a ticket draft', () => {
         ticketId: 'fixture-ana-open',
         content: 'Também reinicia sozinho',
       });
+      expect(draft.ticket).toMatchObject({
+        id: 'fixture-ana-open',
+        number: 'INC-20311',
+        status: 'open',
+      });
       await request(server)
         .post(`/api/ticket-drafts/${draft.id}/confirm`)
         .set('Cookie', cookie)

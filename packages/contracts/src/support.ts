@@ -12,6 +12,7 @@ export const SupportConversationSummarySchema = z.strictObject({
   employee: z.strictObject({ id: z.string(), name: z.string() }),
   handoff: HandoffViewSchema.nullable(),
   assignedAnalystId: z.string().nullable(),
+  contextTicketId: z.string().nullable().default(null),
   closedAt: z.string().datetime().nullable(),
   lastMessage: z
     .strictObject({
@@ -37,3 +38,8 @@ export const SupportReplyInputSchema = z.strictObject({
     .refine((value) => value.trim().length > 0),
 });
 export type SupportReplyInput = z.infer<typeof SupportReplyInputSchema>;
+
+export const SupportCloseInputSchema = z.strictObject({
+  outcome: z.enum(['approved', 'resolved']).optional(),
+});
+export type SupportCloseInput = z.infer<typeof SupportCloseInputSchema>;

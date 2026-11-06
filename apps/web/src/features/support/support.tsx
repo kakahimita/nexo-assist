@@ -1,21 +1,41 @@
 'use client';
 import {
   SupportConversationViewSchema,
+  SupportReplyInputSchema,
   type SupportConversationFilter,
   type SupportConversationView,
+  type UserView,
 } from '@nexo/contracts';
-import { useCallback, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { SupportDetail } from './support-detail';
 import { SupportQueue } from './support-queue';
 import { useSupportQueue } from './use-support-queue';
 
-export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Element {
+function withoutDraft(drafts: Record<string, string>, id: string): Record<string, string> {
+  const next = { ...drafts };
+  delete next[id];
+  return next;
+}
+
+export function Support({
+  user,
+  onLogout,
+}: {
+  user: UserView;
+  onLogout: () => void;
+}): React.JSX.Element {
   const [filter, setFilter] = useState<SupportConversationFilter>('waiting');
   const [selectedId, setSelectedId] = useState('');
   const [detail, setDetail] = useState<SupportConversationView | null>(null);
-  const [content, setContent] = useState('');
-  const [error, setError] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [detailError, setDetailError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const selectionVersion = useRef(0);
+  const selectionController = useRef<AbortController | null>(null);
+  const busyRef = useRef(false);
   const {
     items: queue,
     status: queueStatus,
@@ -36,139 +56,151 @@ export function Support({ onLogout }: { onLogout: () => void }): React.JSX.Eleme
     [onLogout],
   );
 
-  async function select(id: string) {
+  useEffect(
+    () => () => {
+      selectionController.current?.abort();
+    },
+    [],
+  );
+
+  async function select(id: string): Promise<boolean> {
+    const version = ++selectionVersion.current;
+    selectionController.current?.abort();
+    const controller = new AbortController();
+    selectionController.current = controller;
     setSelectedId(id);
+    setDetail(null);
+    setDetailLoading(true);
+    setDetailError('');
+    setActionError('');
     setNotice('');
-    setError('');
     try {
-      const data: unknown = await (await call(`/api/support/conversations/${id}`)).json();
+      const data: unknown = await (
+        await call(`/api/support/conversations/${id}`, { signal: controller.signal })
+      ).json();
+      if (version !== selectionVersion.current) return true;
       setDetail(SupportConversationViewSchema.parse(data));
-    } catch {
-      setError('Não foi possível carregar a conversa.');
+      return true;
+    } catch (cause) {
+      if (version !== selectionVersion.current) return false;
+      if (cause instanceof DOMException && cause.name === 'AbortError') return false;
+      setDetailError('Não foi possível carregar a conversa.');
+      return false;
+    } finally {
+      if (version === selectionVersion.current) setDetailLoading(false);
     }
   }
 
   async function act(path: string, body: string): Promise<boolean> {
-    if (busy) return false;
+    if (busyRef.current) return false;
+    const targetId = selectedId;
+    busyRef.current = true;
     setBusy(true);
+    setActionError('');
+    setNotice('');
     try {
-      await call(`/api/support/conversations/${selectedId}/${path}`, {
+      await call(`/api/support/conversations/${targetId}/${path}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body,
       });
       return true;
     } catch {
-      setError('Não foi possível concluir a ação.');
+      setActionError('Não foi possível concluir a ação.');
       return false;
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
 
   async function claim() {
+    const targetId = selectedId;
     if (!(await act('claim', '{}'))) return;
-    await select(selectedId);
+    await select(targetId);
     await loadQueue();
   }
 
-  async function reply(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text = content.trim();
-    if (!text || busy) return;
-    setContent('');
-    if (!(await act('reply', JSON.stringify({ content: text })))) return;
-    await select(selectedId);
+  async function reply() {
+    const targetId = selectedId;
+    const parsed = SupportReplyInputSchema.safeParse({
+      content: (drafts[targetId] ?? '').trim(),
+    });
+    if (!parsed.success) {
+      setActionError('Informe uma resposta válida.');
+      return;
+    }
+    if (!(await act('reply', JSON.stringify(parsed.data)))) return;
+    setDrafts((current) => withoutDraft(current, targetId));
+    if (!(await select(targetId)))
+      setNotice('Resposta enviada. Não foi possível atualizar a conversa.');
   }
 
   async function returnToAgent() {
+    const targetId = selectedId;
     if (!(await act('return', '{}'))) return;
+    setDrafts((current) => withoutDraft(current, targetId));
     setDetail(null);
     setSelectedId('');
+    setNotice('Atendimento devolvido ao agente.');
     await loadQueue();
   }
 
-  async function close() {
-    if (!(await act('close', '{}'))) return;
+  async function close(outcome?: 'approved' | 'resolved') {
+    const targetId = selectedId;
+    if (!(await act('close', JSON.stringify(outcome ? { outcome } : {})))) return;
+    setDrafts((current) => withoutDraft(current, targetId));
+    setDetail(null);
+    setSelectedId('');
     setNotice('Atendimento encerrado.');
-    setDetail(null);
-    setSelectedId('');
     await loadQueue();
   }
-
-  const owned = detail?.conversation.state === 'with_analyst';
 
   return (
     <div className="support">
-      {error && <p role="alert">{error}</p>}
-      {notice && <p role="status">{notice}</p>}
-      <SupportQueue
-        items={queue}
-        filter={filter}
-        selectedId={selectedId}
-        status={queueStatus}
-        error={queueError}
-        onFilterChange={setFilter}
-        onSelect={(id) => void select(id)}
-        onRetry={() => void loadQueue()}
-      />
-      {detail && (
-        <section aria-label="Atendimento" className="support-detail">
-          <header className="support-detail-header">
-            <strong>{detail.conversation.employee.name}</strong>
-            <span role="status">{owned ? 'Você está atendendo' : 'Aguardando atendente'}</span>
-          </header>
-          {!owned ? (
-            <button type="button" disabled={busy} onClick={() => void claim()}>
-              Assumir atendimento
-            </button>
-          ) : (
-            <>
-              <button type="button" disabled={busy} onClick={() => void returnToAgent()}>
-                Devolver ao agent
+      <div className="support-queue-column">
+        <SupportQueue
+          items={queue}
+          filter={filter}
+          selectedId={selectedId}
+          status={queueStatus}
+          error={queueError}
+          busy={busy}
+          onFilterChange={setFilter}
+          onSelect={(id) => {
+            if (!busyRef.current) void select(id);
+          }}
+          onRetry={() => void loadQueue()}
+        />
+      </div>
+      <div className="support-detail-column">
+        {notice && <p role="status">{notice}</p>}
+        {detailError && (
+          <div role="alert">
+            <p>{detailError}</p>
+            {selectedId && (
+              <button type="button" onClick={() => void select(selectedId)}>
+                Tentar novamente
               </button>
-              <button type="button" disabled={busy} onClick={() => void close()}>
-                Encerrar atendimento
-              </button>
-            </>
-          )}
-          <div className="support-messages">
-            {detail.messages.map((message) => (
-              <p key={message.id}>
-                {message.role === 'analyst' ? `${message.authorName ?? 'Suporte'}: ` : ''}
-                {message.content}
-              </p>
-            ))}
+            )}
           </div>
-          <section aria-label={`Chamados de ${detail.conversation.employee.name}`}>
-            <h2>Chamados de {detail.conversation.employee.name}</h2>
-            {detail.tickets.length === 0 && <p>Nenhum chamado.</p>}
-            {detail.tickets.map((ticket) => (
-              <p key={ticket.id}>
-                {ticket.title} · {ticket.status === 'open' ? 'Aberto' : 'Resolvido'} · prioridade{' '}
-                {ticket.priority}
-              </p>
-            ))}
-          </section>
-          {!owned ? (
-            <p>Assuma o atendimento para responder</p>
-          ) : (
-            <form onSubmit={reply}>
-              <label htmlFor="reply">Resposta</label>
-              <textarea
-                id="reply"
-                value={content}
-                onChange={(event) => setContent(event.target.value)}
-                disabled={busy}
-                required
-              />
-              <button type="submit" disabled={busy}>
-                Enviar resposta
-              </button>
-            </form>
-          )}
-        </section>
-      )}
+        )}
+        {detailLoading && <p role="status">Carregando conversa…</p>}
+        {detail && (
+          <SupportDetail
+            detail={detail}
+            user={user}
+            busy={busy}
+            draft={drafts[selectedId] ?? ''}
+            error={actionError}
+            onDraftChange={(value) => setDrafts((current) => ({ ...current, [selectedId]: value }))}
+            onClaim={() => void claim()}
+            onReply={() => void reply()}
+            onReturn={() => void returnToAgent()}
+            onClose={(outcome) => void close(outcome)}
+          />
+        )}
+      </div>
     </div>
   );
 }

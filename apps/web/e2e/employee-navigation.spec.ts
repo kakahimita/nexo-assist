@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 test('V02 V06: employee navigation works with keyboard at desktop and narrow widths', async ({
   page,
@@ -8,7 +9,7 @@ test('V02 V06: employee navigation works with keyboard at desktop and narrow wid
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('qualquer');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
   await page.getByLabel('Mensagem').fill('Texto não enviado');
   const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
   const navBox = await navigation.boundingBox();
@@ -23,6 +24,10 @@ test('V02 V06: employee navigation works with keyboard at desktop and narrow wid
   await expect(page.getByRole('heading', { name: 'Meu perfil' })).toBeVisible();
   await navigation.getByRole('button', { name: 'Atendimento' }).focus();
   await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Mensagem')).toHaveValue('Texto não enviado');
+  await expect(navigation.getByRole('button')).toHaveCount(2);
+  await expect(navigation.getByRole('button', { name: 'Meus chamados' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Conversas' })).toHaveCount(0);
   await expect(page.getByLabel('Mensagem')).toHaveValue('Texto não enviado');
   await page.setViewportSize({ width: 375, height: 812 });
   await expect(profile).toBeVisible();

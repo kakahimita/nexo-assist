@@ -1,11 +1,39 @@
 import { expect, test } from '@playwright/test';
 
-async function loginAsAnalyst(page: import('@playwright/test').Page) {
+async function loginAsAnalyst(page: import('@playwright/test').Page): Promise<string> {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('analista@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
+  await expect(page.getByRole('button', { name: 'Sair' })).toBeVisible();
+  return page.evaluate(async () => (await (await fetch('/api/session')).json()).id as string);
 }
+
+test('V04: searches the loaded queue by employee name and message', async ({ page }) => {
+  const item = (id: string, name: string, content: string) => ({
+    id,
+    state: 'waiting_for_analyst',
+    stateVersion: 0,
+    employee: { id: `${id}-employee`, name },
+    handoff: null,
+    assignedAnalystId: null,
+    closedAt: null,
+    lastMessage: { content, createdAt: '2026-11-04T12:03:00.000Z', role: 'employee' },
+  });
+  await page.route('**/api/support/conversations?filter=*', (route) =>
+    route.fulfill({
+      json: [item('ana', 'Ana Souza', 'Notebook lento'), item('bruna', 'Bruna Lima', 'Acesso VPN')],
+    }),
+  );
+  await loginAsAnalyst(page);
+  const queue = page.getByRole('region', { name: 'Conversas' });
+  const search = queue.getByRole('searchbox', { name: 'Pesquisar conversas' });
+  await search.fill('vpn');
+  await expect(queue.getByRole('button', { name: /Bruna Lima/ })).toBeVisible();
+  await expect(queue.getByRole('button', { name: /Ana Souza/ })).toHaveCount(0);
+  await search.fill('sem resultado');
+  await expect(queue.getByText('Nenhuma conversa encontrada.')).toBeVisible();
+});
 
 test('B11 V04: announces queue loading without presenting it as empty', async ({ page }) => {
   let release!: () => void;
@@ -138,7 +166,8 @@ test('B11: queue retry preserves the selected detail, reply, and action error', 
     await route.fulfill({ status: 500 });
   });
 
-  await loginAsAnalyst(page);
+  const analystId = await loginAsAnalyst(page);
+  item.assignedAnalystId = analystId;
   await page.locator('[data-conversation-id="owned"]').click();
   await page.getByLabel('Resposta').fill('Rascunho que não pode ser perdido');
   await page.getByRole('button', { name: 'Encerrar atendimento' }).click();

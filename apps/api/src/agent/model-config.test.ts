@@ -37,6 +37,13 @@ describe('parseModelEnvironment', () => {
       }),
     ).toEqual({ provider: 'google', model: 'gemini-3.5-flash', apiKey: VALID_KEY });
   });
+  it('uses a session key without requiring an environment key', () => {
+    expect(parseModelEnvironment({ MODEL_NAME: 'gemini-3.5-flash' }, 'session-key')).toEqual({
+      provider: 'google',
+      model: 'gemini-3.5-flash',
+      apiKey: 'session-key',
+    });
+  });
 
   it('B17: rejects a missing key by naming the variable', () => {
     const error = captureError(() => parseModelEnvironment({}));

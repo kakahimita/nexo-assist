@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 
 test('B13: browser history survives restarting the API process', async ({ page, baseURL }) => {
   const directory = await mkdtemp(join(tmpdir(), 'nexo-browser-restart-'));
@@ -75,15 +76,14 @@ test('B13: browser history survives restarting the API process', async ({ page, 
     await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
     await page.getByLabel('Senha', { exact: true }).fill('x');
     await page.getByRole('button', { name: 'Entrar' }).click();
-    await page.getByRole('button', { name: 'Nova conversa' }).click();
+    await startFreshConversation(page);
     await page.getByLabel('Mensagem').fill('Histórico após reinício');
-    await page.getByRole('button', { name: 'Enviar mensagem' }).click();
+    await page.getByRole('button', { name: 'Enviar', exact: true }).click();
     await expect(page.getByText('Histórico após reinício')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Enviar mensagem' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Enviar', exact: true })).toBeEnabled();
     await stop();
     await start();
     await page.reload();
-    await page.getByRole('button', { name: 'Conversa 1' }).click();
     await expect(page.getByText('Histórico após reinício')).toBeVisible();
   } finally {
     await stop();

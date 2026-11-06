@@ -1,6 +1,24 @@
 import { z } from 'zod';
 
 export const TicketTypeSchema = z.enum(['INC', 'REQ']);
+export const TicketStatusSchema = z.enum([
+  'open',
+  'waiting_for_analyst',
+  'in_progress',
+  'approved',
+  'resolved',
+]);
+export type TicketStatus = z.infer<typeof TicketStatusSchema>;
+const statusLabels: Record<TicketStatus, string> = {
+  open: 'Aberto',
+  waiting_for_analyst: 'Aguardando analista',
+  in_progress: 'Em andamento',
+  approved: 'Aprovado',
+  resolved: 'Resolvido',
+};
+export function ticketStatusLabel(status: TicketStatus): string {
+  return statusLabels[status];
+}
 export const TicketCategorySchema = z.enum([
   'access',
   'network_vpn',
@@ -40,6 +58,7 @@ export type DraftInput = z.infer<typeof DraftInputSchema>;
 
 export const TicketViewSchema = z.strictObject({
   id,
+  number: z.string().nullable().default(null),
   ownerId: id,
   title: text.max(200),
   description: text,
@@ -47,7 +66,7 @@ export const TicketViewSchema = z.strictObject({
   category: TicketCategorySchema,
   priority: PrioritySchema,
   impact: ImpactSchema.exclude(['unknown']),
-  status: z.enum(['open', 'resolved']),
+  status: TicketStatusSchema,
   transferRequested: z.boolean(),
   createdAt: timestamp,
   resolvedAt: timestamp.nullable(),
@@ -59,7 +78,14 @@ export type TicketView = z.infer<typeof TicketViewSchema>;
 export const TicketEventViewSchema = z.strictObject({
   id,
   ticketId: id,
-  kind: z.enum(['created', 'supplemented', 'reopened', 'transfer_requested', 'support_updated']),
+  kind: z.enum([
+    'created',
+    'supplemented',
+    'reopened',
+    'transfer_requested',
+    'support_updated',
+    'status_changed',
+  ]),
   content: text,
   createdAt: timestamp,
 });
@@ -73,6 +99,7 @@ export const DraftViewSchema = z
     input: DraftInputSchema,
     priority: PrioritySchema.optional(),
     candidates: z.array(TicketViewSchema).optional(),
+    ticket: TicketViewSchema.nullable().default(null),
     candidateMatches: z
       .array(z.strictObject({ id, match: z.enum(['exact', 'possible']) }))
       .optional(),

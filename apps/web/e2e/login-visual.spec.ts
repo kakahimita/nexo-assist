@@ -39,3 +39,28 @@ test('V01: unavailable recovery and persistent login are identified', async ({ p
     ),
   ).toBeVisible();
 });
+
+test('V01: a demo Gemini key can be configured for the current session', async ({ page }) => {
+  await page.goto('/');
+  const key = page.getByLabel('Chave de API do Gemini');
+  const submit = page.getByRole('button', { name: 'Entrar', exact: true });
+  const card = page.locator('.demo-model-key');
+  const [submitBox, cardBox] = await Promise.all([submit.boundingBox(), card.boundingBox()]);
+  expect(cardBox).not.toBeNull();
+  expect(submitBox).not.toBeNull();
+  expect(cardBox!.y).toBeGreaterThan(submitBox!.y);
+  expect(
+    Math.abs(cardBox!.x + cardBox!.width / 2 - (submitBox!.x + submitBox!.width / 2)),
+  ).toBeLessThan(2);
+  await expect(key).toHaveAttribute('type', 'password');
+  await key.fill('key-not-rendered-after-submit');
+  await page.getByRole('button', { name: 'Usar chave nesta sessão' }).click();
+  await expect(page.getByRole('status')).toHaveText('Chave configurada para esta sessão.');
+  await expect(key).toHaveValue('');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+});

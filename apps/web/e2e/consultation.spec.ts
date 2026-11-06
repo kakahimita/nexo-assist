@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
+import { startFreshConversation } from './employee-chat';
 async function start(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByLabel('E-mail corporativo').fill('ana.souza@nexo.com.br');
   await page.getByLabel('Senha', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await startFreshConversation(page);
 }
 async function send(page: import('@playwright/test').Page, text: string) {
   await page.getByLabel('Mensagem').fill(text);
-  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
+  await page.getByRole('button', { name: 'Enviar', exact: true }).click();
 }
 test('B02 B12: asks platform and exposes actual decision evidence', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -29,24 +30,47 @@ test('B02 B12: asks platform and exposes actual decision evidence', async ({ pag
   await expect(chat.getByText(/Compatibilidade com a versão do Windows/).last()).toBeVisible();
   expect(await (await page.request.get('/api/tickets')).json()).toEqual(ticketsBefore);
 });
+test('B09: a paused conversation can start a new one and be resumed', async ({ page }) => {
+  await start(page);
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  const waiting = async () =>
+    (
+      (await (await page.request.get('/api/conversations')).json()) as Array<{ state: string }>
+    ).filter((item) => item.state === 'waiting_for_analyst').length;
+  const waitingBefore = await waiting();
+  await expect(page.getByRole('button', { name: 'Iniciar nova conversa' })).toHaveCount(0);
+  await send(page, 'Qual o status do meu chamado?');
+  const choices = chat.getByRole('group', { name: 'Chamados encontrados' }).last();
+  await choices.getByRole('button', { name: /Notebook lento/ }).click();
+  await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
+
+  await page.getByRole('button', { name: 'Iniciar nova conversa' }).click();
+  await expect(page.getByRole('button', { name: 'Voltar ao atendimento' })).toBeVisible();
+  await expect(chat.getByText('Descreva sua dúvida de TI para começar.')).toBeVisible();
+
+  const conversations = (await (await page.request.get('/api/conversations')).json()) as Array<{
+    state: string;
+  }>;
+  expect(conversations.filter((item) => item.state === 'waiting_for_analyst')).toHaveLength(
+    waitingBefore + 1,
+  );
+
+  await page.getByRole('button', { name: 'Voltar ao atendimento' }).click();
+  await expect(chat.getByText(/Notebook lento está com o prazo vencido/)).toBeVisible();
+  await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
+  await expect(page.getByRole('button', { name: 'Voltar ao atendimento' })).toHaveCount(0);
+});
+
 test('B03 B16: selects own tickets and redirects RH', async ({ page }) => {
   await start(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   await send(page, 'Qual o status do meu chamado?');
-  await expect(chat.getByRole('button', { name: /Notebook lento/ }).last()).toBeVisible();
-  await expect(chat.getByRole('button', { name: /Senha bloqueada/ }).last()).toBeVisible();
-  await chat
-    .getByRole('button', { name: /Notebook lento/ })
-    .last()
-    .click();
+  const choices = chat.getByRole('group', { name: 'Chamados encontrados' }).last();
+  await expect(choices.getByRole('button', { name: /Notebook lento/ })).toBeVisible();
+  await expect(choices.getByRole('button', { name: /Senha bloqueada/ })).toBeVisible();
+  await choices.getByRole('button', { name: /Notebook lento/ }).click();
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
-  const creation = page.waitForResponse(
-    (response) =>
-      response.url().endsWith('/api/conversations') && response.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Nova conversa' }).click();
-  await creation;
-  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeEnabled();
+  await startFreshConversation(page);
   await send(page, 'INC-99999');
   await expect(chat.getByText(/Qual chamado você deseja consultar/).last()).toBeVisible();
   await send(page, 'Como solicitar férias no RH?');
@@ -118,10 +142,6 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
     route.fulfill({ json: [user, agent] }),
   );
   await page.reload();
-  await page
-    .getByRole('button', { name: /Conversa/ })
-    .last()
-    .click();
   await expect(page.getByRole('region', { name: 'Conversa' }).getByRole('alert')).toContainText(
     'limite do modelo',
   );

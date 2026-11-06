@@ -120,3 +120,22 @@ The chat ticket-consultation increment for [#36](https://github.com/kakahimita/n
 The ticket-card follow-up [#38](https://github.com/kakahimita/nexo-assist/issues/38) (part of #9) adds server-owned category and creation metadata, the status badge, the amber last update, and the responsive legacy fallback; its executed checks and remaining visual differences are recorded in the same verification document.
 
 The analyst-console increment for [#30](https://github.com/kakahimita/nexo-assist/issues/30) (part of #8) delivers the analyst queue, atomic claim, reply, return, and close on top of the employee handoff core; its deterministic evidence and boundaries are recorded in [human support verification](human-support-verification.md).
+
+The owned-conversation refinement for [#42](https://github.com/kakahimita/nexo-assist/issues/42) (part of #9) adds ownership-aware detail controls, race-safe selection, per-conversation drafts, honest failure handling, role-distinct messages, and authorized ticket context. Its executed evidence and remaining V05 differences are recorded in the same verification.
+
+The analyst-console layout follow-up for [#46](https://github.com/kakahimita/nexo-assist/issues/46) (part of #9) aligns the desktop queue, conversation, and ticket context with the three-region V04/V05 composition. It keeps the existing support behavior and responsive stack; visual fidelity remains partial because some prototype data and actions are not implemented.
+
+The employee-shell follow-up for [#48](https://github.com/kakahimita/nexo-assist/issues/48) (part of #9) keeps ticket consultation inside the employee chat, following the original V02/V03 frames. The employee navigation contains Atendimento and Meu perfil; the latest persisted conversation resumes automatically without a visible history list. A new conversation can still be started for the session limit. V06 shows a read-only password area with an explicitly unavailable reset action, without claiming a reset service.
+
+The in-progress V03 correction on the same branch opens the first chat automatically,
+removes permanent conversation and analyst actions, places ticket selection and
+contextual human contact in the agent flow, and anchors the composer at the
+desktop frame footer. The PRD's automatic overdue transfer still takes precedence
+over the prototype's optional offer. See [employee visual verification](employee-visual-verification.md).
+
+The ticket number and status follow-up for [#49](https://github.com/kakahimita/nexo-assist/issues/49)
+gives every ticket a public number per type and five real statuses moved by
+handoff, claim and close; the V03 card shows the number, status, description and
+deadline. The PRD Annex B status list is illustrative, so the transition table is
+a documented project convention; a denied request is `resolved`, and one
+conversation links at most one ticket. See the same verification documents.

@@ -23,7 +23,10 @@ function readVariable(input: NodeJS.ProcessEnv, name: string): string | undefine
   return value.trim();
 }
 
-export function parseModelEnvironment(input: NodeJS.ProcessEnv): ModelConfiguration {
+export function parseModelEnvironment(
+  input: NodeJS.ProcessEnv,
+  sessionApiKey?: string,
+): ModelConfiguration {
   const provider = readVariable(input, 'MODEL_PROVIDER') ?? DEFAULTS.provider;
 
   if (provider !== 'google') {
@@ -31,7 +34,7 @@ export function parseModelEnvironment(input: NodeJS.ProcessEnv): ModelConfigurat
   }
 
   const model = readVariable(input, 'MODEL_NAME') ?? DEFAULTS.model;
-  const apiKey = readVariable(input, 'GOOGLE_API_KEY');
+  const apiKey = sessionApiKey ?? readVariable(input, 'GOOGLE_API_KEY');
 
   if (apiKey === undefined) {
     throw new Error('GOOGLE_API_KEY must be set locally to run the real model smoke test.');

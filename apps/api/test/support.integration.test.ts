@@ -2,6 +2,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
 import { createTestDatabase } from './support/test-database.js';
+import { createDatabaseClient } from '../src/database/client.js';
 
 describe('B11: analyst queue and conversation detail', () => {
   it('lists and reads waiting conversations with employee ticket context', async () => {
@@ -292,6 +293,105 @@ describe('B11: analyst queue and conversation detail', () => {
         .expect(200);
       expect(messages.body).toHaveLength(0);
     } finally {
+      await app.close();
+      await db.cleanup();
+    }
+  });
+
+  it('applies the close outcome to the linked ticket by type', async () => {
+    const db = await createTestDatabase();
+    const app = await createApp({
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    });
+    const client = createDatabaseClient(db.url);
+    try {
+      const server = app.getHttpServer();
+      const login = async (email: string) =>
+        String(
+          (await request(server).post('/api/session').send({ email, password: 'x' }).expect(201))
+            .headers['set-cookie']?.[0],
+        );
+      const ana = await login('ana.souza@nexo.com.br');
+      const analyst = await login('analista@nexo.com.br');
+      const owner = await client.user.findUniqueOrThrow({
+        where: { email: 'ana.souza@nexo.com.br' },
+      });
+      const openConversation = async (ticketId: string) => {
+        const conversation = await request(server)
+          .post('/api/conversations')
+          .set('Cookie', ana)
+          .send({})
+          .expect(201);
+        await request(server)
+          .post(`/api/conversations/${conversation.body.id}/handoff`)
+          .set('Cookie', ana)
+          .send({ reason: 'employee_request' })
+          .expect(201);
+        await client.conversation.update({
+          where: { id: conversation.body.id },
+          data: { contextTicketId: ticketId },
+        });
+        await request(server)
+          .post(`/api/support/conversations/${conversation.body.id}/claim`)
+          .set('Cookie', analyst)
+          .expect(201);
+        return conversation.body.id as string;
+      };
+      const close = (conversationId: string, body: object) =>
+        request(server)
+          .post(`/api/support/conversations/${conversationId}/close`)
+          .set('Cookie', analyst)
+          .send(body);
+
+      const requestTicket = await client.ticket.create({
+        data: {
+          ownerId: owner.id,
+          title: 'Monitor adicional',
+          normalizedTitle: 'monitor adicional',
+          description: 'Preciso de um segundo monitor.',
+          type: 'REQ',
+          category: 'hardware',
+          priority: 'low',
+          impact: 'self',
+          slaStartedAt: new Date(),
+        },
+      });
+      const requestConversation = await openConversation(requestTicket.id);
+      await close(requestConversation, {}).expect(400);
+      expect(
+        (await client.ticket.findUniqueOrThrow({ where: { id: requestTicket.id } })).status,
+      ).toBe('in_progress');
+      await close(requestConversation, { outcome: 'approved' }).expect(201);
+      expect(
+        (await client.ticket.findUniqueOrThrow({ where: { id: requestTicket.id } })).status,
+      ).toBe('approved');
+
+      const incidentConversation = await openConversation('fixture-ana-open');
+      await close(incidentConversation, { outcome: 'approved' }).expect(400);
+      await close(incidentConversation, {}).expect(201);
+      expect(
+        (await client.ticket.findUniqueOrThrow({ where: { id: 'fixture-ana-open' } })).status,
+      ).toBe('resolved');
+
+      await client.ticket.update({
+        where: { id: 'fixture-ana-resolved' },
+        data: { status: 'resolved', resolvedAt: new Date() },
+      });
+      const terminalConversation = await openConversation('fixture-ana-resolved');
+      const eventsBefore = await client.ticketEvent.count({
+        where: { ticketId: 'fixture-ana-resolved', kind: 'status_changed' },
+      });
+      await close(terminalConversation, {}).expect(201);
+      expect(
+        await client.ticketEvent.count({
+          where: { ticketId: 'fixture-ana-resolved', kind: 'status_changed' },
+        }),
+      ).toBe(eventsBefore);
+    } finally {
+      await client.$disconnect();
       await app.close();
       await db.cleanup();
     }

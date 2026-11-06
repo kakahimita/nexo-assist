@@ -10,7 +10,11 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { SupportConversationFilterSchema, SupportReplyInputSchema } from '@nexo/contracts';
+import {
+  SupportCloseInputSchema,
+  SupportConversationFilterSchema,
+  SupportReplyInputSchema,
+} from '@nexo/contracts';
 import { IdentityGuard, type AuthRequest } from '../identity/identity.guard.js';
 import { HumanSupportService } from './human-support.service.js';
 
@@ -49,7 +53,9 @@ export class HumanSupportController {
   }
 
   @Post('conversations/:id/close')
-  close(@Req() request: AuthRequest, @Param('id') id: string) {
-    return this.support.close(request.user, id);
+  close(@Req() request: AuthRequest, @Param('id') id: string, @Body() body: unknown) {
+    const parsed = SupportCloseInputSchema.safeParse(body ?? {});
+    if (!parsed.success) throw new BadRequestException();
+    return this.support.close(request.user, id, parsed.data);
   }
 }

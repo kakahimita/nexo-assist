@@ -1,6 +1,7 @@
 'use client';
 
 import type { SupportConversationFilter, SupportConversationSummary } from '@nexo/contracts';
+import { useState } from 'react';
 
 const filters: Array<{ value: SupportConversationFilter; label: string }> = [
   { value: 'all', label: 'Todas' },
@@ -15,7 +16,7 @@ const stateLabels = {
   closed: 'Encerrada',
 };
 
-const reasonLabels = {
+export const reasonLabels = {
   employee_request: 'Transferida',
   critical_incident: 'Incidente crítico',
   overdue_ticket: 'Chamado vencido',
@@ -28,6 +29,7 @@ export function SupportQueue({
   selectedId,
   status,
   error,
+  busy,
   onFilterChange,
   onSelect,
   onRetry,
@@ -37,19 +39,39 @@ export function SupportQueue({
   selectedId: string;
   status: 'loading' | 'ready' | 'error';
   error: string;
+  busy: boolean;
   onFilterChange: (filter: SupportConversationFilter) => void;
   onSelect: (id: string) => void;
   onRetry: () => void;
 }): React.JSX.Element {
+  const [query, setQuery] = useState('');
+  const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
+  const visibleItems = normalizedQuery
+    ? items.filter((item) =>
+        [item.employee.name, item.lastMessage?.content ?? ''].some((value) =>
+          value.toLocaleLowerCase('pt-BR').includes(normalizedQuery),
+        ),
+      )
+    : items;
   return (
     <section aria-label="Conversas" className="support-list">
       <h2>Conversas</h2>
+      <label className="support-search">
+        <span className="visually-hidden">Pesquisar conversas</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Pesquisar conversa"
+        />
+      </label>
       <nav aria-label="Filtros" className="support-filters">
         {filters.map(({ value, label }) => (
           <button
             type="button"
             key={value}
             aria-pressed={filter === value}
+            disabled={busy}
             onClick={() => onFilterChange(value)}
           >
             {label}
@@ -66,14 +88,18 @@ export function SupportQueue({
         </div>
       )}
       {status === 'ready' && items.length === 0 && <p>Nenhuma conversa neste filtro.</p>}
+      {status === 'ready' && items.length > 0 && visibleItems.length === 0 && (
+        <p>Nenhuma conversa encontrada.</p>
+      )}
       {status === 'ready' && (
         <ul>
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <li key={item.id}>
               <button
                 type="button"
                 data-conversation-id={item.id}
                 aria-current={selectedId === item.id ? 'true' : undefined}
+                disabled={busy}
                 onClick={() => onSelect(item.id)}
               >
                 <span aria-hidden="true" className="support-queue-initials">

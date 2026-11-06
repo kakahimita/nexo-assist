@@ -45,6 +45,7 @@ describe('B01 B13 B16: authorized persistent history', () => {
         .set('Cookie', ana)
         .send({})
         .expect(201);
+      expect(conversation.body.flow).toEqual({ mode: 'none', stage: 'idle', facts: {} });
       const path = `/api/conversations/${conversation.body.id}/messages`;
       const employee = await request(server)
         .post(path)
@@ -103,7 +104,12 @@ describe('B01 B13 B16: authorized persistent history', () => {
       server = app.getHttpServer();
       expect(
         (await request(server).get('/api/conversations').set('Cookie', ana).expect(200)).body,
-      ).toHaveLength(1);
+      ).toEqual([
+        expect.objectContaining({
+          id: conversation.body.id,
+          flow: { mode: 'none', stage: 'idle', facts: {} },
+        }),
+      ]);
       const messages = (await request(server).get(path).set('Cookie', ana).expect(200)).body;
       expect(messages).toHaveLength(2);
       expect(messages[1]).toMatchObject({

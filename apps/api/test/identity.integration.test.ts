@@ -6,6 +6,45 @@ import { createDatabaseClient } from '../src/database/client.js';
 import { createTestDatabase } from './support/test-database.js';
 
 describe('B01: server session', () => {
+  it('keeps a submitted demo model key in an HttpOnly temporary session until login', async () => {
+    const db = await createTestDatabase();
+    const app = await createApp({
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    });
+    const secret = 'demo-key-must-not-be-returned';
+    try {
+      const server = app.getHttpServer();
+      await request(server).post('/api/session/model-key').send({ modelApiKey: '   ' }).expect(400);
+      await request(server)
+        .post('/api/session/model-key')
+        .send({ modelApiKey: 'x'.repeat(513) })
+        .expect(400);
+      const configured = await request(server)
+        .post('/api/session/model-key')
+        .send({ modelApiKey: secret })
+        .expect(201);
+      expect(configured.text).not.toContain(secret);
+      const temporaryCookie = String(configured.headers['set-cookie']?.[0]);
+      expect(temporaryCookie).toMatch(/nexo_demo_model_key=/);
+      expect(temporaryCookie).toMatch(/HttpOnly/i);
+      expect(temporaryCookie).toMatch(/SameSite=Lax/i);
+      const login = await request(server)
+        .post('/api/session')
+        .set('Cookie', temporaryCookie)
+        .send({ email: 'ana.souza@nexo.com.br', password: 'x' })
+        .expect(201);
+      const cookies = String(login.headers['set-cookie']);
+      expect(cookies).toMatch(/nexo_session=/);
+      expect(cookies).toMatch(/nexo_demo_model_key=;/);
+    } finally {
+      await app.close();
+      await db.cleanup();
+    }
+  });
+
   it('authenticates fixtures and rejects invalid, expired and revoked sessions', async () => {
     const db = await createTestDatabase();
     const app = await createApp({

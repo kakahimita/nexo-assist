@@ -11,6 +11,7 @@ import { readConsultationStream } from './stream';
 import { Decision } from './decision';
 import { DraftCard } from './draft-card';
 import { TicketCard } from './ticket-card';
+import { TicketSelection } from './ticket-selection';
 import { employeeStage } from './stage';
 const errors: Record<string, string> = {
   quota: 'O limite do modelo foi atingido. Tente novamente mais tarde.',
@@ -26,7 +27,7 @@ export function Consultation({
   onBusy,
   onUnauthorized,
   onStartNew,
-  onTicketCommitted,
+  onPausedState,
 }: {
   conversationId: string;
   conversation: ConversationView;
@@ -35,7 +36,7 @@ export function Consultation({
   onBusy: (busy: boolean) => void;
   onUnauthorized: () => void;
   onStartNew: () => void;
-  onTicketCommitted: () => void;
+  onPausedState?: (state: 'waiting_for_analyst' | 'with_analyst' | null) => void;
 }): React.JSX.Element {
   const [content, setContent] = useState('');
   const [active, setActive] = useState(false);
@@ -49,6 +50,14 @@ export function Consultation({
   const closed = conversation.state === 'closed';
   const now = new Date();
   const [handoff, setHandoff] = useState(conversation.handoff);
+  const pausedState = humanEngaged
+    ? conversation.state === 'with_analyst'
+      ? ('with_analyst' as const)
+      : ('waiting_for_analyst' as const)
+    : null;
+  useEffect(() => {
+    onPausedState?.(pausedState);
+  }, [onPausedState, pausedState]);
   useEffect(() => {
     let current = true;
     void fetch(`/api/conversations/${encodeURIComponent(conversationId)}/draft-proposals`)
@@ -161,6 +170,16 @@ export function Consultation({
     event.preventDefault();
     void send(content);
   }
+  async function selectTicket(ticket: { id: string; title: string }): Promise<void> {
+    const response = await fetch(`/api/conversations/${conversationId}/ticket-selection`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ticketId: ticket.id }),
+    });
+    if (response.status === 401) return onUnauthorized();
+    if (!response.ok) return setError('Não foi possível selecionar o chamado.');
+    await send(ticket.title);
+  }
   function chips(items: ConsultationAction[]) {
     return (
       <div className="consultation-actions">
@@ -174,20 +193,20 @@ export function Consultation({
   }
   return (
     <section className="consultation" aria-label="Conversa">
-      <h2>Mensagens</h2>
+      <h2 className="visually-hidden">Mensagens</h2>
       {humanEngaged && (
         <p role="status">
           Aguardando atendimento humano. {handoff?.summary ?? 'Sua solicitação foi encaminhada.'}
         </p>
       )}
-      {!humanEngaged && !closed && (
+      {!humanEngaged && !closed && (error || capped || messages.at(-1)?.status === 'failed') && (
         <button
           className="human-support-button"
           type="button"
-          disabled={active || capped}
+          disabled={active}
           onClick={() => void requestHandoff()}
         >
-          Falar com analista
+          Falar com um analista
         </button>
       )}
       {closed && (
@@ -203,22 +222,76 @@ export function Consultation({
       )}
       <div className="consultation-messages">
         {messages.map((message) => (
-          <article key={message.id} className={`chat-message ${message.role}`}>
+          <article
+            key={message.id}
+            className={`chat-message ${message.role}`}
+            aria-label={
+              message.role === 'employee'
+                ? 'Você'
+                : message.role === 'agent'
+                  ? 'Nexo Assist'
+                  : `Suporte: ${message.authorName ?? 'Suporte'}`
+            }
+          >
+            {message.role === 'employee' && <strong className="chat-message-speaker">Você</strong>}
             {message.role === 'agent' && (
-              <>
-                <strong>Nexo Assist</strong>
+              <div className="chat-message-status-line">
+                <strong className="chat-message-speaker">Nexo Assist</strong>
                 {message.status === 'completed' &&
                   message.decision &&
                   chips(message.decision.actions)}
-              </>
+              </div>
             )}
             {message.role === 'analyst' && (
               <>
-                <strong>{message.authorName}</strong>
+                <strong className="chat-message-speaker">{message.authorName ?? 'Suporte'}</strong>
                 <span className="support-tag">Suporte</span>
               </>
             )}
-            <p>{message.content}</p>
+            {message.role === 'agent' &&
+              message.status === 'completed' &&
+              message.decision?.tickets.length === 1 && (
+                <TicketCard ticket={message.decision.tickets[0]!} now={now} />
+              )}
+            <div className="chat-message-bubble">
+              <p>{message.content}</p>
+              {message.status === 'completed' &&
+                message.decision &&
+                message.decision.action !== 'handoff' &&
+                !humanEngaged &&
+                (message.decision.quickReplies.length > 0 ||
+                  (message.decision.tickets.length === 1 && !closed)) && (
+                  <div className="quick-replies">
+                    {message.decision.quickReplies.map((reply) => (
+                      <button
+                        type="button"
+                        disabled={active || capped}
+                        key={reply}
+                        onClick={() =>
+                          void (/falar com (um )?analista/i.test(reply)
+                            ? requestHandoff()
+                            : send(reply))
+                        }
+                      >
+                        {reply}
+                      </button>
+                    ))}
+                    {message.decision.tickets.length === 1 &&
+                      !closed &&
+                      !message.decision.quickReplies.some((reply) =>
+                        /falar com (um )?analista/i.test(reply),
+                      ) && (
+                        <button
+                          type="button"
+                          disabled={active}
+                          onClick={() => void requestHandoff()}
+                        >
+                          Falar com um analista
+                        </button>
+                      )}
+                  </div>
+                )}
+            </div>
             {message.status === 'failed' && (
               <p role="alert">
                 {errors[message.decision?.errorCode ?? ''] ??
@@ -227,73 +300,42 @@ export function Consultation({
             )}
             {message.decision && (
               <>
+                {message.status === 'completed' &&
+                  message.decision.action !== 'handoff' &&
+                  !humanEngaged &&
+                  message.decision.tickets.length > 1 && (
+                    <TicketSelection
+                      tickets={message.decision.tickets}
+                      disabled={active || capped}
+                      onSelect={(ticket) => void selectTicket(ticket)}
+                    />
+                  )}
                 <Decision decision={message.decision} />
-                {message.status === 'completed' && message.decision.tickets.length === 1 && (
-                  <TicketCard ticket={message.decision.tickets[0]!} now={now} />
-                )}
-                {message.status === 'completed' && message.decision.action !== 'handoff' && (
-                  <>
-                    <div className="quick-replies">
-                      {message.decision.quickReplies.map((reply) => (
-                        <button
-                          type="button"
-                          disabled={active || capped}
-                          key={reply}
-                          onClick={() => void send(reply)}
-                        >
-                          {reply}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="ticket-options">
-                      {message.decision.tickets.map((ticket) => (
-                        <button
-                          type="button"
-                          disabled={active || capped}
-                          key={ticket.id}
-                          onClick={() => void send(ticket.title)}
-                        >
-                          {ticket.title} · {ticket.status === 'open' ? 'Aberto' : 'Resolvido'}
-                          {ticket.overdue ? ' · prazo vencido' : ''}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
               </>
             )}
             {message.decision?.draftId && (
-              <DraftCard
-                draftId={message.decision.draftId}
-                onUnauthorized={onUnauthorized}
-                onCommitted={onTicketCommitted}
-              />
+              <DraftCard draftId={message.decision.draftId} onUnauthorized={onUnauthorized} />
             )}
           </article>
         ))}
         {active && (
-          <article className="chat-message agent" aria-live="polite">
-            <strong>Nexo Assist</strong>
-            {chips(actions)}
-            <p>{partial || 'Preparando resposta...'}</p>
+          <article className="chat-message agent" aria-label="Nexo Assist" aria-live="polite">
+            <div className="chat-message-status-line">
+              <strong className="chat-message-speaker">Nexo Assist</strong>
+              {chips(actions)}
+            </div>
+            <div className="chat-message-bubble">
+              <p>{partial || 'Preparando resposta...'}</p>
+            </div>
           </article>
         )}
+        {pendingDrafts
+          .filter((id) => !messages.some((message) => message.decision?.draftId === id))
+          .map((id) => (
+            <DraftCard key={id} draftId={id} onUnauthorized={onUnauthorized} />
+          ))}
       </div>
-      {pendingDrafts
-        .filter((id) => !messages.some((message) => message.decision?.draftId === id))
-        .map((id) => (
-          <DraftCard
-            key={id}
-            draftId={id}
-            onUnauthorized={onUnauthorized}
-            onCommitted={onTicketCommitted}
-          />
-        ))}
       {error && <p role="alert">{error}</p>}
-      <p className="message-counter">
-        Mensagens: {used} de {CONVERSATION_MESSAGE_LIMIT}
-      </p>
-      <p className="message-counter">Restantes: {Math.max(0, CONVERSATION_MESSAGE_LIMIT - used)}</p>
       {capped && (
         <>
           <p role="status">
@@ -319,12 +361,25 @@ export function Consultation({
               maxLength={4000}
               placeholder="Escreva para o Nexo..."
             />
-            <button disabled={active || capped} type="submit">
-              Enviar mensagem
+            <button className="composer-send" disabled={active || capped} type="submit">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 19V5" />
+                <path d="m6 11 6-6 6 6" />
+              </svg>
+              Enviar
             </button>
           </div>
         </form>
       )}
+      <p className="message-counter">
+        {used}/{CONVERSATION_MESSAGE_LIMIT} mensagens nesta sessão
+      </p>
     </section>
   );
 }

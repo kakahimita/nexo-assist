@@ -111,6 +111,26 @@ describe('B12/B13: consultation wire contracts', () => {
     expect(legacy.category).toBeNull();
     expect(legacy.createdAt).toBeNull();
   });
+  it('carries the formatted number and description and accepts the new statuses', () => {
+    const ticket = {
+      id: 'INC-1',
+      title: 'Notebook lento',
+      status: 'waiting_for_analyst',
+      priority: 'medium',
+      deadline: '2026-11-03T12:00:00.000Z',
+      overdue: false,
+    };
+    const legacy = ConsultationTicketViewSchema.parse(ticket);
+    expect(legacy.number).toBeNull();
+    expect(legacy.description).toBeNull();
+    expect(
+      ConsultationTicketViewSchema.parse({
+        ...ticket,
+        number: 'INC-20311',
+        description: 'Lentidão desde a atualização.',
+      }),
+    ).toMatchObject({ number: 'INC-20311', description: 'Lentidão desde a atualização.' });
+  });
   it('preserves the ticket category and creation date and rejects unknown values', () => {
     const ticket = {
       id: 'INC-1',
