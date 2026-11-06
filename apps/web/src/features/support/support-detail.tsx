@@ -1,7 +1,7 @@
 'use client';
 
-import type { MessageView, SupportConversationView, UserView } from '@nexo/contracts';
-import { Fragment } from 'react';
+import type { HandoffView, MessageView, SupportConversationView, UserView } from '@nexo/contracts';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
 
 import { getEmployeeInitials } from '../history/employee-initials';
 import { reasonLabels } from './support-queue';
@@ -45,6 +45,60 @@ function senderBadge(message: MessageView): string | null {
 
 function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? name;
+}
+
+function HandoffCard({ handoff }: { handoff: HandoffView }): React.JSX.Element {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const summaryId = useId();
+  const summaryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const node = summaryRef.current;
+    if (!node) return;
+
+    const measure = () => {
+      if (!expanded) setOverflowing(node.scrollHeight > node.clientHeight + 1);
+    };
+
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [expanded, handoff.summary]);
+
+  return (
+    <section className="support-handoff" aria-label="Resumo da transferência">
+      <h2>Resumo da transferência</h2>
+      <p>Motivo: {reasonLabels[handoff.reason]}</p>
+      <div
+        className="support-handoff-summary"
+        data-expanded={expanded ? 'true' : 'false'}
+        id={summaryId}
+        ref={summaryRef}
+      >
+        <p>{handoff.summary}</p>
+      </div>
+      <div className="support-handoff-footer">
+        <time dateTime={handoff.requestedAt}>
+          Solicitada em {formatFullDateTime(handoff.requestedAt)}
+        </time>
+        {(overflowing || expanded) && (
+          <button
+            aria-controls={summaryId}
+            aria-expanded={expanded}
+            className="support-handoff-toggle"
+            onClick={() => setExpanded((value) => !value)}
+            type="button"
+          >
+            {expanded ? 'Ver menos' : 'Ver mais'}
+          </button>
+        )}
+      </div>
+    </section>
+  );
 }
 
 export function SupportDetail({
@@ -188,14 +242,7 @@ export function SupportDetail({
         )}
       </header>
       {detail.conversation.handoff && (
-        <section className="support-handoff" aria-label="Resumo da transferência">
-          <h2>Resumo da transferência</h2>
-          <p>Motivo: {reasonLabels[detail.conversation.handoff.reason]}</p>
-          <p>{detail.conversation.handoff.summary}</p>
-          <time dateTime={detail.conversation.handoff.requestedAt}>
-            Solicitada em {formatFullDateTime(detail.conversation.handoff.requestedAt)}
-          </time>
-        </section>
+        <HandoffCard handoff={detail.conversation.handoff} key={detail.conversation.id} />
       )}
       {error && <p role="alert">{error}</p>}
       <div className="support-messages">

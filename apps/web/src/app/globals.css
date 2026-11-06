@@ -1947,6 +1947,43 @@ button:disabled {
   font-size: 13.5px;
   line-height: 20px;
 }
+.support-handoff-summary {
+  max-height: 200px;
+  overflow: hidden;
+}
+.support-handoff-summary p {
+  margin: 0;
+}
+.support-handoff-summary[data-expanded='true'] {
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+}
+.support-handoff-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+.support-handoff-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #0062c4;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 15px;
+  cursor: pointer;
+}
+.support-handoff-toggle:hover {
+  text-decoration: underline;
+}
+.support-handoff-toggle:focus-visible {
+  outline: 2px solid #0062c4;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 .support-handoff time {
   color: #5b6472;
   font-size: 12px;
