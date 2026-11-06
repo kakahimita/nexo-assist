@@ -9,6 +9,10 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Consultation } from '../consultation/consultation';
 import { Support } from '../support/support';
+import { fetchApiReadiness, getApiBaseUrl } from '../system-status/api';
+import { getEmployeeInitials } from './employee-initials';
+
+const AVAILABILITY_TIMEOUT_MS = 5_000;
 
 export function History({
   user,
@@ -27,6 +31,9 @@ export function History({
   const [busy, setBusy] = useState(false);
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState<'support' | 'profile'>('support');
+  const [availability, setAvailability] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
+  const [queueCount, setQueueCount] = useState(0);
   const busyRef = useRef(false);
   const loadVersion = useRef(0);
   const selectionVersion = useRef(0);
@@ -55,6 +62,30 @@ export function History({
       return null;
     }
   }, [call]);
+  useEffect(() => {
+    if (user.role !== 'employee') return;
+
+    let active = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), AVAILABILITY_TIMEOUT_MS);
+
+    void fetchApiReadiness(getApiBaseUrl(), controller.signal)
+      .then(() => {
+        if (active) setAvailability('ready');
+      })
+      .catch(() => {
+        if (active) setAvailability('unavailable');
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+      });
+
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [availabilityAttempt, user.role]);
   const choose = useCallback(
     async (id: string) => {
       const version = ++selectionVersion.current;
@@ -136,15 +167,33 @@ export function History({
     return (
       <div className="analyst-layout">
         <aside className="analyst-rail" aria-label="Navegação do suporte">
-          <span className="analyst-mark" aria-label="Nexo Assist">
-            N
+          <span className="analyst-logo" aria-label="Nexo Assist">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21.763 2.245 18.389 3.932c-.623.308-.973.903-.973 1.631v6.293L6.223 2.427c-.623-.469-1.372-.553-2.03-.245L1.008 3.813C.357 4.135 0 4.737 0 5.486v15.218c0 1.477 1.526 2.289 2.716 1.785l3.073-1.617c.693-.322 1.057-.952 1.057-1.722v-7.7l11.732 10.591c.602.546 1.421.679 2.086.364l2.786-1.505c.602-.315.786-.931.786-1.68V3.932c0-1.463-1.505-2.275-2.625-1.687Z" />
+            </svg>
           </span>
-          <span className="analyst-rail-label">Conversas</span>
+          <span
+            className="analyst-rail-conversations"
+            role="img"
+            aria-label={`Conversas${queueCount > 0 ? `: ${queueCount}` : ''}`}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l1.5-3A8.5 8.5 0 1 1 21 11.5Z" />
+            </svg>
+            {queueCount > 0 && <span className="analyst-badge">{queueCount}</span>}
+          </span>
           <div className="analyst-account">
             <span className="analyst-avatar" aria-hidden="true">
-              {user.name.slice(0, 2).toUpperCase()}
+              {getEmployeeInitials(user.name)}
             </span>
-            <span className="analyst-account-name">{user.name}</span>
             <button type="button" disabled={busy} onClick={() => void logout()}>
               Sair
             </button>
@@ -152,7 +201,7 @@ export function History({
         </aside>
         <main className="analyst-main">
           {error && <p role="alert">{error}</p>}
-          <Support user={user} onLogout={onLogout} />
+          <Support user={user} onLogout={onLogout} onQueueCountChange={setQueueCount} />
         </main>
       </div>
     );
@@ -216,11 +265,34 @@ export function History({
           </button>
         </nav>
         <div className="employee-account">
-          <p>
-            <strong>{user.name}</strong>
-            <span>{user.email}</span>
-          </p>
-          <button type="button" disabled={busy} onClick={() => void logout()}>
+          <div className="employee-account-identity">
+            <span aria-hidden="true" className="employee-avatar">
+              {getEmployeeInitials(user.name)}
+            </span>
+            <p>
+              <strong>{user.name}</strong>
+              <span>{user.email}</span>
+            </p>
+          </div>
+          <button
+            className="employee-logout"
+            type="button"
+            disabled={busy}
+            onClick={() => void logout()}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" x2="9" y1="12" y2="12" />
+            </svg>
             Sair
           </button>
         </div>
@@ -230,6 +302,28 @@ export function History({
           <span>Service desk de TI</span>
           <span aria-hidden="true">›</span>
           <strong>{page === 'support' ? 'Atendimento' : 'Meu perfil'}</strong>
+          <div
+            className={`employee-availability employee-availability-${availability}`}
+            role="status"
+          >
+            <span aria-hidden="true" className="employee-availability-dot" />
+            {availability === 'loading' && <span>Verificando disponibilidade</span>}
+            {availability === 'ready' && <span>Assistente online</span>}
+            {availability === 'unavailable' && (
+              <>
+                <span>Assistente indisponível</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAvailability('loading');
+                    setAvailabilityAttempt((attempt) => attempt + 1);
+                  }}
+                >
+                  Tentar novamente
+                </button>
+              </>
+            )}
+          </div>
         </header>
         <div className="employee-content">
           {error && <p role="alert">{error}</p>}

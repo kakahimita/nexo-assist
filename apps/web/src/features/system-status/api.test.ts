@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchApiHealth } from './api.js';
+import { fetchApiHealth, fetchApiReadiness } from './api.js';
 
 const baseUrl = 'http://localhost:3001/api';
 
@@ -94,5 +94,55 @@ describe('B17: browser health client', () => {
 
     await expect(fetchApiHealth('file:///tmp/api')).rejects.toMatchObject({ code: 'network' });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('B17: returns the readiness contract from the ready endpoint', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(jsonResponse({ status: 'ok', service: 'nexo-api', database: 'ready' })),
+    );
+
+    await expect(fetchApiReadiness(baseUrl)).resolves.toEqual({
+      status: 'ok',
+      service: 'nexo-api',
+      database: 'ready',
+    });
+  });
+
+  it('B17: requests readiness through the relative web proxy base', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ status: 'ok', service: 'nexo-api', database: 'ready' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchApiReadiness('/api')).resolves.toMatchObject({ database: 'ready' });
+    expect(fetchMock).toHaveBeenCalledWith('/api/ready', expect.anything());
+  });
+
+  it('B17: rejects an unavailable readiness response with code http', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(
+            { status: 'unavailable', service: 'nexo-api', database: 'unavailable' },
+            503,
+          ),
+        ),
+    );
+
+    await expect(fetchApiReadiness(baseUrl)).rejects.toMatchObject({ code: 'http' });
+  });
+
+  it('B17: rejects an invalid ready payload with code invalid-response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse({ status: 'ok', service: 'nexo-api' })),
+    );
+
+    await expect(fetchApiReadiness(baseUrl)).rejects.toMatchObject({ code: 'invalid-response' });
   });
 });
