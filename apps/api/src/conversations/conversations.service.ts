@@ -17,6 +17,7 @@ import {
 import { type ConversationFlow } from '@nexo/contracts';
 import { z } from 'zod';
 import { transitionTicket } from '../tickets/status-transition.js';
+import { formatTicketNumber } from '../tickets/ticket-number.js';
 import type {
   ConversationView,
   HandoffReason,
@@ -42,13 +43,31 @@ export class ConversationsService {
     this.employee(user);
     const rows = await this.database.client.conversation.findMany({
       where: { ownerId: user.id },
+      include: {
+        messages: {
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: 1,
+          select: { content: true, createdAt: true, role: true },
+        },
+        contextTicket: { select: { number: true, type: true } },
+      },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
     return rows.map((row) => this.conversationView(row));
   }
   async create(user: UserView): Promise<ConversationView> {
     this.employee(user);
-    const row = await this.database.client.conversation.create({ data: { ownerId: user.id } });
+    const row = await this.database.client.$transaction(async (tx) => {
+      const paused = await tx.conversation.findFirst({
+        where: {
+          ownerId: user.id,
+          state: { in: ['waiting_for_analyst', 'with_analyst'] },
+        },
+        select: { id: true },
+      });
+      if (paused) throw new ConflictException('Human support is still handling a conversation.');
+      return tx.conversation.create({ data: { ownerId: user.id } });
+    });
     return this.conversationView(row);
   }
   async confirmResolution(
@@ -113,7 +132,10 @@ export class ConversationsService {
     assignedAnalystId: string | null;
     closedAt: Date | null;
     flowJson: string;
+    messages?: Array<{ content: string; createdAt: Date; role: string }>;
+    contextTicket?: { number: number | null; type: string } | null;
   }): ConversationView {
+    const latest = row.messages?.[0] ?? null;
     return ConversationViewSchema.parse({
       id: row.id,
       createdAt: row.createdAt.toISOString(),
@@ -130,6 +152,18 @@ export class ConversationsService {
       assignedAnalystId: row.assignedAnalystId,
       closedAt: row.closedAt?.toISOString() ?? null,
       flow: this.parseFlow(row.flowJson),
+      latestMessage:
+        latest === null
+          ? null
+          : {
+              content: latest.content,
+              createdAt: latest.createdAt.toISOString(),
+              role: latest.role,
+            },
+      contextTicketNumber:
+        row.contextTicket?.number == null
+          ? null
+          : formatTicketNumber(row.contextTicket.type as 'INC' | 'REQ', row.contextTicket.number),
     });
   }
   private parseFlow(raw: string) {

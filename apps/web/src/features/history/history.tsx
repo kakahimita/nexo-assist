@@ -2,17 +2,103 @@
 import {
   ConversationViewSchema,
   MessageViewSchema,
+  TicketViewSchema,
   type ConversationView,
   type MessageView,
+  type TicketView,
   type UserView,
 } from '@nexo/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Consultation } from '../consultation/consultation';
 import { Support } from '../support/support';
 import { fetchApiReadiness, getApiBaseUrl } from '../system-status/api';
+import { categories, priorities, ticketStatusLabel } from '../tickets/labels';
 import { getEmployeeInitials } from './employee-initials';
 
 const AVAILABILITY_TIMEOUT_MS = 5_000;
+
+function ConversationDashboard({
+  conversations,
+  tickets,
+  status,
+  onChoose,
+}: {
+  conversations: ConversationView[];
+  tickets: TicketView[];
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  onChoose: (id: string) => void;
+}): React.JSX.Element {
+  const openTickets = tickets.filter((ticket) => ticket.status !== 'resolved').length;
+  const closedTickets = tickets.length - openTickets;
+  return (
+    <section className="conversations-dashboard" aria-labelledby="conversations-dashboard-heading">
+      <header className="conversations-dashboard-heading">
+        <h2 id="conversations-dashboard-heading">Minhas conversas</h2>
+        <p>
+          {openTickets} {openTickets === 1 ? 'chamado aberto' : 'chamados abertos'} ·{' '}
+          {closedTickets} {closedTickets === 1 ? 'encerrado' : 'encerrados'}
+        </p>
+      </header>
+      <section aria-labelledby="dashboard-tickets-heading">
+        <h3 id="dashboard-tickets-heading">Meus chamados</h3>
+        {status === 'loading' && <p role="status">Carregando chamados...</p>}
+        {status === 'error' && <p role="alert">Não foi possível carregar os chamados.</p>}
+        {status === 'ready' && tickets.length === 0 && <p>Você ainda não possui chamados.</p>}
+        {status === 'ready' && tickets.length > 0 && (
+          <div className="conversations-dashboard-tickets">
+            {tickets.map((ticket) => (
+              <article className="conversations-dashboard-ticket" key={ticket.id}>
+                <div>
+                  <span>Chamado {ticket.number ?? 'sem número'}</span>
+                  <span data-status={ticket.status}>{ticketStatusLabel(ticket.status)}</span>
+                </div>
+                <h4>{ticket.title}</h4>
+                <p>{ticket.description}</p>
+                <dl>
+                  <div>
+                    <dt>Categoria</dt>
+                    <dd>{categories[ticket.category]}</dd>
+                  </div>
+                  <div>
+                    <dt>Prioridade</dt>
+                    <dd>{priorities[ticket.priority]}</dd>
+                  </div>
+                  <div>
+                    <dt>Prazo</dt>
+                    <dd>{ticket.overdue ? 'Vencido' : 'Dentro do prazo'}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+      <section aria-labelledby="dashboard-conversations-heading">
+        <h3 id="dashboard-conversations-heading">Conversas</h3>
+        {conversations.length === 0 ? (
+          <p>Você ainda não possui conversas.</p>
+        ) : (
+          <ul className="conversations-dashboard-list">
+            {[...conversations].reverse().map((conversation) => (
+              <li key={conversation.id}>
+                <button type="button" onClick={() => onChoose(conversation.id)}>
+                  <span>{conversation.latestMessage?.content ?? 'Conversa sem mensagens'}</span>
+                  <small>
+                    {conversation.contextTicketNumber
+                      ? `Chamado ${conversation.contextTicketNumber}`
+                      : 'Sem chamado vinculado'}
+                  </small>
+                  {(conversation.state === 'waiting_for_analyst' ||
+                    conversation.state === 'with_analyst') && <em>Em atendimento humano</em>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </section>
+  );
+}
 
 export function History({
   user,
@@ -30,11 +116,17 @@ export function History({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [page, setPage] = useState<'support' | 'profile'>('support');
+  const [page, setPage] = useState<'support' | 'profile' | 'conversations'>('support');
+  const [dashboardTickets, setDashboardTickets] = useState<TicketView[]>([]);
+  const [dashboardStatus, setDashboardStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    'idle',
+  );
   const [availability, setAvailability] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
   const [queueCount, setQueueCount] = useState(0);
   const busyRef = useRef(false);
+  const conversationsRef = useRef<ConversationView[]>([]);
+  const currentPausedRef = useRef<'waiting_for_analyst' | 'with_analyst' | null>(null);
   const loadVersion = useRef(0);
   const selectionVersion = useRef(0);
   useEffect(() => {
@@ -85,7 +177,10 @@ export function History({
       const data: unknown = await (await call('/api/conversations')).json();
       if (!Array.isArray(data)) throw new Error();
       const parsed = data.map((item: unknown) => ConversationViewSchema.parse(item));
-      if (version === loadVersion.current) setConversations(parsed);
+      if (version === loadVersion.current) {
+        conversationsRef.current = parsed;
+        setConversations(parsed);
+      }
       return parsed;
     } catch {
       if (version === loadVersion.current) setError('Não foi possível carregar a conversa.');
@@ -117,34 +212,46 @@ export function History({
     };
   }, [availabilityAttempt, user.role]);
   const choose = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
       const version = ++selectionVersion.current;
       try {
         const data: unknown = await (await call(`/api/conversations/${id}/messages`)).json();
         if (!Array.isArray(data)) throw new Error();
-        if (version !== selectionVersion.current) return;
+        if (version !== selectionVersion.current) return false;
         setMessages(data.map((item: unknown) => MessageViewSchema.parse(item)));
         setSelected(id);
+        currentPausedRef.current = null;
         setCurrentPaused(null);
         setError('');
+        return true;
       } catch {
         if (version === selectionVersion.current) setError('Não foi possível carregar a conversa.');
+        return false;
       }
     },
     [call],
   );
   const reportPaused = useCallback(
     (state: 'waiting_for_analyst' | 'with_analyst' | null) => {
+      currentPausedRef.current = state;
       setCurrentPaused(state);
       if (!state) return;
-      setConversations((current) =>
-        current.map((item) => (item.id === selected ? { ...item, state } : item)),
-      );
+      setConversations((current) => {
+        const next = current.map((item) => (item.id === selected ? { ...item, state } : item));
+        conversationsRef.current = next;
+        return next;
+      });
     },
     [selected],
   );
   const create = useCallback(async () => {
-    if (busyRef.current) return;
+    const hasPausedConversation =
+      currentPausedRef.current !== null ||
+      conversationsRef.current.some(
+        (conversation) =>
+          conversation.state === 'waiting_for_analyst' || conversation.state === 'with_analyst',
+      );
+    if (busyRef.current || hasPausedConversation) return;
     busyRef.current = true;
     loadVersion.current++;
     selectionVersion.current++;
@@ -160,8 +267,13 @@ export function History({
           })
         ).json(),
       );
-      setConversations((current) => [...current, data]);
+      setConversations((current) => {
+        const next = [...current, data];
+        conversationsRef.current = next;
+        return next;
+      });
       await choose(data.id);
+      setPage('support');
     } catch {
       setError('Não foi possível criar a conversa.');
     } finally {
@@ -193,6 +305,24 @@ export function History({
       setError('Não foi possível sair. Tente novamente.');
     }
   }
+  const openDashboard = useCallback(async () => {
+    setPage('conversations');
+    setDashboardStatus('loading');
+    try {
+      const data: unknown = await (await call('/api/tickets')).json();
+      if (!Array.isArray(data)) throw new Error();
+      setDashboardTickets(data.map((item: unknown) => TicketViewSchema.parse(item)));
+      setDashboardStatus('ready');
+    } catch {
+      setDashboardStatus('error');
+    }
+  }, [call]);
+  const chooseFromDashboard = useCallback(
+    async (id: string) => {
+      if (await choose(id)) setPage('support');
+    },
+    [choose],
+  );
   if (user.role === 'analyst') {
     return (
       <div className="analyst-layout">
@@ -248,6 +378,7 @@ export function History({
     currentPaused !== null ||
     currentConversation?.state === 'waiting_for_analyst' ||
     currentConversation?.state === 'with_analyst';
+  const hasPausedConversation = pausedConversation !== null;
   const otherPaused =
     pausedConversation && pausedConversation.id !== selected ? pausedConversation : null;
   return (
@@ -331,7 +462,27 @@ export function History({
         <header className="employee-topbar">
           <span>Service desk de TI</span>
           <span aria-hidden="true">›</span>
-          <strong>{page === 'support' ? 'Atendimento' : 'Meu perfil'}</strong>
+          <strong>
+            {page === 'support'
+              ? 'Atendimento'
+              : page === 'profile'
+                ? 'Meu perfil'
+                : 'Minhas conversas'}
+          </strong>
+          {page === 'support' && (
+            <div className="employee-topbar-actions" aria-label="Ações de conversa">
+              <button type="button" onClick={() => void openDashboard()}>
+                Minhas conversas
+              </button>
+              <button
+                type="button"
+                disabled={busy || creating || hasPausedConversation}
+                onClick={() => void create()}
+              >
+                Nova conversa
+              </button>
+            </div>
+          )}
           <div
             className={`employee-availability employee-availability-${availability}`}
             role="status"
@@ -393,6 +544,14 @@ export function History({
               </section>
             </section>
           )}
+          {page === 'conversations' && (
+            <ConversationDashboard
+              conversations={conversations}
+              tickets={dashboardTickets}
+              status={dashboardStatus}
+              onChoose={(id) => void chooseFromDashboard(id)}
+            />
+          )}
           <div className="employee-chat-view" hidden={page !== 'support'}>
             {creating && <p role="status">Iniciando conversa...</p>}
             {selected && selectedPaused && currentConversation && (
@@ -402,7 +561,7 @@ export function History({
                     ? 'Seu atendimento está aguardando um analista.'
                     : 'Seu atendimento está com um analista.'}
                 </span>
-                <button type="button" disabled={busy || creating} onClick={() => void create()}>
+                <button type="button" disabled onClick={() => void create()}>
                   Iniciar nova conversa
                 </button>
               </div>

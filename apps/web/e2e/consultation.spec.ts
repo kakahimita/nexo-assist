@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, request, test } from '@playwright/test';
 import { startFreshConversation } from './employee-chat';
 async function start(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -30,7 +30,9 @@ test('B02 B12: asks platform and exposes actual decision evidence', async ({ pag
   await expect(chat.getByText(/Compatibilidade com a versão do Windows/).last()).toBeVisible();
   expect(await (await page.request.get('/api/tickets')).json()).toEqual(ticketsBefore);
 });
-test('B09: a paused conversation can start a new one and be resumed', async ({ page }) => {
+test('B09 B10: a paused conversation blocks a new session until human support returns it', async ({
+  page,
+}) => {
   await start(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   const waiting = async () =>
@@ -43,22 +45,45 @@ test('B09: a paused conversation can start a new one and be resumed', async ({ p
   const choices = chat.getByRole('group', { name: 'Chamados encontrados' }).last();
   await choices.getByRole('button', { name: /Notebook lento/ }).click();
   await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
-
-  await page.getByRole('button', { name: 'Iniciar nova conversa' }).click();
-  await expect(page.getByRole('button', { name: 'Voltar ao atendimento' })).toBeVisible();
-  await expect(chat.getByText('Descreva sua dúvida de TI para começar.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Iniciar nova conversa' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Nova conversa', exact: true })).toBeDisabled();
+  const rejected = await page.evaluate(async () => {
+    const response = await fetch('/api/conversations', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    });
+    return response.status;
+  });
+  expect(rejected).toBe(409);
 
   const conversations = (await (await page.request.get('/api/conversations')).json()) as Array<{
+    id: string;
     state: string;
   }>;
   expect(conversations.filter((item) => item.state === 'waiting_for_analyst')).toHaveLength(
     waitingBefore + 1,
   );
-
-  await page.getByRole('button', { name: 'Voltar ao atendimento' }).click();
-  await expect(chat.getByText(/Notebook lento está com o prazo vencido/)).toBeVisible();
-  await expect(chat.getByRole('status')).toContainText('Aguardando atendimento humano');
-  await expect(page.getByRole('button', { name: 'Voltar ao atendimento' })).toHaveCount(0);
+  const paused = conversations.find((item) => item.state === 'waiting_for_analyst');
+  expect(paused).toBeDefined();
+  const baseURL = new URL(page.url()).origin;
+  const analyst = await request.newContext({
+    baseURL,
+    extraHTTPHeaders: { Origin: baseURL },
+  });
+  try {
+    await analyst
+      .post('/api/session', { data: { email: 'analista@nexo.com.br', password: 'x' } })
+      .then((response) => expect(response.status()).toBe(201));
+    await analyst
+      .post(`/api/support/conversations/${paused?.id}/claim`)
+      .then((response) => expect(response.status()).toBe(201));
+    await analyst
+      .post(`/api/support/conversations/${paused?.id}/return`)
+      .then((response) => expect(response.status()).toBe(201));
+  } finally {
+    await analyst.dispose();
+  }
 });
 
 test('B03 B16: selects own tickets and redirects RH', async ({ page }) => {

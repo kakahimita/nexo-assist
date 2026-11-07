@@ -26,6 +26,15 @@ export const ConversationViewSchema = z.strictObject({
   assignedAnalystId: z.string().nullable(),
   closedAt: z.string().datetime().nullable(),
   flow: ConversationFlowSchema,
+  latestMessage: z
+    .strictObject({
+      content: z.string(),
+      createdAt: z.string().datetime(),
+      role: z.enum(['employee', 'agent', 'analyst']),
+    })
+    .nullable()
+    .default(null),
+  contextTicketNumber: z.string().nullable().default(null),
 });
 export type ConversationView = z.infer<typeof ConversationViewSchema>;
 export const ConversationStateSchema = z.enum([

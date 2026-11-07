@@ -67,6 +67,26 @@ describe('B13 conversation contracts', () => {
       }).success,
     ).toBe(false);
   });
+  it('accepts a server-provided conversation summary for the employee dashboard', () => {
+    expect(
+      ConversationViewSchema.safeParse({
+        id: 'conversation-summary',
+        createdAt: '2026-11-07T12:00:00.000Z',
+        state: 'agent',
+        stateVersion: 0,
+        handoff: null,
+        assignedAnalystId: null,
+        closedAt: null,
+        flow: { mode: 'none', stage: 'idle', facts: {} },
+        latestMessage: {
+          content: 'Meu notebook não liga.',
+          createdAt: '2026-11-07T12:01:00.000Z',
+          role: 'employee',
+        },
+        contextTicketNumber: 'INC-20393',
+      }).success,
+    ).toBe(true);
+  });
   it('accepts with_analyst and closed states and rejects an unknown state', () => {
     expect(
       ConversationViewSchema.safeParse({

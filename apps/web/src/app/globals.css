@@ -704,11 +704,34 @@ textarea {
 .employee-topbar strong {
   color: #1b2431;
 }
+.employee-topbar-actions {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.employee-topbar-actions button {
+  padding: 7px 12px;
+  border: 1px solid #d8dee7;
+  border-radius: 8px;
+  background: #fff;
+  color: #3d4656;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+.employee-topbar-actions button:last-child {
+  border-color: #0069c7;
+  background: #0069c7;
+  color: #fff;
+}
+.employee-topbar-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 .employee-availability {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
   color: #697386;
   font-size: 12px;
 }
@@ -792,6 +815,129 @@ textarea {
 .employee-ticket-view[hidden] {
   display: none;
 }
+.conversations-dashboard {
+  width: min(100% - 40px, 680px);
+  margin: 38px auto 56px;
+}
+.conversations-dashboard-heading {
+  margin-bottom: 28px;
+}
+.conversations-dashboard-heading h2,
+.conversations-dashboard h3,
+.conversations-dashboard h4 {
+  margin: 0;
+  color: #17233a;
+}
+.conversations-dashboard-heading h2 {
+  font-size: 24px;
+}
+.conversations-dashboard-heading p {
+  margin: 5px 0 0;
+  color: #65728a;
+  font-size: 13px;
+}
+.conversations-dashboard > section + section {
+  margin-top: 28px;
+}
+.conversations-dashboard h3 {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.conversations-dashboard-tickets {
+  display: grid;
+  gap: 10px;
+}
+.conversations-dashboard-ticket {
+  padding: 16px;
+  border: 1px solid #e2e7ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 12px #17233a0a;
+}
+.conversations-dashboard-ticket > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #697386;
+  font-size: 12px;
+}
+.conversations-dashboard-ticket > div span:last-child {
+  color: #087443;
+}
+.conversations-dashboard-ticket > div span:last-child[data-status='resolved'] {
+  color: #5f728a;
+}
+.conversations-dashboard-ticket h4 {
+  margin-top: 8px;
+  font-size: 16px;
+}
+.conversations-dashboard-ticket > p {
+  margin: 7px 0 13px;
+  color: #536176;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.conversations-dashboard-ticket dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f4;
+}
+.conversations-dashboard-ticket dt {
+  color: #7a8596;
+  font-size: 11px;
+}
+.conversations-dashboard-ticket dd {
+  margin: 3px 0 0;
+  color: #24324a;
+  font-size: 12px;
+  font-weight: 600;
+}
+.conversations-dashboard-list {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #e2e7ee;
+  border-radius: 14px;
+  background: #fff;
+  list-style: none;
+}
+.conversations-dashboard-list li + li {
+  border-top: 1px solid #edf0f4;
+}
+.conversations-dashboard-list button {
+  display: grid;
+  width: 100%;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 0;
+  background: #fff;
+  color: #1e3556;
+  font: inherit;
+  text-align: left;
+}
+.conversations-dashboard-list button:hover,
+.conversations-dashboard-list button:focus-visible {
+  background: #f4f8fd;
+}
+.conversations-dashboard-list button > span {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conversations-dashboard-list small {
+  color: #718096;
+  font-size: 11px;
+}
+.conversations-dashboard-list em {
+  color: #0b7d4d;
+  font-size: 11px;
+  font-style: normal;
+}
 .employee-content nav[aria-label='Conversas'] {
   display: flex;
   flex-wrap: wrap;
@@ -848,6 +994,13 @@ textarea {
     flex-wrap: wrap;
     padding: 10px 20px;
   }
+  .employee-topbar-actions {
+    order: 2;
+    margin-left: 0;
+  }
+  .employee-availability {
+    margin-left: auto;
+  }
   .employee-content {
     overflow: visible;
   }
@@ -856,6 +1009,13 @@ textarea {
   }
   .employee-chat-view {
     min-height: 60vh;
+  }
+  .conversations-dashboard {
+    width: min(100% - 32px, 680px);
+    margin-top: 28px;
+  }
+  .conversations-dashboard-ticket dl {
+    grid-template-columns: 1fr 1fr;
   }
 }
 .profile {
