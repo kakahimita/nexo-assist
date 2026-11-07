@@ -283,4 +283,35 @@ describe('B01 B13 B16: authorized persistent history', () => {
       await db.cleanup();
     }
   });
+  it('does not let a new conversation bypass an employee handoff', async () => {
+    const db = await createTestDatabase();
+    const app = await createApp({
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    });
+    try {
+      const server = app.getHttpServer();
+      const login = await request(server)
+        .post('/api/session')
+        .send({ email: 'ana.souza@nexo.com.br', password: 'x' })
+        .expect(201);
+      const cookie = String(login.headers['set-cookie']?.[0]);
+      const conversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', cookie)
+        .send({})
+        .expect(201);
+      await request(server)
+        .post(`/api/conversations/${conversation.body.id}/handoff`)
+        .set('Cookie', cookie)
+        .send({ reason: 'employee_request' })
+        .expect(201);
+      await request(server).post('/api/conversations').set('Cookie', cookie).send({}).expect(409);
+    } finally {
+      await app.close();
+      await db.cleanup();
+    }
+  });
 });

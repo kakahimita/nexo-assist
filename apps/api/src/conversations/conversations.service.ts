@@ -57,7 +57,17 @@ export class ConversationsService {
   }
   async create(user: UserView): Promise<ConversationView> {
     this.employee(user);
-    const row = await this.database.client.conversation.create({ data: { ownerId: user.id } });
+    const row = await this.database.client.$transaction(async (tx) => {
+      const paused = await tx.conversation.findFirst({
+        where: {
+          ownerId: user.id,
+          state: { in: ['waiting_for_analyst', 'with_analyst'] },
+        },
+        select: { id: true },
+      });
+      if (paused) throw new ConflictException('Human support is still handling a conversation.');
+      return tx.conversation.create({ data: { ownerId: user.id } });
+    });
     return this.conversationView(row);
   }
   async confirmResolution(

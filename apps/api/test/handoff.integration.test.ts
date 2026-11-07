@@ -92,6 +92,14 @@ describe('B09 B10 B13 B16: durable employee handoff', () => {
             .expect(201)
         ).headers['set-cookie']?.[0],
       );
+      const analystCookie = String(
+        (
+          await request(server)
+            .post('/api/session')
+            .send({ email: 'analista@nexo.com.br', password: 'x' })
+            .expect(201)
+        ).headers['set-cookie']?.[0],
+      );
       const createConversation = () =>
         request(server).post('/api/conversations').set('Cookie', cookie).send({}).expect(201);
       const stream = (conversationId: string, content: string) =>
@@ -104,6 +112,14 @@ describe('B09 B10 B13 B16: durable employee handoff', () => {
       const overdue = await createConversation();
       const overdueResponse = await stream(overdue.body.id, 'Notebook lento');
       expect(overdueResponse.text).toContain('"type":"handoff-waiting"');
+      await request(server)
+        .post(`/api/support/conversations/${overdue.body.id}/claim`)
+        .set('Cookie', analystCookie)
+        .expect(201);
+      await request(server)
+        .post(`/api/support/conversations/${overdue.body.id}/return`)
+        .set('Cookie', analystCookie)
+        .expect(201);
 
       const critical = await createConversation();
       await stream(critical.body.id, 'Abrir chamado: notebook não funciona');
@@ -119,7 +135,7 @@ describe('B09 B10 B13 B16: durable employee handoff', () => {
       expect(
         conversations.body.find((item: { id: string }) => item.id === overdue.body.id),
       ).toMatchObject({
-        state: 'waiting_for_analyst',
+        state: 'agent',
         handoff: { reason: 'overdue_ticket' },
       });
       expect(
@@ -219,7 +235,7 @@ describe('B09 B10 B13 B16: durable employee handoff', () => {
           handoff: expect.objectContaining({ reason: 'employee_request' }),
         }),
       );
-      await request(server).post('/api/conversations').set('Cookie', ana).send({}).expect(201);
+      await request(server).post('/api/conversations').set('Cookie', ana).send({}).expect(409);
       const persisted = await request(server)
         .get('/api/conversations')
         .set('Cookie', ana)

@@ -158,7 +158,7 @@ test('V03: employee cannot start a permanent new conversation while human suppor
     route.fulfill({ json: [] }),
   );
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Nova conversa', exact: true })).toBeDisabled();
 });
 
 test('B01 B13: login, persist, logout and isolate history', async ({ page }) => {

@@ -132,8 +132,8 @@ bar now provides `Minhas conversas` and `Nova conversa`; the former lists only
 the authenticated employee's ticket cards and conversation summaries. Selecting
 a summary reloads that conversation and returns to Atendimento. The removed
 `Falar com o Nexo Assist` action is not present. A waiting or analyst-owned
-conversation disables the permanent new-conversation action and the creation
-callback independently enforces the same boundary.
+conversation disables the permanent new-conversation action. The server rejects
+creation in the same state, so a direct request cannot bypass the pause.
 
 The list response is server-authorized and includes the latest message and any
 linked public ticket number, avoiding client-side message fan-out. Browser
