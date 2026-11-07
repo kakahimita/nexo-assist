@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { startFreshConversation } from './employee-chat';
 
-test('V03: first visit opens the chat without a permanent new-conversation action', async ({
-  page,
-}) => {
+test('V03: first visit opens the chat with permanent conversation actions', async ({ page }) => {
   const conversation = {
     id: 'first',
     createdAt: '2026-11-05T12:00:00.000Z',
@@ -30,8 +28,137 @@ test('V03: first visit opens the chat without a permanent new-conversation actio
     route.fulfill({ json: [] }),
   );
   await page.goto('/');
-  await expect(page.getByRole('region', { name: 'Conversa' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Nova conversa' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Conversa', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Minhas conversas' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeVisible();
+});
+
+test('V03: employee opens the conversations dashboard and restores a selected chat', async ({
+  page,
+}) => {
+  const conversation = {
+    id: 'dashboard-conversation',
+    createdAt: '2026-11-07T12:00:00.000Z',
+    state: 'agent',
+    stateVersion: 0,
+    handoff: null,
+    assignedAnalystId: null,
+    closedAt: null,
+    flow: { mode: 'none', stage: 'idle', facts: {} },
+    latestMessage: {
+      content: 'Meu notebook não liga.',
+      createdAt: '2026-11-07T12:01:00.000Z',
+      role: 'employee',
+    },
+    contextTicketNumber: 'INC-20393',
+  };
+  await page.route('**/api/session', (route) =>
+    route.fulfill({
+      json: { id: 'user', name: 'Ana', email: 'ana.souza@nexo.com.br', role: 'employee' },
+    }),
+  );
+  await page.route('**/api/ready', (route) =>
+    route.fulfill({ json: { status: 'ok', service: 'nexo-api', database: 'ready' } }),
+  );
+  await page.route('**/api/conversations', (route) => route.fulfill({ json: [conversation] }));
+  await page.route('**/api/conversations/dashboard-conversation/messages', (route) =>
+    route.fulfill({
+      json: [
+        {
+          id: 'message-1',
+          content: 'Meu notebook não liga.',
+          createdAt: '2026-11-07T12:01:00.000Z',
+          role: 'employee',
+          status: 'completed',
+          decision: null,
+          authorName: null,
+        },
+      ],
+    }),
+  );
+  await page.route('**/api/conversations/dashboard-conversation/draft-proposals', (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await page.route('**/api/tickets', (route) =>
+    route.fulfill({
+      json: [
+        {
+          id: 'ticket-1',
+          number: 'INC-20393',
+          ownerId: 'user',
+          title: 'Notebook não liga',
+          description: 'A tela permanece apagada ao iniciar.',
+          type: 'INC',
+          category: 'hardware',
+          priority: 'high',
+          impact: 'self',
+          status: 'open',
+          transferRequested: false,
+          createdAt: '2026-11-07T12:00:00.000Z',
+          resolvedAt: null,
+          slaStartedAt: '2026-11-07T12:00:00.000Z',
+          deadline: '2026-11-07T16:00:00.000Z',
+          overdue: false,
+        },
+      ],
+    }),
+  );
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Minhas conversas' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeVisible();
+  await page.getByRole('button', { name: 'Minhas conversas' }).click();
+  await expect(page.getByRole('heading', { name: 'Minhas conversas' })).toBeVisible();
+  await expect(page.getByText('Notebook não liga', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /Meu notebook não liga/ }).click();
+  await expect(page.getByRole('region', { name: 'Conversa', exact: true })).toBeVisible();
+  await expect(page.getByText('Meu notebook não liga.', { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.getByRole('button', { name: 'Minhas conversas' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    )
+    .toBe(true);
+});
+
+test('V03: employee cannot start a permanent new conversation while human support owns one', async ({
+  page,
+}) => {
+  const conversation = {
+    id: 'paused-conversation',
+    createdAt: '2026-11-07T12:00:00.000Z',
+    state: 'waiting_for_analyst',
+    stateVersion: 1,
+    handoff: {
+      reason: 'employee_request',
+      summary: 'Aguardando atendimento humano.',
+      requestedAt: '2026-11-07T12:01:00.000Z',
+    },
+    assignedAnalystId: null,
+    closedAt: null,
+    flow: { mode: 'none', stage: 'idle', facts: {} },
+    latestMessage: null,
+    contextTicketNumber: null,
+  };
+  await page.route('**/api/session', (route) =>
+    route.fulfill({
+      json: { id: 'user', name: 'Ana', email: 'ana.souza@nexo.com.br', role: 'employee' },
+    }),
+  );
+  await page.route('**/api/ready', (route) =>
+    route.fulfill({ json: { status: 'ok', service: 'nexo-api', database: 'ready' } }),
+  );
+  await page.route('**/api/conversations', (route) => route.fulfill({ json: [conversation] }));
+  await page.route('**/api/conversations/paused-conversation/messages', (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await page.route('**/api/conversations/paused-conversation/draft-proposals', (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeDisabled();
 });
 
 test('B01 B13: login, persist, logout and isolate history', async ({ page }) => {
