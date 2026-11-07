@@ -199,4 +199,88 @@ describe('B01 B13 B16: authorized persistent history', () => {
       await db.cleanup();
     }
   });
+  it('lists only the employee conversation summary and its context ticket number', async () => {
+    const db = await createTestDatabase();
+    const env = {
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:3000',
+      databaseUrl: db.url,
+    };
+    const app = await createApp(env);
+    try {
+      const server = app.getHttpServer();
+      const anaLogin = await request(server)
+        .post('/api/session')
+        .send({ email: 'ana.souza@nexo.com.br', password: 'x' })
+        .expect(201);
+      const brunoLogin = await request(server)
+        .post('/api/session')
+        .send({ email: 'bruno.lima@nexo.com.br', password: 'x' })
+        .expect(201);
+      const anaCookie = String(anaLogin.headers['set-cookie']?.[0]);
+      const brunoCookie = String(brunoLogin.headers['set-cookie']?.[0]);
+      const anaConversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', anaCookie)
+        .send({})
+        .expect(201);
+      await request(server)
+        .post(`/api/conversations/${anaConversation.body.id}/messages`)
+        .set('Cookie', anaCookie)
+        .send({ content: 'Meu notebook não liga.' })
+        .expect(201);
+      const brunoConversation = await request(server)
+        .post('/api/conversations')
+        .set('Cookie', brunoCookie)
+        .send({})
+        .expect(201);
+      await request(server)
+        .post(`/api/conversations/${brunoConversation.body.id}/messages`)
+        .set('Cookie', brunoCookie)
+        .send({ content: 'Mensagem privada do Bruno.' })
+        .expect(201);
+      const client = createDatabaseClient(db.url);
+      try {
+        const ana = await client.user.findUniqueOrThrow({
+          where: { email: 'ana.souza@nexo.com.br' },
+        });
+        const ticket = await client.ticket.create({
+          data: {
+            number: 20393,
+            ownerId: ana.id,
+            title: 'Notebook não liga',
+            normalizedTitle: 'notebook nao liga',
+            description: 'O notebook não liga.',
+            type: 'INC',
+            category: 'hardware',
+            priority: 'high',
+            impact: 'self',
+            slaStartedAt: new Date('2026-11-07T12:00:00.000Z'),
+          },
+        });
+        await client.conversation.update({
+          where: { id: anaConversation.body.id },
+          data: { contextTicketId: ticket.id },
+        });
+      } finally {
+        await client.$disconnect();
+      }
+      expect(
+        (await request(server).get('/api/conversations').set('Cookie', anaCookie).expect(200)).body,
+      ).toEqual([
+        expect.objectContaining({
+          id: anaConversation.body.id,
+          latestMessage: expect.objectContaining({
+            content: 'Meu notebook não liga.',
+            role: 'employee',
+          }),
+          contextTicketNumber: 'INC-20393',
+        }),
+      ]);
+    } finally {
+      await app.close();
+      await db.cleanup();
+    }
+  });
 });
