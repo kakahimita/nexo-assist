@@ -123,3 +123,21 @@ overdue ticket automatically, so its waiting banner and response do not mirror
 the prototype's optional transfer example. The guide also includes public
 ticket numbers, descriptions, and three finer status labels absent from the
 current ticket contract; they were not fabricated for the capture.
+
+## Employee conversations dashboard (#64)
+
+The owner-approved dashboard restores an explicit employee history screen that
+was deliberately absent from the preceding V03 correction. The Atendimento top
+bar now provides `Minhas conversas` and `Nova conversa`; the former lists only
+the authenticated employee's ticket cards and conversation summaries. Selecting
+a summary reloads that conversation and returns to Atendimento. The removed
+`Falar com o Nexo Assist` action is not present. A waiting or analyst-owned
+conversation disables the permanent new-conversation action and the creation
+callback independently enforces the same boundary.
+
+The list response is server-authorized and includes the latest message and any
+linked public ticket number, avoiding client-side message fan-out. Browser
+coverage verifies the dashboard, the selected-chat return path, the paused
+state, and 375 px horizontal overflow. The original private reference bundle
+was unavailable in this checkout, so this increment does not claim a comparison
+with the Pencil frame or exact visual fidelity.
