@@ -4,6 +4,13 @@ The [#62 natural support interpretation](natural-support-verification.md) tracks
 semantic proposal provenance and the separate real-model conversational gate for
 B02/B04/B07/B09–B16. Deterministic success is not live conversational acceptance.
 
+The [#65 thinking indicator](thinking-indicator-verification.md) covers the B14
+waiting-state portion deterministically: the employee sees an announced spinner
+between submission and the first fragment, it clears on text, completion,
+handoff, error, and request exit, and it never appears during resolution
+confirmation. It does not change streaming, resolution, or live-provider
+behavior.
+
 The [#60 login viewport refinement](login-viewport-verification.md) records bounded
 desktop no-scroll checks and continued narrow-screen access for V01.
 
