@@ -41,6 +41,7 @@ export function Consultation({
 }): React.JSX.Element {
   const [content, setContent] = useState('');
   const [active, setActive] = useState(false);
+  const [awaitingReply, setAwaitingReply] = useState(false);
   const [partial, setPartial] = useState('');
   const [actions, setActions] = useState<ConsultationAction[]>([]);
   const [error, setError] = useState('');
@@ -127,6 +128,7 @@ export function Consultation({
     if (!text || activeRef.current || capped || closed) return;
     activeRef.current = true;
     setActive(true);
+    setAwaitingReply(true);
     onBusy(true);
     setError('');
     setPartial('');
@@ -153,18 +155,23 @@ export function Consultation({
       if (!response.ok || !response.body) throw new Error();
       await readConsultationStream(response.body, (event) => {
         if (event.type === 'user-message') setMessages((current) => [...current, event.message]);
-        else if (event.type === 'text-delta') setPartial((current) => current + event.text);
-        else if (event.type === 'action') setActions((current) => [...current, event.action]);
+        else if (event.type === 'text-delta') {
+          setAwaitingReply(false);
+          setPartial((current) => current + event.text);
+        } else if (event.type === 'action') setActions((current) => [...current, event.action]);
         else if (event.type === 'handoff-waiting') {
           done = true;
+          setAwaitingReply(false);
           setHumanEngaged(true);
           setPartial('');
           setActions([]);
         } else if (event.type === 'error') {
+          setAwaitingReply(false);
           setActions([]);
           setError(errors[event.code] ?? 'Não foi possível concluir a resposta.');
         } else if (event.type === 'done') {
           done = true;
+          setAwaitingReply(false);
           setMessages((current) => [...current, event.message]);
           setPartial('');
           setActions([]);
@@ -178,6 +185,7 @@ export function Consultation({
     } finally {
       activeRef.current = false;
       setActive(false);
+      setAwaitingReply(false);
       onBusy(false);
     }
   }
@@ -240,6 +248,9 @@ export function Consultation({
   return (
     <section className="consultation" aria-label="Conversa">
       <h2 className="visually-hidden">Mensagens</h2>
+      <p className="visually-hidden" aria-live="polite" aria-atomic="true">
+        {awaitingReply ? 'Preparando resposta' : ''}
+      </p>
       {humanEngaged && (
         <p role="status">
           Aguardando atendimento humano. {handoff?.summary ?? 'Sua solicitação foi encaminhada.'}
@@ -389,14 +400,20 @@ export function Consultation({
             )}
           </article>
         ))}
-        {active && (
+        {active && (awaitingReply || partial) && (
           <article className="chat-message agent" aria-label="Nexo Assist" aria-live="polite">
             <div className="chat-message-status-line">
               <strong className="chat-message-speaker">Nexo Assist</strong>
               {chips(actions)}
             </div>
             <div className="chat-message-bubble">
-              <p>{partial || 'Preparando resposta...'}</p>
+              {awaitingReply ? (
+                <div className="thinking" aria-hidden="true">
+                  <span className="thinking-spinner" />
+                </div>
+              ) : (
+                <p>{partial}</p>
+              )}
             </div>
           </article>
         )}

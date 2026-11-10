@@ -21,10 +21,20 @@ test('employee confirmation persists a resolution and the login displays real ag
   await chat.getByLabel('Mensagem').fill('Meu monitor está sem imagem');
   await chat.getByRole('button', { name: 'Enviar', exact: true }).click();
   await expect(chat.getByRole('button', { name: 'Resolveu', exact: true })).toBeVisible();
+  let releaseResolution!: () => void;
+  const resolutionGate = new Promise<void>((resolve) => {
+    releaseResolution = resolve;
+  });
+  await page.route('**/api/conversations/*/resolution', async (route) => {
+    await resolutionGate;
+    await route.continue();
+  });
   const confirmed = page.waitForResponse(
     (response) => response.url().endsWith('/resolution') && response.request().method() === 'POST',
   );
   await chat.getByRole('button', { name: 'Resolveu', exact: true }).click();
+  await expect(chat.locator('.thinking-spinner')).toHaveCount(0);
+  releaseResolution();
   const result = await confirmed;
   expect(result.status()).toBe(201);
   const conversation = await result.json();

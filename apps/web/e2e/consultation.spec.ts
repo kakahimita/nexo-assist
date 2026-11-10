@@ -171,3 +171,65 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
     'limite do modelo',
   );
 });
+test('#65 B12: shows a thinking indicator until the first streamed fragment', async ({ page }) => {
+  await start(page);
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  const timestamp = '2026-11-10T12:00:00.000Z';
+  const user = {
+    id: 'user-thinking',
+    content: 'VPN',
+    createdAt: timestamp,
+    role: 'employee',
+    status: 'completed',
+    decision: null,
+    authorName: null,
+  };
+  const agent = {
+    id: 'agent-thinking',
+    content: 'Resposta pronta.',
+    createdAt: timestamp,
+    role: 'agent',
+    status: 'completed',
+    authorName: null,
+    decision: {
+      intent: 'Consulta',
+      action: 'answer',
+      appliedRule: 'Base',
+      confidence: 0.8,
+      justification: 'Artigo aplicável',
+      missingFacts: [],
+      quickReplies: [],
+      actions: [],
+      evidence: [],
+      tickets: [],
+      outcome: 'completed',
+      errorCode: null,
+      source: 'deterministic',
+    },
+  };
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/conversations/*/messages/stream', async (route) => {
+    await gate;
+    await route.fulfill({
+      status: 201,
+      contentType: 'text/event-stream',
+      body: [
+        { type: 'user-message', message: user },
+        { type: 'text-delta', text: 'Resposta pronta.' },
+        { type: 'done', message: agent },
+      ]
+        .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+        .join(''),
+    });
+  });
+  await send(page, 'VPN');
+  await expect(page.locator('.thinking-spinner')).toBeVisible();
+  await expect(chat.getByText('Preparando resposta')).toBeAttached();
+  release();
+  await expect(chat.getByText('Resposta pronta.', { exact: true }).last()).toBeVisible();
+  await expect(page.locator('.thinking-spinner')).toHaveCount(0);
+  await expect(chat.getByText('Preparando resposta')).toHaveCount(0);
+});

@@ -1425,6 +1425,29 @@ textarea {
 .chat-message-bubble p {
   margin: 0;
 }
+.thinking {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+.thinking-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd8e6;
+  border-top-color: #1b2431;
+  border-radius: 50%;
+  animation: thinking-spin 0.8s linear infinite;
+}
+@keyframes thinking-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .thinking-spinner {
+    animation: none;
+  }
+}
 .chat-message.employee {
   justify-items: end;
 }
