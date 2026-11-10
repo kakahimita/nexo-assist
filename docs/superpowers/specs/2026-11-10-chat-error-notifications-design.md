@@ -49,8 +49,8 @@ rejected to keep API behavior and contracts unchanged.
 
 | Code | Title | Body |
 | --- | --- | --- |
-| `quota` | Limite de uso atingido | Os tokens gratuitos do Gemini para esta chave acabaram. Tente novamente mais tarde. |
-| `model_unavailable` | Assistente indisponível | Não consegui falar com o provedor do modelo agora. Pode ser uma instabilidade temporária; tente novamente em instantes. |
+| `quota` | Limite de uso atingido | A chave do Gemini atingiu um limite de uso. Tente novamente mais tarde. |
+| `model_unavailable` | Assistente indisponível | Não consegui falar com o provedor do modelo. Tente novamente em instantes; se continuar, verifique a chave configurada para esta sessão. |
 | `invalid_output` | Resposta não validada | O assistente respondeu em um formato que não pude validar. Tente novamente. |
 | `interrupted` | Resposta interrompida | A conexão terminou antes de a resposta chegar completa. Tente novamente. |
 | generic transport failure | Não foi possível concluir | Recarregue a conversa para verificar o histórico antes de tentar novamente. |

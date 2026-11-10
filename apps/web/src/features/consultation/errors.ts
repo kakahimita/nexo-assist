@@ -9,11 +9,11 @@ const generic: ChatErrorCopy = {
 const copies: Record<string, ChatErrorCopy> = {
   quota: {
     title: 'Limite de uso atingido',
-    body: 'Os tokens gratuitos do Gemini para esta chave acabaram. Tente novamente mais tarde.',
+    body: 'A chave do Gemini atingiu um limite de uso. Tente novamente mais tarde.',
   },
   model_unavailable: {
     title: 'Assistente indisponível',
-    body: 'Não consegui falar com o provedor do modelo agora. Pode ser uma instabilidade temporária; tente novamente em instantes.',
+    body: 'Não consegui falar com o provedor do modelo. Tente novamente em instantes; se continuar, verifique a chave configurada para esta sessão.',
   },
   invalid_output: {
     title: 'Resposta não validada',

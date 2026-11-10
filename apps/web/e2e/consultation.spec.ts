@@ -306,7 +306,7 @@ test('#68 B15: pauses the error toast and keeps exactly one inline error', async
   release();
   const toast = chat.getByRole('alert');
   await expect(toast).toContainText('Limite de uso atingido');
-  await expect(toast).toContainText('Os tokens gratuitos do Gemini');
+  await expect(toast).toContainText('A chave do Gemini atingiu um limite de uso');
   await expect(chat.getByRole('alert')).toHaveCount(1);
   await expect(chat.locator('.chat-error-inline')).toHaveCount(0);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -342,6 +342,7 @@ test('#68 B15: closes the error toast manually on a narrow screen', async ({ pag
   release();
   const toast = chat.getByRole('alert');
   await expect(toast).toContainText('Assistente indisponível');
+  await expect(toast).toContainText('verifique a chave configurada');
   const box = await toast.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
