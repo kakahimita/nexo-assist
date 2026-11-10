@@ -1448,6 +1448,142 @@ textarea {
     animation: none;
   }
 }
+.chat-error-toast {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 28px;
+  gap: 10px 12px;
+  width: min(380px, calc(100vw - 32px));
+  padding: 14px 14px 18px;
+  border: 1px solid #ecc7c0;
+  border-radius: 14px;
+  background: #fff7f5;
+  color: #412522;
+  box-shadow:
+    0 2px 6px #1b243114,
+    0 18px 40px #1b24311f;
+  overflow: hidden;
+  animation: chat-error-toast-in 180ms ease-out;
+}
+.chat-error-toast-icon {
+  width: 22px;
+  height: 22px;
+  color: #a3342a;
+}
+.chat-error-toast-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.chat-error-toast-title {
+  margin: 0;
+  color: #8f261d;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.chat-error-toast-body {
+  margin: 0;
+  color: #5a312c;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.chat-error-toast-close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #8f261d;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.chat-error-toast-close:hover,
+.chat-error-toast-close:focus-visible {
+  background: #f7ded9;
+}
+.chat-error-toast-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #c9584b;
+  transform-origin: left center;
+  animation: chat-error-toast-progress 5s linear forwards;
+}
+.chat-error-toast[data-paused='true'] .chat-error-toast-progress {
+  animation-play-state: paused;
+}
+.chat-error-inline {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  margin: 8px 0;
+  padding: 12px 14px;
+  border: 1px solid #ecc7c0;
+  border-left: 3px solid #b44437;
+  border-radius: 10px;
+  background: #fff7f5;
+}
+.chat-error-inline-icon {
+  width: 20px;
+  height: 20px;
+  color: #a3342a;
+}
+.chat-error-inline-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.chat-error-inline-title {
+  margin: 0;
+  color: #8f261d;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.chat-error-inline-body {
+  margin: 0;
+  color: #5a312c;
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+@keyframes chat-error-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes chat-error-toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@media (max-width: 600px) {
+  .chat-error-toast {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-error-toast,
+  .chat-error-toast-progress {
+    animation: none;
+  }
+}
 .chat-message.employee {
   justify-items: end;
 }
