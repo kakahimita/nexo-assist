@@ -146,8 +146,13 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
       source: 'deterministic',
     },
   };
-  await page.route('**/api/conversations/*/messages/stream', (route) =>
-    route.fulfill({
+  let releaseError!: () => void;
+  const errorGate = new Promise<void>((resolve) => {
+    releaseError = resolve;
+  });
+  await page.route('**/api/conversations/*/messages/stream', async (route) => {
+    await errorGate;
+    await route.fulfill({
       status: 201,
       contentType: 'text/event-stream',
       body: [
@@ -157,11 +162,14 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
       ]
         .map((event) => `data: ${JSON.stringify(event)}\n\n`)
         .join(''),
-    }),
-  );
-  await send(page, 'VPN');
+    });
+  });
   const chat = page.getByRole('region', { name: 'Conversa' });
+  await send(page, 'VPN');
+  await expect(chat.locator('.thinking-spinner')).toBeVisible();
+  releaseError();
   await expect(chat.getByRole('alert').first()).toContainText('limite do modelo');
+  await expect(chat.locator('.thinking-spinner')).toHaveCount(0);
   await expect(chat.locator('.consultation-actions .succeeded')).toHaveCount(0);
   await page.route('**/api/conversations/*/messages', (route) =>
     route.fulfill({ json: [user, agent] }),
@@ -171,7 +179,7 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
     'limite do modelo',
   );
 });
-test('#65 B12: shows a thinking indicator until the first streamed fragment', async ({ page }) => {
+test('#65 B14: shows a thinking indicator until the first streamed fragment', async ({ page }) => {
   await start(page);
   const chat = page.getByRole('region', { name: 'Conversa' });
   const timestamp = '2026-11-10T12:00:00.000Z';
@@ -228,6 +236,8 @@ test('#65 B12: shows a thinking indicator until the first streamed fragment', as
   await send(page, 'VPN');
   await expect(page.locator('.thinking-spinner')).toBeVisible();
   await expect(chat.getByText('Preparando resposta')).toBeAttached();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator('.thinking-spinner')).toHaveCSS('animation-name', 'none');
   release();
   await expect(chat.getByText('Resposta pronta.', { exact: true }).last()).toBeVisible();
   await expect(page.locator('.thinking-spinner')).toHaveCount(0);
