@@ -2,6 +2,9 @@
 
 **Issue:** #68 (follow-up to #65, kept on branch `feature/LAB-0065` by owner request)
 
+**Status:** Approved and executed at revision `2ba547e`; evidence in
+`docs/chat-error-notifications-verification.md`.
+
 ## Intent
 
 When the employee chat fails, the current UI shows the same plain inline

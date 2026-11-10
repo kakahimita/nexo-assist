@@ -11,6 +11,12 @@ handoff, error, and request exit, and it never appears during resolution
 confirmation. It does not change streaming, resolution, or live-provider
 behavior.
 
+The [#68 chat error notifications](chat-error-notifications-verification.md)
+cover the B15 error-communication portion: stream failures show cause-specific
+copy in a five-second accessible toast, the toast pauses and closes, and a
+redesigned inline record persists after it. Backend error classification and
+recovery actions are unchanged.
+
 The [#60 login viewport refinement](login-viewport-verification.md) records bounded
 desktop no-scroll checks and continued narrow-screen access for V01.
 

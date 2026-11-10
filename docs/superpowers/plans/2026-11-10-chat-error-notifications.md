@@ -10,6 +10,9 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-10-chat-error-notifications-design.md`
 
+**Status:** Executed at revision `2ba547e`; evidence in
+`docs/chat-error-notifications-verification.md`.
+
 ## Global Constraints
 
 - Issue #68 stays on branch `feature/LAB-0065` by owner request; disclose the mismatch in the PR.
