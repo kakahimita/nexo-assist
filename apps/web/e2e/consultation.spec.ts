@@ -11,6 +11,50 @@ async function send(page: import('@playwright/test').Page, text: string) {
   await page.getByLabel('Mensagem').fill(text);
   await page.getByRole('button', { name: 'Enviar', exact: true }).click();
 }
+function failedStreamEvents(code: 'quota' | 'model_unavailable') {
+  const timestamp = '2026-11-10T12:00:00.000Z';
+  return [
+    {
+      type: 'user-message',
+      message: {
+        id: `user-${code}`,
+        content: 'VPN',
+        createdAt: timestamp,
+        role: 'employee',
+        status: 'completed',
+        decision: null,
+        authorName: null,
+      },
+    },
+    { type: 'error', code },
+    {
+      type: 'done',
+      message: {
+        id: `agent-${code}`,
+        content: 'Não foi possível concluir a resposta.',
+        createdAt: timestamp,
+        role: 'agent',
+        status: 'failed',
+        authorName: null,
+        decision: {
+          intent: 'Consulta indisponível',
+          action: 'unavailable',
+          appliedRule: 'Falha',
+          confidence: 0,
+          justification: 'Indisponível',
+          missingFacts: [],
+          quickReplies: [],
+          actions: [],
+          evidence: [],
+          tickets: [],
+          outcome: 'failed',
+          errorCode: code,
+          source: 'deterministic',
+        },
+      },
+    },
+  ];
+}
 test('B02 B12: asks platform and exposes actual decision evidence', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await start(page);
@@ -146,8 +190,13 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
       source: 'deterministic',
     },
   };
-  await page.route('**/api/conversations/*/messages/stream', (route) =>
-    route.fulfill({
+  let releaseError!: () => void;
+  const errorGate = new Promise<void>((resolve) => {
+    releaseError = resolve;
+  });
+  await page.route('**/api/conversations/*/messages/stream', async (route) => {
+    await errorGate;
+    await route.fulfill({
       status: 201,
       contentType: 'text/event-stream',
       body: [
@@ -157,17 +206,152 @@ test('B12 B15: failed turn stays failed after reloading history', async ({ page 
       ]
         .map((event) => `data: ${JSON.stringify(event)}\n\n`)
         .join(''),
-    }),
-  );
-  await send(page, 'VPN');
+    });
+  });
   const chat = page.getByRole('region', { name: 'Conversa' });
-  await expect(chat.getByRole('alert').first()).toContainText('limite do modelo');
+  await send(page, 'VPN');
+  await expect(chat.locator('.thinking-spinner')).toBeVisible();
+  releaseError();
+  await expect(chat.getByRole('alert')).toContainText('Limite de uso atingido');
+  await expect(chat.locator('.thinking-spinner')).toHaveCount(0);
   await expect(chat.locator('.consultation-actions .succeeded')).toHaveCount(0);
   await page.route('**/api/conversations/*/messages', (route) =>
     route.fulfill({ json: [user, agent] }),
   );
   await page.reload();
-  await expect(page.getByRole('region', { name: 'Conversa' }).getByRole('alert')).toContainText(
-    'limite do modelo',
+  await expect(page.getByText('Limite de uso atingido')).toBeVisible();
+});
+test('#65 B14: shows a thinking indicator until the first streamed fragment', async ({ page }) => {
+  await start(page);
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  const timestamp = '2026-11-10T12:00:00.000Z';
+  const user = {
+    id: 'user-thinking',
+    content: 'VPN',
+    createdAt: timestamp,
+    role: 'employee',
+    status: 'completed',
+    decision: null,
+    authorName: null,
+  };
+  const agent = {
+    id: 'agent-thinking',
+    content: 'Resposta pronta.',
+    createdAt: timestamp,
+    role: 'agent',
+    status: 'completed',
+    authorName: null,
+    decision: {
+      intent: 'Consulta',
+      action: 'answer',
+      appliedRule: 'Base',
+      confidence: 0.8,
+      justification: 'Artigo aplicável',
+      missingFacts: [],
+      quickReplies: [],
+      actions: [],
+      evidence: [],
+      tickets: [],
+      outcome: 'completed',
+      errorCode: null,
+      source: 'deterministic',
+    },
+  };
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/conversations/*/messages/stream', async (route) => {
+    await gate;
+    await route.fulfill({
+      status: 201,
+      contentType: 'text/event-stream',
+      body: [
+        { type: 'user-message', message: user },
+        { type: 'text-delta', text: 'Resposta pronta.' },
+        { type: 'done', message: agent },
+      ]
+        .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+        .join(''),
+    });
+  });
+  await send(page, 'VPN');
+  await expect(page.locator('.thinking-spinner')).toBeVisible();
+  await expect(chat.getByText('Preparando resposta')).toBeAttached();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator('.thinking-spinner')).toHaveCSS('animation-name', 'none');
+  release();
+  await expect(chat.getByText('Resposta pronta.', { exact: true }).last()).toBeVisible();
+  await expect(page.locator('.thinking-spinner')).toHaveCount(0);
+  await expect(chat.getByText('Preparando resposta')).toHaveCount(0);
+});
+test('#68 B15: pauses the error toast and keeps exactly one inline error', async ({ page }) => {
+  await start(page);
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/conversations/*/messages/stream', async (route) => {
+    await gate;
+    await route.fulfill({
+      status: 201,
+      contentType: 'text/event-stream',
+      body: failedStreamEvents('quota')
+        .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+        .join(''),
+    });
+  });
+  await send(page, 'VPN');
+  release();
+  const toast = chat.getByRole('alert');
+  await expect(toast).toContainText('Limite de uso atingido');
+  await expect(toast).toContainText('A chave do Gemini atingiu um limite de uso');
+  await expect(chat.getByRole('alert')).toHaveCount(1);
+  await expect(chat.locator('.chat-error-inline')).toHaveCount(0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(toast).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.chat-error-toast-progress')).toHaveCSS('animation-name', 'none');
+  await toast.hover();
+  await page.waitForTimeout(5500);
+  await expect(toast).toBeVisible();
+  await page.mouse.move(0, 0);
+  await expect(chat.getByRole('alert')).toHaveCount(0, { timeout: 7_000 });
+  await expect(chat.locator('.chat-error-inline')).toHaveCount(1);
+  await expect(chat.locator('.chat-error-inline')).toContainText('Limite de uso atingido');
+});
+test('#68 B15: closes the error toast manually on a narrow screen', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await start(page);
+  const chat = page.getByRole('region', { name: 'Conversa' });
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/conversations/*/messages/stream', async (route) => {
+    await gate;
+    await route.fulfill({
+      status: 201,
+      contentType: 'text/event-stream',
+      body: failedStreamEvents('model_unavailable')
+        .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+        .join(''),
+    });
+  });
+  await send(page, 'VPN');
+  release();
+  const toast = chat.getByRole('alert');
+  await expect(toast).toContainText('Assistente indisponível');
+  await expect(toast).toContainText('verifique a chave configurada');
+  const box = await toast.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(375);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
   );
+  await page.getByRole('button', { name: 'Fechar notificação' }).click();
+  await expect(chat.getByRole('alert')).toHaveCount(0);
+  await expect(chat.locator('.chat-error-inline')).toHaveCount(1);
+  await expect(chat.locator('.chat-error-inline')).toContainText('Assistente indisponível');
 });

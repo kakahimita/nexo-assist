@@ -9,17 +9,13 @@ import {
 } from '@nexo/contracts';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { readConsultationStream } from './stream';
+import { ChatErrorInline, ErrorToast } from './error-toast';
+import { chatErrorCopy, type ChatErrorCopy } from './errors';
 import { Decision } from './decision';
 import { DraftCard } from './draft-card';
 import { TicketCard } from './ticket-card';
 import { TicketSelection } from './ticket-selection';
 import { employeeStage } from './stage';
-const errors: Record<string, string> = {
-  quota: 'O limite do modelo foi atingido. Tente novamente mais tarde.',
-  model_unavailable: 'O assistente está indisponível. Tente novamente.',
-  invalid_output: 'Não foi possível validar a resposta. Tente novamente.',
-  interrupted: 'A resposta foi interrompida. Tente novamente.',
-};
 export function Consultation({
   conversationId,
   conversation,
@@ -41,10 +37,19 @@ export function Consultation({
 }): React.JSX.Element {
   const [content, setContent] = useState('');
   const [active, setActive] = useState(false);
+  const [awaitingReply, setAwaitingReply] = useState(false);
   const [partial, setPartial] = useState('');
   const [actions, setActions] = useState<ConsultationAction[]>([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<ChatErrorCopy | null>(null);
+  const [notification, setNotification] = useState<{ id: number; code: string | null } | null>(
+    null,
+  );
   const activeRef = useRef(false);
+  const notificationId = useRef(0);
+  function notify(code: string | null): void {
+    notificationId.current += 1;
+    setNotification({ id: notificationId.current, code });
+  }
   const [serverUsed, setServerUsed] = useState(0);
   const [pendingDrafts, setPendingDrafts] = useState<string[]>([]);
   const [humanEngaged, setHumanEngaged] = useState(employeeStage(conversation.state) === 'human');
@@ -55,7 +60,7 @@ export function Consultation({
     activeRef.current = true;
     setActive(true);
     onBusy(true);
-    setError('');
+    setError(null);
     try {
       const response = await fetch(`/api/conversations/${conversationId}/resolution`, {
         method: 'POST',
@@ -70,7 +75,10 @@ export function Consultation({
       ConversationViewSchema.parse(await response.json());
       setResolutionConfirmed(true);
     } catch {
-      setError('Não foi possível confirmar a resolução. Atualize a conversa e tente novamente.');
+      setError({
+        title: 'Não foi possível confirmar',
+        body: 'Atualize a conversa e tente novamente.',
+      });
     } finally {
       activeRef.current = false;
       setActive(false);
@@ -111,7 +119,11 @@ export function Consultation({
         if (current) setPendingDrafts(result.map((item: { draftId: string }) => item.draftId));
       })
       .catch(() => {
-        if (current) setError('Não foi possível recuperar os rascunhos pendentes.');
+        if (current)
+          setError({
+            title: 'Rascunhos indisponíveis',
+            body: 'Não foi possível recuperar os rascunhos pendentes.',
+          });
       });
     return () => {
       current = false;
@@ -127,8 +139,9 @@ export function Consultation({
     if (!text || activeRef.current || capped || closed) return;
     activeRef.current = true;
     setActive(true);
+    setAwaitingReply(true);
     onBusy(true);
-    setError('');
+    setError(null);
     setPartial('');
     setActions([]);
     setContent('');
@@ -153,18 +166,24 @@ export function Consultation({
       if (!response.ok || !response.body) throw new Error();
       await readConsultationStream(response.body, (event) => {
         if (event.type === 'user-message') setMessages((current) => [...current, event.message]);
-        else if (event.type === 'text-delta') setPartial((current) => current + event.text);
-        else if (event.type === 'action') setActions((current) => [...current, event.action]);
+        else if (event.type === 'text-delta') {
+          setAwaitingReply(false);
+          setPartial((current) => current + event.text);
+        } else if (event.type === 'action') setActions((current) => [...current, event.action]);
         else if (event.type === 'handoff-waiting') {
           done = true;
+          setAwaitingReply(false);
           setHumanEngaged(true);
           setPartial('');
           setActions([]);
         } else if (event.type === 'error') {
+          setAwaitingReply(false);
           setActions([]);
-          setError(errors[event.code] ?? 'Não foi possível concluir a resposta.');
+          setError(chatErrorCopy(event.code));
+          notify(event.code);
         } else if (event.type === 'done') {
           done = true;
+          setAwaitingReply(false);
           setMessages((current) => [...current, event.message]);
           setPartial('');
           setActions([]);
@@ -172,25 +191,31 @@ export function Consultation({
       });
       if (!done) throw new Error();
     } catch {
-      setError(
-        'Não foi possível concluir a resposta. Recarregue a conversa para verificar o histórico.',
-      );
+      setError(chatErrorCopy(null));
+      notify(null);
     } finally {
       activeRef.current = false;
       setActive(false);
+      setAwaitingReply(false);
       onBusy(false);
     }
   }
   async function requestHandoff(): Promise<void> {
     if (active || humanEngaged) return;
-    setError('');
+    setError(null);
     const response = await fetch(`/api/conversations/${conversationId}/handoff`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ reason: 'employee_request' }),
     });
     if (response.status === 401) return onUnauthorized();
-    if (!response.ok) return setError('Não foi possível solicitar atendimento humano.');
+    if (!response.ok) {
+      setError({
+        title: 'Não foi possível solicitar atendimento',
+        body: 'Tente novamente em instantes.',
+      });
+      return;
+    }
     const result = await response.json();
     setHumanEngaged(true);
     setHandoff(result.handoff);
@@ -209,7 +234,10 @@ export function Consultation({
       setHumanEngaged(updated.state === 'waiting_for_analyst' || updated.state === 'with_analyst');
       setHandoff(updated.handoff);
     } catch {
-      setError('Chamado confirmado. Recarregue a conversa para verificar o encaminhamento.');
+      setError({
+        title: 'Chamado confirmado',
+        body: 'Recarregue a conversa para verificar o encaminhamento.',
+      });
     }
   }
   function submit(event: FormEvent<HTMLFormElement>): void {
@@ -223,7 +251,13 @@ export function Consultation({
       body: JSON.stringify({ ticketId: ticket.id }),
     });
     if (response.status === 401) return onUnauthorized();
-    if (!response.ok) return setError('Não foi possível selecionar o chamado.');
+    if (!response.ok) {
+      setError({
+        title: 'Não foi possível selecionar o chamado',
+        body: 'Tente novamente em instantes.',
+      });
+      return;
+    }
     await send(ticket.title);
   }
   function chips(items: ConsultationAction[]) {
@@ -240,6 +274,16 @@ export function Consultation({
   return (
     <section className="consultation" aria-label="Conversa">
       <h2 className="visually-hidden">Mensagens</h2>
+      <p className="visually-hidden" aria-live="polite" aria-atomic="true">
+        {awaitingReply ? 'Preparando resposta' : ''}
+      </p>
+      {notification && (
+        <ErrorToast
+          key={notification.id}
+          {...chatErrorCopy(notification.code)}
+          onDismiss={() => setNotification(null)}
+        />
+      )}
       {humanEngaged && (
         <p role="status">
           Aguardando atendimento humano. {handoff?.summary ?? 'Sua solicitação foi encaminhada.'}
@@ -359,11 +403,8 @@ export function Consultation({
                   Meu problema foi resolvido
                 </button>
               )}
-            {message.status === 'failed' && (
-              <p role="alert">
-                {errors[message.decision?.errorCode ?? ''] ??
-                  'Não foi possível concluir a resposta.'}
-              </p>
+            {message.status === 'failed' && !notification && (
+              <ChatErrorInline {...chatErrorCopy(message.decision?.errorCode)} />
             )}
             {message.decision && (
               <>
@@ -389,14 +430,20 @@ export function Consultation({
             )}
           </article>
         ))}
-        {active && (
+        {active && (awaitingReply || partial) && (
           <article className="chat-message agent" aria-label="Nexo Assist" aria-live="polite">
             <div className="chat-message-status-line">
               <strong className="chat-message-speaker">Nexo Assist</strong>
               {chips(actions)}
             </div>
             <div className="chat-message-bubble">
-              <p>{partial || 'Preparando resposta...'}</p>
+              {awaitingReply ? (
+                <div className="thinking" aria-hidden="true">
+                  <span className="thinking-spinner" />
+                </div>
+              ) : (
+                <p>{partial}</p>
+              )}
             </div>
           </article>
         )}
@@ -411,7 +458,9 @@ export function Consultation({
             />
           ))}
       </div>
-      {error && <p role="alert">{error}</p>}
+      {error && !notification && messages.at(-1)?.status !== 'failed' && (
+        <ChatErrorInline {...error} />
+      )}
       {capped && (
         <>
           <p role="status">

@@ -59,7 +59,8 @@ test('B02/B04/B09/B10/B11: failed guidance becomes a confirmed ticket with analy
   await expect(
     chat.getByText('Mais um detalhe: a luz do monitor está acesa.', { exact: true }),
   ).toBeVisible();
-  await expect(chat.getByText('Preparando resposta...')).toHaveCount(0);
+  await expect(chat.getByText('Preparando resposta', { exact: true })).toHaveCount(0);
+  await expect(chat.locator('.thinking-spinner')).toHaveCount(0);
   await page.screenshot({ path: 'outputs/autonomous-resolution-waiting.png', fullPage: true });
   await page.getByRole('button', { name: 'Sair', exact: true }).click();
   await page.getByLabel('E-mail corporativo').fill('analista@nexo.com.br');
