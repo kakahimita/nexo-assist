@@ -1,10 +1,10 @@
 # Chat error notifications verification
 
 Scope: issue #68, a follow-up to #65 kept on branch `feature/LAB-0065` by owner
-request. The employee chat now shows a cause-specific five-second toast and a
-redesigned persistent inline error. This is notification-only work; it does not
-add retry, key-change, or recovery actions and does not change backend
-classification.
+request and merged in PR #67. The employee chat now shows a cause-specific
+five-second toast and a redesigned persistent inline error. This is
+notification-only work; it does not add retry, key-change, or recovery actions
+and does not change backend classification.
 
 ## Copy
 
@@ -57,5 +57,8 @@ entrance and the progress line; `prefers-reduced-motion: reduce` removes both.
 - The notification offers no recovery action, by owner scope.
 - The private challenge reference bundle is unavailable, so no original Pencil
   or PDF visual comparison is claimed.
-- The branch remains `feature/LAB-0065` while the delivery issue is #68; the PR
-  must disclose that mismatch.
+
+## Merge record
+
+Merged in [PR #67](https://github.com/kakahimita/nexo-assist/pull/67) at `1dfe64f`
+on 2026-11-11; issues #65 and #68 were closed.

@@ -1,10 +1,12 @@
 # Architecture and challenge conventions
 
-Status: agreed plan; components below are not implemented yet.
+Status: agreed architecture and project conventions. The foundation is
+implemented; individual delivery status and remaining gaps live in the
+acceptance matrix and verification documents.
 
 ## Components
 
-The in-progress foundation implements a diagnostic Next.js page, NestJS health
+The delivered foundation implements a diagnostic Next.js page, NestJS health
 and readiness endpoints, shared Zod contracts, and migrated SQLite metadata.
 
 Use npm workspaces with `apps/web`, `apps/api`, and `packages/contracts`.
